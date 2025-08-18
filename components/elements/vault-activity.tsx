@@ -101,7 +101,7 @@ export function VaultActivity({
               {activity.amount.amount.toLocaleString("en-US")}{" "}
               {activity.amount.currency}
             </div>
-            <div className="px-[2px] py-1 rounded-[4px] bg-[#fafafa1a] text-white text-[11px] flex items-center">
+            <div className="px-[2px] py-1 rounded-[4px] bg-accent text-secondary text-[11px] flex items-center">
               {activity.amount.amountSummary}
             </div>
           </div>
