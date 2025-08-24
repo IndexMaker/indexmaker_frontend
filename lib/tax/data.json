@@ -1,0 +1,1062 @@
+[
+  {
+    "rank": 1,
+    "country": "United States",
+    "gdp_billions_usd": 30337.2,
+    "crypto_tax": "Short-term capital gains (held less than 1 year, taxed as ordinary income for single filer): 10% ($0-$11,925), 12% ($11,926-$48,535), 22% ($48,536-$103,350), 24% ($103,351-$197,300), 32% ($197,301-$250,525), 35% ($250,526-$626,350), 37% (over $626,350). Long-term (held more than 1 year): 0% ($0-$48,350), 15% ($48,351-$533,400), 20% (over $533,400). Mining/staking taxed as ordinary income at the same short-term rates.",
+    "investment_tax_optimization_schemes": {
+      "401(k)": {
+        "contribution_limits": "$23,500 employee deferrals (2025), +$7,500 catch-up if 50+ ($31,000 total). Combined employee+employer $70,000.",
+        "tax_benefits": "Pre-tax contributions deductible, tax-deferred growth, taxed on withdrawal (EET). No tranches, full deduction up to limits.",
+        "holding_periods": "Withdrawals before 59.5: 10% penalty + ordinary income tax. Loans and hardship withdrawals possible; after 59.5, no penalty.",
+        "eligible_investments": "Stocks, bonds, mutual funds, ETFs; plan-dependent, no real estate or alternatives typically.",
+        "other_details": "Employer match not counted in employee limit."
+      },
+      "Roth 401(k)": {
+        "contribution_limits": "Same as 401(k).",
+        "tax_benefits": "After-tax contributions, tax-free growth and qualified withdrawals (TEE).",
+        "holding_periods": "5-year rule for earnings, age 59.5 for tax-free; early withdrawals of contributions tax-free, earnings 10% penalty + tax.",
+        "eligible_investments": "Same as 401(k).",
+        "other_details": "Income limits for direct Roth IRA, but not for Roth 401(k)."
+      },
+      "IRA (Traditional)": {
+        "contribution_limits": "$7,000, +$1,000 catch-up if 50+ ($8,000).",
+        "tax_benefits": "Deductible contributions (income limits: $77,000-$87,000 single, $123,000-$143,000 married), tax-deferred growth, taxed withdrawals (EET).",
+        "holding_periods": "Penalty 10% before 59.5 + tax; required minimum distributions at 73.",
+        "eligible_investments": "Stocks, bonds, ETFs, mutual funds; no life insurance or collectibles.",
+        "other_details": "Phase-out for deduction based on income and workplace plan."
+      },
+      "Roth IRA": {
+        "contribution_limits": "Same as Traditional IRA.",
+        "tax_benefits": "After-tax, tax-free qualified withdrawals (TEE). No RMDs.",
+        "holding_periods": "5-year rule, age 59.5; early contributions tax-free, earnings penalty + tax.",
+        "eligible_investments": "Same as Traditional.",
+        "other_details": "Income eligibility: <$150,000 single, <$236,000 married."
+      },
+      "HSA": {
+        "contribution_limits": "$4,300 self, $8,550 family, +$1,000 catch-up 55+.",
+        "tax_benefits": "Deductible contributions, tax-free growth, tax-free medical withdrawals (triple tax-free). Non-medical before 65: 20% penalty + tax; after 65, taxed as income no penalty.",
+        "holding_periods": "No limit for medical; non-medical after 65 taxed as income.",
+        "eligible_investments": "After balance threshold, stocks, ETFs.",
+        "other_details": "Requires HDHP."
+      }
+    }
+  },
+  {
+    "rank": 2,
+    "country": "China",
+    "gdp_billions_usd": 19534.9,
+    "crypto_tax": "Cryptocurrency is banned; no legal tax rate applies.",
+    "investment_tax_optimization_schemes": {
+      "Voluntary personal pension system": {
+        "contribution_limits": "CNY 12,000 annually.",
+        "tax_benefits": "Tax deduction up to CNY 12,000, tax-exempt returns, benefits taxed at 3% (EET).",
+        "holding_periods": "Until retirement age; early withdrawal may incur full income tax (up to 45%) + penalties.",
+        "eligible_investments": "Pension products, funds, insurance.",
+        "other_details": "No specific restrictions on foreign investments mentioned."
+      },
+      "Enterprise annuities": {
+        "contribution_limits": "Employer-determined, tax deferral.",
+        "holding_periods": "Until retirement; early access taxed as income.",
+        "eligible_investments": "Annuity-type products.",
+        "other_details": "Limited foreign investment due to regulations."
+      }
+    }
+  },
+  {
+    "rank": 3,
+    "country": "Germany",
+    "gdp_billions_usd": 4921.6,
+    "crypto_tax": "Tax-free if held more than 1 year or gains under €600; otherwise up to 45% plus 5.5% solidarity surcharge if sold within 1 year (treated as income, brackets for single: 0% €0-€11,604, 14-45% €11,605-€62,810, 45% over €62,810). Mining/staking taxed as income up to 45% plus solidarity, with exemptions up to €256/year.",
+    "investment_tax_optimization_schemes": {
+      "Riester pension": {
+        "contribution_limits": "€2,100 deductible, government subsidy €175 + child bonuses.",
+        "tax_benefits": "Contributions deductible, subsidies, benefits taxed (EET).",
+        "holding_periods": "Until 62 or 60 if started before 2012; early withdrawal repays subsidies + tax.",
+        "eligible_investments": "Certified products: insurance, funds, bank savings; EU-focused.",
+        "other_details": "State-subsidized for low-income, families."
+      },
+      "Rürup pension": {
+        "contribution_limits": "€29,344 single, €58,688 couple (100% deductible).",
+        "tax_benefits": "100% deductible, benefits partially taxed.",
+        "holding_periods": "Lifelong annuity from 62; early not allowed.",
+        "eligible_investments": "Insurance-based, annuities.",
+        "other_details": "For self-employed/high-income."
+      }
+    }
+  },
+  {
+    "rank": 4,
+    "country": "Japan",
+    "gdp_billions_usd": 4389.3,
+    "crypto_tax": "Progressive capital gains tax from 5-45% plus local 10% (total 15-55%) depending on total income (brackets: 5% <1.95m yen, 10% 1.95-3.3m, 20% 3.3-6.95m, 23% 6.95-9m, 33% 9-18m, 40% 18-40m, 45% >40m); no distinction for holding periods. Mining/staking taxed as miscellaneous income at the same rates.",
+    "investment_tax_optimization_schemes": {
+      "iDeCo": {
+        "contribution_limits": "¥75,000/month self-employed, ¥23,000 employees (2025).",
+        "tax_benefits": "Deductible contributions, tax-free growth, taxed withdrawals (EET).",
+        "holding_periods": "From 60, annuity or lump sum; early withdrawal not allowed.",
+        "eligible_investments": "Mutual funds, insurance; no direct stocks.",
+        "other_details": "Employer match possible."
+      },
+      "NISA": {
+        "contribution_limits": "¥1.8m growth, ¥1.2m tsumitate annually; lifetime no limit.",
+        "tax_benefits": "Tax-free gains/dividends (TEE).",
+        "holding_periods": "Indefinite for new NISA; early withdrawal tax-free but loses benefits.",
+        "eligible_investments": "Stocks, ETFs, mutual funds; Japanese and foreign.",
+        "other_details": "Growth and accumulation types."
+      }
+    }
+  },
+  {
+    "rank": 5,
+    "country": "India",
+    "gdp_billions_usd": 4271.9,
+    "crypto_tax": "Flat 30% on gains (plus 4% cess), no deductions allowed; 1% TDS on transactions over ₹50,000 (₹10,000 for some). No distinction for holding periods; mining/staking taxed as business income at slab rates (0% ₹0-3 lakh, 5% 3-6 lakh, 10% 6-9 lakh, 15% 9-12 lakh, 20% 12-15 lakh, 30% >15 lakh) plus cess.",
+    "investment_tax_optimization_schemes": {
+      "NPS": {
+        "contribution_limits": "No upper limit, but deduction ₹1.5 lakh under 80C + ₹50,000 under 80CCD(1B).",
+        "tax_benefits": "Deduction up to ₹2 lakh, tax-free growth, 60% tax-free withdrawal (EET partial).",
+        "holding_periods": "Partial withdrawal after 3 years (taxed if not for specified purposes), full at 60; early full withdrawal <10 years taxed on 40%.",
+        "eligible_investments": "Equity, debt, alternatives; up to 75% equity.",
+        "other_details": "Employer contribution additional 14% deductible."
+      },
+      "PPF": {
+        "contribution_limits": "₹1.5 lakh/year.",
+        "tax_benefits": "EEE (exempt-exempt-exempt).",
+        "holding_periods": "15 years lock-in, partial after 7 years (tax-free).",
+        "eligible_investments": "Government savings scheme, fixed interest.",
+        "other_details": "Guaranteed returns ~7-8%."
+      },
+      "ELSS": {
+        "contribution_limits": "No limit, deduction ₹1.5 lakh under 80C.",
+        "tax_benefits": "Deduction under 80C, long-term gains tax 12.5% over ₹1.25 lakh.",
+        "holding_periods": "3 years lock-in; early redemption not allowed.",
+        "eligible_investments": "Equity mutual funds, min 80% equities.",
+        "other_details": "Market-linked returns."
+      }
+    }
+  },
+  {
+    "rank": 6,
+    "country": "United Kingdom",
+    "gdp_billions_usd": 3730.3,
+    "crypto_tax": "Capital gains tax at 10% (basic rate taxpayers, income £12,571-£50,270) or 20% (higher/additional rate taxpayers, income £50,271-£125,140 at 40%, over £125,140 at 45%) if gains exceed £3,000 allowance; no distinction for holding periods. Mining/staking taxed as income at 20% (£12,571-£50,270), 40% (£50,271-£125,140), 45% (over £125,140).",
+    "investment_tax_optimization_schemes": {
+      "SIPP": {
+        "contribution_limits": "£60,000 or 100% earnings.",
+        "tax_benefits": "Tax relief 20-45% on contributions, tax-free growth, 25% tax-free withdrawal (EET partial).",
+        "holding_periods": "From 55 (rising to 57 in 2028); early withdrawal 55% unauthorized payment charge.",
+        "eligible_investments": "Stocks, ETFs, bonds, funds; wide range, some restrictions.",
+        "other_details": "Lifetime allowance abolished."
+      },
+      "ISA": {
+        "contribution_limits": "£20,000 annually.",
+        "tax_benefits": "Tax-free gains/dividends (TEE).",
+        "holding_periods": "No minimum; withdrawals tax-free anytime.",
+        "eligible_investments": "Stocks, ETFs, cash, bonds; UK and foreign.",
+        "other_details": "Types: cash, stocks & shares, lifetime."
+      }
+    }
+  },
+  {
+    "rank": 7,
+    "country": "France",
+    "gdp_billions_usd": 3283.4,
+    "crypto_tax": "Flat 30% (12.8% income tax + 17.2% social charges); tax-free if annual gains below €305. No distinction for holding periods; mining/staking taxed as income up to 45%.",
+    "investment_tax_optimization_schemes": {
+      "PEA": {
+        "contribution_limits": "€150,000 lifetime.",
+        "tax_benefits": "Tax-free after 5 years (TEE).",
+        "holding_periods": "5 years for tax-free; early withdrawal before 5 years: flat 12.8% + 17.2% social + closure; 0-2 years higher penalties.",
+        "eligible_investments": "EU stocks/ETFs; no US stocks directly.",
+        "other_details": "For EU residents."
+      },
+      "PER": {
+        "contribution_limits": "No fixed, deduction limits based on income.",
+        "tax_benefits": "Deductible contributions, tax-free growth, taxed withdrawals (EET).",
+        "holding_periods": "Until retirement, annuity or lump sum; early for specific cases (e.g., house buy) tax-free, otherwise taxed + penalties.",
+        "eligible_investments": "Funds, stocks, insurance; wide, including foreign.",
+        "other_details": "Replacement for older plans."
+      },
+      "Assurance Vie": {
+        "contribution_limits": "No limit.",
+        "tax_benefits": "Tax on gains: 12.8% + 17.2% social if withdrawn <8 years; after 8 years, 7.5% + 17.2% on gains over abatement (€4,600 single, €9,200 couple).",
+        "holding_periods": "8 years for optimal tax (reduced rate); 4-8 years 12.8% + social; <4 years 12.8% + social (no abatement).",
+        "eligible_investments": "Euro funds, units; stocks, bonds, foreign OK.",
+        "other_details": "Life insurance wrapper; tax-free inheritance up to €152,500."
+      }
+    }
+  },
+  {
+    "rank": 8,
+    "country": "Italy",
+    "gdp_billions_usd": 2459.6,
+    "crypto_tax": "26% on gains over €2,000; planned increase to 42% (subject to confirmation). No distinction for holding periods; mining/staking taxed as income at 23-43% (brackets: 23% €0-€28,000, 25% €28,001-€50,000, 35% €50,001-€75,000, 43% >€75,000).",
+    "investment_tax_optimization_schemes": {
+      "PIR": {
+        "contribution_limits": "€40,000/year, €200,000 lifetime.",
+        "tax_benefits": "Tax-free if held 5 years (TEE).",
+        "holding_periods": "5 years; early withdrawal: standard capital gains tax 26-42% + repayment of benefits.",
+        "eligible_investments": "Italian/EU SMEs, stocks/ETFs; min 70% qualifying.",
+        "other_details": "For residents."
+      },
+      "Pension funds": {
+        "contribution_limits": "€5,164 deductible.",
+        "tax_benefits": "Deductible, tax-free growth, reduced tax on benefits (EET).",
+        "holding_periods": "Until retirement; early limited, taxed.",
+        "eligible_investments": "Funds, insurance; diversified.",
+        "other_details": "Employer/employee contributions."
+      }
+    }
+  },
+  {
+    "rank": 9,
+    "country": "Canada",
+    "gdp_billions_usd": 2330.3,
+    "crypto_tax": "50% of gains taxed at marginal income rate (federal brackets: 15% $0-$57,375, 20.5% $57,376-$114,750, 26% $114,751-$177,882, 29% $177,883-$253,414, 33% >$253,414), effective 7.5-16.5% federal + provincial (e.g., Ontario up to 13.16%, total up to 26.5%); full amount if business income. No distinction for holding periods; mining/staking taxed as business or employment income at full marginal rates.",
+    "investment_tax_optimization_schemes": {
+      "RRSP": {
+        "contribution_limits": "18% of income or CAD 31,560 (2025).",
+        "tax_benefits": "Deductible, tax-deferred growth, taxed withdrawals (EET).",
+        "holding_periods": "Until 71, then RRIF; early withdrawal taxed + withholding.",
+        "eligible_investments": "Stocks, ETFs, bonds; wide, some foreign content limits.",
+        "other_details": "Unused room carries forward."
+      },
+      "TFSA": {
+        "contribution_limits": "CAD 7,000 annually (2025), cumulative.",
+        "tax_benefits": "Tax-free (TEE).",
+        "holding_periods": "No minimum; withdrawals tax-free, add to future room.",
+        "eligible_investments": "Stocks, ETFs, cash; similar to RRSP.",
+        "other_details": "Withdrawals add to future room."
+      }
+    }
+  },
+  {
+    "rank": 10,
+    "country": "Brazil",
+    "gdp_billions_usd": 2307.2,
+    "crypto_tax": "Progressive capital gains 15-22.5% on monthly gains over R$35,000 (15% up to R$5m, 17.5% R$5-10m, 20% R$10-30m, 22.5% over R$30m); flat 17.5% on offshore platforms. No distinction for holding periods; mining/staking taxed as income at up to 27.5% (brackets: 0% <R$28,559.70, 7.5% R$28,559.71-R$39,168.43, 15% R$39,168.44-R$50,788.28, 22.5% R$50,788.29-R$55,373.55, 27.5% >R$55,373.55).",
+    "investment_tax_optimization_schemes": {
+      "PGBL": {
+        "contribution_limits": "12% of income deductible.",
+        "tax_benefits": "Deductible, taxed withdrawals (EET). Regression table: 35% <2 years, 30% 2-4 years, 25% 4-6 years, 20% 6-8 years, 15% 8-10 years, 10% >10 years.",
+        "holding_periods": "Until retirement; early withdrawal higher tax per regression.",
+        "eligible_investments": "Funds, fixed/variable income.",
+        "other_details": "Regression tax table lower rates for longer holding."
+      },
+      "VGBL": {
+        "contribution_limits": "No deduction limit.",
+        "tax_benefits": "After-tax, tax on gains only (TEE partial). Same regression table as PGBL.",
+        "holding_periods": "Same as PGBL.",
+        "eligible_investments": "Same.",
+        "other_details": "No deduction on contributions."
+      }
+    }
+  },
+  {
+    "rank": 11,
+    "country": "Russia",
+    "gdp_billions_usd": 2195.7,
+    "crypto_tax": "13% on gains up to 2.4 million RUB; 15% above. No distinction for holding periods; mining taxed at 25% profit tax for businesses.",
+    "investment_tax_optimization_schemes": {
+      "Individual Investment Accounts (IIA)": {
+        "contribution_limits": "RUB 1 million/year for Type A.",
+        "tax_benefits": "Type A: deduction up to RUB 52,000; Type B: tax-free gains if held 3 years.",
+        "holding_periods": "3 years for Type B tax-free; early: standard 13-15% tax.",
+        "eligible_investments": "Stocks, bonds, funds; Russian market.",
+        "other_details": "Type 3 combines benefits, 5-10 years holding."
+      },
+      "Voluntary long-term savings plan": {
+        "contribution_limits": "RUB 400,000/year deductible.",
+        "tax_benefits": "Deduction, government matching up to RUB 36,000/year.",
+        "holding_periods": "5 years min (for 2024-2026); early taxed.",
+        "eligible_investments": "Savings products, funds.",
+        "other_details": "Co-contribution for low-income."
+      }
+    }
+  },
+  {
+    "rank": 12,
+    "country": "South Korea",
+    "gdp_billions_usd": 1947.1,
+    "crypto_tax": "No capital gains tax until 2028 (postponed); gains taxed as other income at 6-45% if over KRW 2.5m threshold starting 2028 (brackets: 6% KRW 14m-50m, 15% 50m-88m, 24% 88m-150m, 35% 150m-300m, 38% 300m-500m, 40% 500m-1b, 45% >1b). Staking/mining taxed as income at progressive rates 6-45%.",
+    "investment_tax_optimization_schemes": {
+      "IRP": {
+        "contribution_limits": "KRW 9 million/year (part of KRW 18 million total retirement).",
+        "tax_benefits": "Tax credits on contributions, tax-free if annuity after 55.",
+        "holding_periods": "5 years min; early taxed at income rates.",
+        "eligible_investments": "Funds, deposits; conservative.",
+        "other_details": "For self-employed/employees."
+      },
+      "ISA": {
+        "contribution_limits": "KRW 20 million/year, KRW 100 million total.",
+        "tax_benefits": "Tax-free gains up to KRW 200 million lifetime.",
+        "holding_periods": "3 years for full benefits; early taxed at 9.9%.",
+        "eligible_investments": "Stocks, funds, deposits; wide.",
+        "other_details": "General and pension types."
+      }
+    }
+  },
+  {
+    "rank": 13,
+    "country": "Australia",
+    "gdp_billions_usd": 1881.1,
+    "crypto_tax": "Capital gains tax at marginal rates 0-45% (brackets: 0% $0-$18,200, 19% $18,201-$45,000, 30% $45,001-$135,000, 37% $135,001-$190,000, 45% >$190,000), with 50% discount if held over 12 months (effective 0-22.5%). Mining/staking taxed as income at 0-45% same brackets.",
+    "investment_tax_optimization_schemes": {
+      "Superannuation": {
+        "contribution_limits": "AUD 30,000 concessional, AUD 120,000 non-concessional (2025).",
+        "tax_benefits": "Concessional taxed at 15%, tax-free after 60 (EET partial).",
+        "holding_periods": "Preservation age 55-60; early access limited, taxed + penalty.",
+        "eligible_investments": "Stocks, ETFs, property; self-managed super funds allow more.",
+        "other_details": "Bring-forward rule for non-concessional up to AUD 360,000."
+      }
+    }
+  },
+  {
+    "rank": 14,
+    "country": "Spain",
+    "gdp_billions_usd": 1827.6,
+    "crypto_tax": "Progressive 19-28% (19% up to €6,000, 21% €6,000-50,000, 23% €50,000-200,000, 27% €200,000-300,000, 28% over €300,000); exempt under €1,000/year. No distinction for holding periods; mining/staking taxed at up to 47% (income brackets: 19% €0-€12,450, 24% €12,451-€20,200, 30% €20,201-€35,200, 37% €35,201-€60,000, 45% €60,001-€300,000, 47% >€300,000).",
+    "investment_tax_optimization_schemes": {
+      "Pension plans": {
+        "contribution_limits": "€1,500 or €8,500 depending on type.",
+        "tax_benefits": "Deductible, tax-free growth, taxed withdrawals (EET).",
+        "holding_periods": "Until retirement; early for illness/unemployment tax-free, otherwise taxed + penalties.",
+        "eligible_investments": "Funds, insurance; diversified, foreign OK.",
+        "other_details": "Employer plans higher limits."
+      }
+    }
+  },
+  {
+    "rank": 15,
+    "country": "Mexico",
+    "gdp_billions_usd": 1817.8,
+    "crypto_tax": "Treated as miscellaneous income; progressive income tax 1.92-35% (brackets: 1.92% MXN 0.01-8,952.49, 6.4% 8,952.5-75,984.55, 10.88% 75,984.56-133,536.07, 16% 133,536.08-155,229.8, 17.92% 155,229.81-185,852.57, 21.36% 185,852.58-289,305.2, 23.52% 289,305.21-346,235.3, 30% 346,235.31-1,020,308.74, 32% 1,020,308.75-1,360,411.65, 34% 1,360,411.66-4,081,234.95, 35% over 4,081,234.96) with 10% provisional withholding on exchanges. No distinction for holding periods; mining/staking taxed as income at same rates.",
+    "investment_tax_optimization_schemes": {
+      "Afores": {
+        "contribution_limits": "10% income voluntary deductible.",
+        "tax_benefits": "Deductible voluntary, tax-free growth, taxed withdrawals (EET).",
+        "holding_periods": "Until 65; early for disability/unemployment.",
+        "eligible_investments": "Funds managed by Afores; stocks, bonds.",
+        "other_details": "Mandatory 6.5% employer + 5.15% employee + state."
+      }
+    }
+  },
+  {
+    "rank": 16,
+    "country": "Indonesia",
+    "gdp_billions_usd": 1492.6,
+    "crypto_tax": "Capital gains taxed as income at progressive rates 5-35% (brackets: 5% IDR 0-60m, 15% 60m-250m, 25% 250m-500m, 30% 500m-5b, 35% >5b); 0.21% final income tax on transaction value; 0.11% VAT on mining and exchange services (VAT exempt on asset sales).",
+    "investment_tax_optimization_schemes": {
+      "Voluntary pension funds": {
+        "contribution_limits": "No specific, tax-exempt.",
+        "tax_benefits": "Contributions and income tax-exempt, withdrawals taxed (EET).",
+        "holding_periods": "Until retirement; early taxed at income rates.",
+        "eligible_investments": "Pension funds, deposits.",
+        "other_details": "DPLK for employer plans."
+      }
+    }
+  },
+  {
+    "rank": 17,
+    "country": "Türkiye",
+    "gdp_billions_usd": 1455.4,
+    "crypto_tax": "No capital gains tax for individuals on non-securities assets like crypto; taxed as income at 15-40% if considered business/trading activity (brackets: 15% TRY 0-158,000, 20% 158,001-330,000, 27% 330,001-800,000, 35% 800,001-1,900,000, 40% >1,900,000). No distinction for holding periods; mining/staking taxed as income.",
+    "investment_tax_optimization_schemes": {
+      "BES": {
+        "contribution_limits": "No upper limit, state match on contributions.",
+        "tax_benefits": "State matching 30%, deduction on contributions, reduced tax on benefits if held 10 years (EET partial).",
+        "holding_periods": "10 years for full benefits, from 56; early <3 years: no state match, 3-6 years: 15% tax, 6-10 years: 10% tax, >10 years: 5% tax.",
+        "eligible_investments": "Funds, stocks; diversified.",
+        "other_details": "Automatic enrollment for employees."
+      }
+    }
+  },
+  {
+    "rank": 18,
+    "country": "Netherlands",
+    "gdp_billions_usd": 1273.0,
+    "crypto_tax": "Wealth tax under Box 3 at up to 36% on deemed yield (assumed return on asset value, not actual gains). No capital gains tax; mining/staking included in wealth calculation.",
+    "investment_tax_optimization_schemes": {
+      "Pension plans (Box 1)": {
+        "contribution_limits": "Based on income, deductible.",
+        "tax_benefits": "Deductible, tax-free growth, taxed benefits (EET).",
+        "holding_periods": "Until retirement; early taxed + penalties.",
+        "eligible_investments": "Pension funds, annuities.",
+        "other_details": "Employer/employee."
+      }
+    }
+  },
+  {
+    "rank": 19,
+    "country": "Saudi Arabia",
+    "gdp_billions_usd": 1136.6,
+    "crypto_tax": "Exempt from taxation; no income or capital gains tax on crypto.",
+    "investment_tax_optimization_schemes": {
+      "End-of-service benefits": {
+        "contribution_limits": "No personal tax, all tax-free.",
+        "tax_benefits": "Tax-free.",
+        "holding_periods": "N/A.",
+        "eligible_investments": "N/A, gratuity payment.",
+        "other_details": "Mandatory employer payment."
+      },
+      "Voluntary savings plans": {
+        "contribution_limits": "N/A.",
+        "tax_benefits": "Tax-free.",
+        "holding_periods": "N/A.",
+        "eligible_investments": "Any.",
+        "other_details": "No tax on investments."
+      }
+    }
+  },
+  {
+    "rank": 20,
+    "country": "Switzerland",
+    "gdp_billions_usd": 999.6,
+    "crypto_tax": "Exempt from capital gains tax for private investors; wealth tax 0.3-1% annually on holdings depending on canton. Mining/staking taxed as income at 0-40% (federal + cantonal brackets vary, e.g., federal 0% <CHF 18,300, progressive to 11.5% >CHF 895,800; cantons add 0-30%); professional traders pay business income tax up to 40%.",
+    "investment_tax_optimization_schemes": {
+      "Pillar 3a": {
+        "contribution_limits": "CHF 7,258 (2025).",
+        "tax_benefits": "Deductible, tax-free growth, taxed withdrawals (EET).",
+        "holding_periods": "Until retirement age; early for house buy/disability tax-free, otherwise taxed + penalties.",
+        "eligible_investments": "Savings, insurance, funds; canton-dependent.",
+        "other_details": "For those in Pillar 2."
+      },
+      "Pillar 2": {
+        "contribution_limits": "Varies by salary.",
+        "tax_benefits": "Tax deferral.",
+        "holding_periods": "Until retirement; early limited.",
+        "eligible_investments": "Pension funds investments.",
+        "other_details": "Occupational, mandatory."
+      }
+    }
+  },
+  {
+    "rank": 21,
+    "country": "Poland",
+    "gdp_billions_usd": 915.5,
+    "crypto_tax": "Flat 19% on gains and income; no exemptions or distinction for holding periods. Mining/staking taxed at 19%.",
+    "investment_tax_optimization_schemes": {
+      "IKE": {
+        "contribution_limits": "PLN 26,019 (2025).",
+        "tax_benefits": "Tax-free if held to retirement (TEE).",
+        "holding_periods": "Until retirement; early taxed at 19%.",
+        "eligible_investments": "Funds, deposits.",
+        "other_details": "Voluntary."
+      },
+      "IKZE": {
+        "contribution_limits": "PLN 10,416 basic, PLN 15,624 business (2025).",
+        "tax_benefits": "Deductible, tax-free growth, 10% tax on withdrawal.",
+        "holding_periods": "5 years or age 65; early clawback deduction + tax.",
+        "eligible_investments": "Same.",
+        "other_details": "Annual deduction."
+      },
+      "OKI": {
+        "contribution_limits": "PLN 100,000.",
+        "tax_benefits": "Tax-free.",
+        "holding_periods": "No minimum.",
+        "eligible_investments": "Stocks, funds.",
+        "other_details": "New personal investment account."
+      }
+    }
+  },
+  {
+    "rank": 22,
+    "country": "Taiwan",
+    "gdp_billions_usd": 814.4,
+    "crypto_tax": "Treated as property; gains taxed as income at progressive rates 5-40% (brackets: 5% NTD 0-560,000, 12% 560,001-1,260,000, 20% 1,260,001-2,800,000, 30% 2,800,001-5,600,000, 40% >5,600,000). No specific capital gains tax; 0.1% securities transaction tax may apply if classified as securities. Mining/staking taxed as income.",
+    "investment_tax_optimization_schemes": {
+      "Labor Pension Fund": {
+        "contribution_limits": "Varies, tax-deferred.",
+        "tax_benefits": "Tax-deferred contributions/growth, taxed benefits (EET).",
+        "holding_periods": "Until retirement; early taxed.",
+        "eligible_investments": "Pension funds.",
+        "other_details": "Mandatory + voluntary."
+      }
+    }
+  },
+  {
+    "rank": 23,
+    "country": "Belgium",
+    "gdp_billions_usd": 689.4,
+    "crypto_tax": "0% for normal private investment ('good family man' profile); 33% for speculative activity; up to 50% for professional traders (income tax rates, brackets: 25% €0-€15,820, 40% €15,821-€27,920, 45% €27,921-€50,000, 50% >€50,000). No distinction for holding periods; mining/staking taxed based on profile. New 10% capital gains tax on financial assets including crypto starts January 2026.",
+    "investment_tax_optimization_schemes": {
+      "Pension savings plans": {
+        "contribution_limits": "€1,020-1,310.",
+        "tax_benefits": "Tax credit 25-30%, benefits taxed 8-10% (EET partial).",
+        "holding_periods": "Until 60; early withdrawal taxed 33% + local surtax.",
+        "eligible_investments": "Funds or insurance.",
+        "other_details": "Annual choice between amounts."
+      },
+      "Long-term savings insurance": {
+        "contribution_limits": "Income-based.",
+        "tax_benefits": "Tax relief on premiums.",
+        "holding_periods": "Long-term; early may lose relief.",
+        "eligible_investments": "Insurance products.",
+        "other_details": "Linked to mortgage or life."
+      }
+    }
+  },
+  {
+    "rank": 24,
+    "country": "Sweden",
+    "gdp_billions_usd": 638.8,
+    "crypto_tax": "Flat 30% on capital gains; no distinction for holding periods. Mining/staking taxed as income at 32-52% (municipal + national; national 0% <SEK 625,800, 20% >SEK 625,800; municipal avg 32%).",
+    "investment_tax_optimization_schemes": {
+      "ISK": {
+        "contribution_limits": "No limit, but deemed yield tax.",
+        "tax_benefits": "Deemed yield tax ~1.06% (2025), no tax on actual gains.",
+        "holding_periods": "No minimum; annual tax on value.",
+        "eligible_investments": "Stocks, funds; wide.",
+        "other_details": "Efficient for high returns."
+      },
+      "Pension savings": {
+        "contribution_limits": "SEK 1,800 deductible.",
+        "tax_benefits": "Deduction, taxed benefits.",
+        "holding_periods": "Until 55; early taxed + penalties.",
+        "eligible_investments": "Pension plans.",
+        "other_details": "Limited use."
+      }
+    }
+  },
+  {
+    "rank": 25,
+    "country": "Ireland",
+    "gdp_billions_usd": 587.2,
+    "crypto_tax": "Flat 33% on capital gains; no exemptions or distinction for holding periods. Mining/staking taxed as income at up to 52% (standard 20% €0-€42,000, higher 40% >€42,000 + USC/PRSI up to 12%).",
+    "investment_tax_optimization_schemes": {
+      "Pension plans": {
+        "contribution_limits": "% of earnings by age, up to €115,000.",
+        "tax_benefits": "Relief at marginal rate, tax-free growth, 25% tax-free lump sum (EET partial).",
+        "holding_periods": "From 50-60; early limited, taxed.",
+        "eligible_investments": "Funds, stocks; regulated.",
+        "other_details": "Lifetime limit €2m."
+      }
+    }
+  },
+  {
+    "rank": 26,
+    "country": "Argentina",
+    "gdp_billions_usd": 574.2,
+    "crypto_tax": "Capital gains taxed at 15%; assets declared before March 31, 2025, taxed only on gains (exempt on holdings). No distinction for holding periods; mining/staking taxed as income at up to 35% (brackets: 25% ARS 0-101,679,575, 30% 101,679,576-1,016,795,752, 35% >1,016,795,752).",
+    "investment_tax_optimization_schemes": {
+      "Foreign pensions": {
+        "contribution_limits": "N/A.",
+        "tax_benefits": "Not taxed.",
+        "holding_periods": "N/A.",
+        "eligible_investments": "N/A.",
+        "other_details": "Private plans deferral possible."
+      }
+    }
+  },
+  {
+    "rank": 27,
+    "country": "UAE",
+    "gdp_billions_usd": 568.6,
+    "crypto_tax": "0%; no personal income or capital gains tax. 5% VAT may apply on goods/services purchased with crypto; corporate tax 9% on business profits over AED 375,000.",
+    "investment_tax_optimization_schemes": {
+      "End-of-service gratuity": {
+        "contribution_limits": "N/A.",
+        "tax_benefits": "Tax-free.",
+        "holding_periods": "N/A.",
+        "eligible_investments": "N/A.",
+        "other_details": "Mandatory, calculated on service."
+      },
+      "DEWS plans": {
+        "contribution_limits": "Employer 5.83-8.33% salary.",
+        "tax_benefits": "Tax-free.",
+        "holding_periods": "Until termination.",
+        "eligible_investments": "Funds, investments.",
+        "other_details": "DIFC scheme."
+      }
+    }
+  },
+  {
+    "rank": 28,
+    "country": "Singapore",
+    "gdp_billions_usd": 561.7,
+    "crypto_tax": "0% capital gains tax for individual investors; income tax up to 22% if frequent trading or business activity (brackets: 0% SGD 0-20,000, 2% 20,001-30,000, 3.5% 30,001-40,000, 7% 40,001-80,000, 12% 80,001-120,000, 16% 120,001-160,000, 19% 160,001-200,000, 20% 200,001-240,000, 21% 240,001-280,000, 22% >280,000). 8% GST on purchases; no distinction for holding periods.",
+    "investment_tax_optimization_schemes": {
+      "CPF": {
+        "contribution_limits": "S$102,000 annual ceiling.",
+        "tax_benefits": "Tax-exempt contributions/growth/withdrawals (TEE).",
+        "holding_periods": "From 55; early limited.",
+        "eligible_investments": "Accounts, investments after min sum.",
+        "other_details": "Mandatory 37% total contribution."
+      },
+      "SRS": {
+        "contribution_limits": "S$15,300 locals/PRs, S$35,700 foreigners.",
+        "tax_benefits": "Deductible, tax-free growth, 50% taxable withdrawals.",
+        "holding_periods": "10 years staggered withdrawal for 50% exemption; early full tax + 5% penalty.",
+        "eligible_investments": "Stocks, funds, insurance.",
+        "other_details": "Voluntary, from CPF."
+      }
+    }
+  },
+  {
+    "rank": 29,
+    "country": "Austria",
+    "gdp_billions_usd": 559.2,
+    "crypto_tax": "Flat 27.5% on capital income from cryptocurrencies; no distinction for holding periods. Mining/staking taxed at progressive rates up to 55% (brackets: 0% €0-€12,816, 20% €12,817-€20,818, 30% €20,819-€34,513, 40% €34,514-€66,612, 48% €66,613-€99,266, 50% €99,267-€1m, 55% >€1m).",
+    "investment_tax_optimization_schemes": {
+      "Pension companies/occupational plans": {
+        "contribution_limits": "Employer-matched, deductible.",
+        "tax_benefits": "Deductible, exempt growth, taxed benefits at reduced rate (EET).",
+        "holding_periods": "Until retirement; early taxed.",
+        "eligible_investments": "Pension funds.",
+        "other_details": "State subsidies."
+      }
+    }
+  },
+  {
+    "rank": 30,
+    "country": "Israel",
+    "gdp_billions_usd": 550.9,
+    "crypto_tax": "Capital gains tax at 25%; no distinction for holding periods. Mining/staking taxed as business income at up to 50% (brackets: 10% ILS 0-7,010, 14% 7,011-10,060, 20% 10,061-16,150, 31% 16,151-22,870, 47% 22,871-50,000, 50% >50,000).",
+    "investment_tax_optimization_schemes": {
+      "Pension funds": {
+        "contribution_limits": "Tax credit on contributions.",
+        "tax_benefits": "Tax credit, tax-free growth, annuity tax-free (EET partial).",
+        "holding_periods": "Until retirement; early taxed.",
+        "eligible_investments": "Funds, diversified.",
+        "other_details": "Mandatory + voluntary."
+      },
+      "Keren Hishtalmut": {
+        "contribution_limits": "Employer 7.5%, employee 2.5%.",
+        "tax_benefits": "Tax-free after 6 years.",
+        "holding_periods": "6 years; early taxed as income.",
+        "eligible_investments": "Funds, savings.",
+        "other_details": "Education fund, tax-free withdrawal."
+      }
+    }
+  },
+  {
+    "rank": 31,
+    "country": "Thailand",
+    "gdp_billions_usd": 545.3,
+    "crypto_tax": "Capital gains exempt until December 31, 2029 (for trades on licensed platforms); income tax on mining/staking at progressive rates 0-35% (brackets: 0% THB 0-150,000, 5% 150,001-300,000, 10% 300,001-500,000, 15% 500,001-750,000, 20% 750,001-1m, 25% 1m-2m, 30% 2m-5m, 35% >5m).",
+    "investment_tax_optimization_schemes": {
+      "RMF": {
+        "contribution_limits": "30% income, max THB 500,000.",
+        "tax_benefits": "Deductible, taxed benefits (EET).",
+        "holding_periods": "5 years, from 55; early clawback deduction + 3% penalty.",
+        "eligible_investments": "Mutual funds.",
+        "other_details": "Combined with others max THB 500,000."
+      },
+      "Thai ESG": {
+        "contribution_limits": "30% income, max THB 300,000 (2025 special).",
+        "tax_benefits": "Deductible.",
+        "holding_periods": "8 years; early clawback.",
+        "eligible_investments": "ESG funds.",
+        "other_details": "Temporary higher limit 2025."
+      },
+      "SSF": {
+        "contribution_limits": "30% income, max THB 200,000.",
+        "tax_benefits": "Deductible.",
+        "holding_periods": "10 years; early clawback + penalty.",
+        "eligible_investments": "Super savings funds.",
+        "other_details": "Phased out, but existing continue."
+      }
+    }
+  },
+  {
+    "rank": 32,
+    "country": "Philippines",
+    "gdp_billions_usd": 507.7,
+    "crypto_tax": "Capital gains tax up to 15% on profits (progressive: 5% PHP 0-100,000, 10% 100,001-500,000, 15% >500,000); no distinction for holding periods. Mining/staking taxed as income at 5-32% (brackets: 0% PHP 0-250,000, 15% 250,001-400,000, 20% 400,001-800,000, 25% 800,001-2m, 30% 2m-8m, 32% >8m); potential VAT on services.",
+    "investment_tax_optimization_schemes": {
+      "PERA": {
+        "contribution_limits": "PHP 100,000 locals, PHP 200,000 OFWs.",
+        "tax_benefits": "5% tax credit on contributions, tax-free growth/withdrawals if qualified (TEE).",
+        "holding_periods": "Until 55 or 5 years; early taxed + 20% penalty.",
+        "eligible_investments": "Funds, UITFs, annuities.",
+        "other_details": "Employer contributions additional credit."
+      }
+    }
+  },
+  {
+    "rank": 33,
+    "country": "Norway",
+    "gdp_billions_usd": 506.5,
+    "crypto_tax": "Flat 22% on capital gains; no distinction for holding periods. Mining/staking taxed as income at up to 52% (22% general + bracket tax: 1.7% NOK 217,401-306,050, 4.7% 306,051-774,800, 13.7% 774,801-1,065,550, 16.7% 1,065,551-2,225,000, 17.7% >2,225,000; plus municipal avg 22-25%).",
+    "investment_tax_optimization_schemes": {
+      "ASK": {
+        "contribution_limits": "No limit.",
+        "tax_benefits": "Tax-deferred gains.",
+        "holding_periods": "No minimum; tax on withdrawal at 22%.",
+        "eligible_investments": "Stocks, ETFs.",
+        "other_details": "Until withdrawal."
+      },
+      "IPS": {
+        "contribution_limits": "NOK 15,000 deductible.",
+        "tax_benefits": "Deduction, tax-free if held to 62.",
+        "holding_periods": "To 62; early taxed.",
+        "eligible_investments": "Pension savings.",
+        "other_details": "Voluntary."
+      }
+    }
+  },
+  {
+    "rank": 34,
+    "country": "Vietnam",
+    "gdp_billions_usd": 506.4,
+    "crypto_tax": "Capital gains tax at 20%; 10% VAT on service fees. No distinction for holding periods; mining/staking taxed as income at 5-35% (brackets: 5% VND 0-60m, 10% 60m-120m, 15% 120m-216m, 20% 216m-384m, 25% 384m-624m, 30% 624m-960m, 35% >960m); proposed 0.1% transaction tax.",
+    "investment_tax_optimization_schemes": {
+      "Voluntary supplementary retirement insurance": {
+        "contribution_limits": "VND 1m/month deductible.",
+        "tax_benefits": "Deductible, tax-deferred.",
+        "holding_periods": "Until retirement; early taxed.",
+        "eligible_investments": "Insurance products.",
+        "other_details": "Limited benefits."
+      }
+    }
+  },
+  {
+    "rank": 35,
+    "country": "Malaysia",
+    "gdp_billions_usd": 488.3,
+    "crypto_tax": "0% for occasional investors (no capital gains tax); income tax at 0-30% if regular trading or business (brackets: 0% MYR 0-5,000, 1% 5,001-20,000, 3% 20,001-35,000, 6% 35,001-50,000, 11% 50,001-70,000, 19% 70,001-100,000, 25% 100,001-400,000, 26% 400,001-600,000, 28% 600,001-1m, 30% >1m). No distinction for holding periods.",
+    "investment_tax_optimization_schemes": {
+      "PRS": {
+        "contribution_limits": "RM3,000 relief.",
+        "tax_benefits": "Relief up to RM3,000, tax-free growth, taxed withdrawals at 8% (EET partial).",
+        "holding_periods": "Until 55; early taxed + 8% penalty.",
+        "eligible_investments": "Private retirement funds.",
+        "other_details": "Voluntary."
+      },
+      "EPF": {
+        "contribution_limits": "RM4,000 voluntary relief.",
+        "tax_benefits": "Tax-exempt.",
+        "holding_periods": "Until 55; early limited.",
+        "eligible_investments": "EPF-managed.",
+        "other_details": "Mandatory + voluntary."
+      }
+    }
+  },
+  {
+    "rank": 36,
+    "country": "Bangladesh",
+    "gdp_billions_usd": 481.9,
+    "crypto_tax": "Cryptocurrency is banned; no legal tax rate applies.",
+    "investment_tax_optimization_schemes": {
+      "Investment tax rebate": {
+        "contribution_limits": "15% on investments up to 25% income or BDT 1.5 crore.",
+        "tax_benefits": "Rebate on investments in approved instruments.",
+        "holding_periods": "N/A.",
+        "eligible_investments": "DPS, insurance, stocks.",
+        "other_details": "Tax rebate calculation."
+      },
+      "Universal Pension Scheme": {
+        "contribution_limits": "Min BDT 1,000/month, max BDT 5,000.",
+        "tax_benefits": "Contributions treated as investment for rebate, pension tax-free.",
+        "holding_periods": "Until 60; early limited.",
+        "eligible_investments": "Pension scheme.",
+        "other_details": "Government subsidy for low-income."
+      }
+    }
+  },
+  {
+    "rank": 37,
+    "country": "Iran",
+    "gdp_billions_usd": 463.7,
+    "crypto_tax": "No specific crypto tax framework; treated as asset or business income, taxed at progressive rates up to 35% (brackets: 10% up to 5 times annual exemption, 20% excess). Mining legal and taxed at 25% for businesses; trading regulated but no CGT specified.",
+    "investment_tax_optimization_schemes": {
+      "Pension funds": {
+        "contribution_limits": "No specific.",
+        "tax_benefits": "Tax deferral on contributions.",
+        "holding_periods": "Until retirement; early taxed.",
+        "eligible_investments": "Pension funds.",
+        "other_details": "Limited tax advantages."
+      }
+    }
+  },
+  {
+    "rank": 38,
+    "country": "Denmark",
+    "gdp_billions_usd": 431.2,
+    "crypto_tax": "Progressive 37-52% depending on income bracket (bottom 37% up to DKK 600,000, top 52% >DKK 600,000 incl. labor market tax; share income 27% <DKK 67,500, 42% >DKK 67,500); potential tax on unrealized gains under review. No distinction for holding periods.",
+    "investment_tax_optimization_schemes": {
+      "Pension plans": {
+        "contribution_limits": "DKK 60,900.",
+        "tax_benefits": "Deductible, tax-free growth, taxed benefits (EET).",
+        "holding_periods": "Until retirement; early taxed + penalties.",
+        "eligible_investments": "Pension funds.",
+        "other_details": "Age savings TEE."
+      }
+    }
+  },
+  {
+    "rank": 39,
+    "country": "Hong Kong SAR",
+    "gdp_billions_usd": 422.1,
+    "crypto_tax": "Exempt from taxation for long-term investments; income tax up to 17% if professional trading or business (brackets: 2% HKD 0-50,000, 6% 50,001-100,000, 10% 100,001-150,000, 14% 150,001-200,000, 17% >200,000).",
+    "investment_tax_optimization_schemes": {
+      "MPF": {
+        "contribution_limits": "HKD 18,000 deductible for self-employed.",
+        "tax_benefits": "Deductible up to HKD 18,000, tax-free growth/withdrawals (TEE).",
+        "holding_periods": "From 65; early for illness/emigration.",
+        "eligible_investments": "MPF funds.",
+        "other_details": "Mandatory 10% total."
+      },
+      "ORSO": {
+        "contribution_limits": "HKD 18,000 deductible for employees.",
+        "tax_benefits": "Tax relief on contributions.",
+        "holding_periods": "Varies; early may be taxed.",
+        "eligible_investments": "Occupational schemes.",
+        "other_details": "Employer-sponsored."
+      }
+    }
+  },
+  {
+    "rank": 40,
+    "country": "Colombia",
+    "gdp_billions_usd": 419.3,
+    "crypto_tax": "Treated as intangible asset; capital gains taxed at 10-15% for individuals depending on income (10% <COP 1,800 UVT, 15% >1,800 UVT); income tax up to 39% if business activity (brackets: 0% COP 0-1,090 UVT, 19% 1,091-1,700 UVT, 28% 1,701-4,100 UVT, 33% 4,101-8,670 UVT, 35% 8,671-18,970 UVT, 37% 18,971-31,000 UVT, 39% >31,000 UVT). No distinction for holding periods.",
+    "investment_tax_optimization_schemes": {
+      "Voluntary pension funds": {
+        "contribution_limits": "30% income or COP 13m deductible.",
+        "tax_benefits": "Deductible, tax-free growth, taxed benefits (EET).",
+        "holding_periods": "Until retirement; early taxed.",
+        "eligible_investments": "Pension funds.",
+        "other_details": "Additional to mandatory."
+      },
+      "AFC": {
+        "contribution_limits": "Deductible up to certain.",
+        "tax_benefits": "Tax exemption on savings for housing.",
+        "holding_periods": "For housing purchase; early taxed.",
+        "eligible_investments": "Savings accounts.",
+        "other_details": "Housing savings."
+      }
+    }
+  },
+  {
+    "rank": 41,
+    "country": "South Africa",
+    "gdp_billions_usd": 418.0,
+    "crypto_tax": "Treated as intangible assets; capital gains tax with 40% inclusion in income, effective rate 0-18% (marginal rates: 18% ZAR 0-237,100, 26% 237,101-370,500, 31% 370,501-512,800, 36% 512,801-673,000, 41% 673,001-857,900, 45% >857,900); annual exclusion R40,000. Income tax at 18-45% if trading/mining; no distinction for holding periods but losses carry forward.",
+    "investment_tax_optimization_schemes": {
+      "TFSA": {
+        "contribution_limits": "R36,000/year, R500,000 lifetime.",
+        "tax_benefits": "Tax-free (TEE).",
+        "holding_periods": "No minimum; excess contributions taxed 40%.",
+        "eligible_investments": "Stocks, ETFs, savings.",
+        "other_details": "Annual limit strict."
+      },
+      "Retirement Annuity": {
+        "contribution_limits": "27.5% income, max R350,000.",
+        "tax_benefits": "Deductible, tax-free growth, taxed benefits (EET).",
+        "holding_periods": "From 55; early taxed + penalties (two-pot system allows limited access).",
+        "eligible_investments": "Funds, diversified.",
+        "other_details": "Two-pot system from 2024."
+      }
+    }
+  },
+  {
+    "rank": 42,
+    "country": "Romania",
+    "gdp_billions_usd": 406.2,
+    "crypto_tax": "Flat 10% on gains (after 0% exemption ended July 31, 2025); no distinction for holding periods. Mining/staking taxed as income at 10%.",
+    "investment_tax_optimization_schemes": {
+      "Pillar 3 voluntary pensions": {
+        "contribution_limits": "€400/year deductible.",
+        "tax_benefits": "Deductible, tax-free growth, 10% tax on benefits (EET partial).",
+        "holding_periods": "Until retirement; early taxed.",
+        "eligible_investments": "Pension funds.",
+        "other_details": "Additional to Pillar 2."
+      }
+    }
+  },
+  {
+    "rank": 43,
+    "country": "Pakistan",
+    "gdp_billions_usd": 374.6,
+    "crypto_tax": "Capital gains tax at 15% on profits; potential Capital Value Tax (CVT) 0-15% depending on holding period and value. Mining/staking taxed as income at up to 45% (brackets: 0% PKR 0-600,000, 5% 600,001-1,200,000, 10% 1,200,001-2,400,000, 15% 2,400,001-3,600,000, 20% 3,600,001-4,800,000, 25% 4,800,001-6,000,000, 30% 6,000,001-7,200,000, 35% 7,200,001-12,000,000, 40% >12,000,000).",
+    "investment_tax_optimization_schemes": {
+      "VPS": {
+        "contribution_limits": "20% income.",
+        "tax_benefits": "Tax credit up to 20%, tax-free growth, taxed withdrawals (EET).",
+        "holding_periods": "Until retirement; early taxed.",
+        "eligible_investments": "Voluntary pension schemes.",
+        "other_details": "Mutual funds based."
+      }
+    }
+  },
+  {
+    "rank": 44,
+    "country": "Chile",
+    "gdp_billions_usd": 362.2,
+    "crypto_tax": "Profits taxed as income under Global Complementary Tax 0-40% progressive (brackets: 0% CLP 0-13.5 UTA, 4% 13.5-30 UTA, 8% 30-50 UTA, 13.5% 50-70 UTA, 23% 70-90 UTA, 32% 90-120 UTA, 35% 120-310 UTA, 40% >310 UTA) or Additional Tax for non-residents (35%). No distinction for holding periods; mining/staking taxed as business income.",
+    "investment_tax_optimization_schemes": {
+      "APV": {
+        "contribution_limits": "No limit, benefits on contributions.",
+        "tax_benefits": "Deduction or state subsidy, tax-free growth, taxed benefits (EET).",
+        "holding_periods": "Until retirement; early taxed.",
+        "eligible_investments": "Voluntary pension savings.",
+        "other_details": "A or B regime choice."
+      }
+    }
+  },
+  {
+    "rank": 45,
+    "country": "Czech Republic",
+    "gdp_billions_usd": 360.2,
+    "crypto_tax": "Tax-free if held more than 3 years; otherwise progressive 15-23% (15% up to €80,000 equivalent, 23% above); exempt under CZK 30,800/year. Mining/staking taxed as income.",
+    "investment_tax_optimization_schemes": {
+      "DIP": {
+        "contribution_limits": "CZK 48,000 deductible.",
+        "tax_benefits": "Deduction, tax-free if held 10 years (TEE).",
+        "holding_periods": "10 years or to retirement; early taxed at income rates.",
+        "eligible_investments": "Stocks, funds.",
+        "other_details": "Long-term investment."
+      },
+      "Pension insurance": {
+        "contribution_limits": "State support up to CZK 24,000/year.",
+        "tax_benefits": "State matching.",
+        "holding_periods": "After 60 and 10 years; early loses support.",
+        "eligible_investments": "Pension plans.",
+        "other_details": "Voluntary."
+      }
+    }
+  },
+  {
+    "rank": 46,
+    "country": "Egypt",
+    "gdp_billions_usd": 345.9,
+    "crypto_tax": "Cryptocurrency is banned; no legal tax rate applies.",
+    "investment_tax_optimization_schemes": {
+      "Private pension funds": {
+        "contribution_limits": "No deduction, benefits taxed.",
+        "tax_benefits": "Limited, no capital gains on funds.",
+        "holding_periods": "N/A.",
+        "eligible_investments": "Pension funds.",
+        "other_details": "Sukuk tax-exempt."
+      }
+    }
+  },
+  {
+    "rank": 47,
+    "country": "Finland",
+    "gdp_billions_usd": 320.0,
+    "crypto_tax": "Progressive capital gains 30-34% (30% up to €30,000, 34% above); exempt under €1,000/year. No distinction for holding periods; mining/staking taxed as income at up to 44% (progressive state + municipal avg 20%, total 5.5-31.25% state + municipal).",
+    "investment_tax_optimization_schemes": {
+      "Voluntary pension insurance": {
+        "contribution_limits": "€5,000 deductible.",
+        "tax_benefits": "Deductible, tax-free growth, taxed benefits (EET).",
+        "holding_periods": "Until retirement; early taxed + penalties.",
+        "eligible_investments": "Insurance-based.",
+        "other_details": "Limited deduction."
+      },
+      "PS-savings accounts": {
+        "contribution_limits": "No limit.",
+        "tax_benefits": "Tax on dividends/gains deferred.",
+        "holding_periods": "No minimum; tax on withdrawal.",
+        "eligible_investments": "Stocks.",
+        "other_details": "For equity savings."
+      }
+    }
+  },
+  {
+    "rank": 48,
+    "country": "Portugal",
+    "gdp_billions_usd": 319.9,
+    "crypto_tax": "28% on short-term gains (held less than 1 year); tax-free if held over 1 year. Staking/mining taxed as income at 14.5-53% progressive (brackets: 14.5% €0-€8,500, 23% €8,501-€11,623, 26.5% €11,624-€16,472, 28.5% €16,473-€21,321, 34.5% €21,322-€27,146, 37% €27,147-€39,791, 43% €39,792-€51,997, 46% €51,998-€78,834, 48% €78,835-€250,000, 53% >€250,000).",
+    "investment_tax_optimization_schemes": {
+      "PPR": {
+        "contribution_limits": "No limit.",
+        "tax_benefits": "Tax-free if held 5 years.",
+        "holding_periods": "5 years; early: progressive income tax 14.5-53%.",
+        "eligible_investments": "Stocks, ETFs.",
+        "other_details": "Retirement savings."
+      },
+      "Pension funds": {
+        "contribution_limits": "20% contributions deductible.",
+        "tax_benefits": "Deductible, reduced tax after 8 years (17.5% 0-5 years, 14% 5-8 years, 7% >8 years).",
+        "holding_periods": "Until retirement; early higher tax.",
+        "eligible_investments": "Funds.",
+        "other_details": "Voluntary."
+      }
+    }
+  },
+  {
+    "rank": 49,
+    "country": "Kazakhstan",
+    "gdp_billions_usd": 306.6,
+    "crypto_tax": "Gains taxed as income at 10% for residents, 20% for non-residents; VAT on mining services. No distinction for holding periods.",
+    "investment_tax_optimization_schemes": {
+      "UAPF": {
+        "contribution_limits": "No limit.",
+        "tax_benefits": "Tax-exempt from 2026.",
+        "holding_periods": "Until retirement.",
+        "eligible_investments": "Pension fund.",
+        "other_details": "Unified accumulative."
+      },
+      "Voluntary pension annuities": {
+        "contribution_limits": "Tax deduction.",
+        "tax_benefits": "Deduction.",
+        "holding_periods": "N/A.",
+        "eligible_investments": "Annuities.",
+        "other_details": "Voluntary."
+      }
+    }
+  },
+  {
+    "rank": 50,
+    "country": "Peru",
+    "gdp_billions_usd": 294.9,
+    "crypto_tax": "Treated as intangible asset; capital gains taxed at 5% for non-domiciled individuals; income tax up to 30% for residents (brackets: 8% PEN 0-5 UIT, 14% 5-20 UIT, 17% 20-35 UIT, 20% 35-45 UIT, 30% >45 UIT). No distinction for holding periods; mining/staking taxed as income.",
+    "investment_tax_optimization_schemes": {
+      "SPP": {
+        "contribution_limits": "No deduction, tax-exempt returns.",
+        "tax_benefits": "Tax-exempt for pension savings (TTE).",
+        "holding_periods": "For pension; early taxed.",
+        "eligible_investments": "Private pension system.",
+        "other_details": "Voluntary savings tax-exempt."
+      }
+    }
+  },
+  {
+    "rank": 51,
+    "country": "Iraq",
+    "gdp_billions_usd": 270.9,
+    "crypto_tax": "Cryptocurrency is banned; no legal tax rate applies.",
+    "investment_tax_optimization_schemes": {
+      "End-of-service benefits": {
+        "contribution_limits": "N/A.",
+        "tax_benefits": "Tax-free.",
+        "holding_periods": "N/A.",
+        "eligible_investments": "N/A.",
+        "other_details": "Mandatory gratuity."
+      }
+    }
+  },
+  {
+    "rank": 52,
+    "country": "Greece",
+    "gdp_billions_usd": 265.2,
+    "crypto_tax": "Flat 15% on capital gains; no exemptions or distinction for holding periods. Mining/staking taxed as income at 9-44% (brackets: 9% €0-10,000, 22% 10,001-20,000, 28% 20,001-30,000, 36% 30,001-40,000, 44% >40,000).",
+    "investment_tax_optimization_schemes": {
+      "Voluntary occupational funds": {
+        "contribution_limits": "20% income excluded up to certain.",
+        "tax_benefits": "Contributions excluded, reduced tax on benefits 5-20%.",
+        "holding_periods": "Duration-dependent tax: 20% <5 years, 15% 5-15 years, 10% 15-25 years, 5% >25 years.",
+        "eligible_investments": "Occupational funds.",
+        "other_details": "Personal plans tax-exempt on income."
+      }
+    }
+  },
+  {
+    "rank": 53,
+    "country": "Algeria",
+    "gdp_billions_usd": 264.3,
+    "crypto_tax": "Cryptocurrency is banned; no legal tax rate applies.",
+    "investment_tax_optimization_schemes": {
+      "Social security pensions": {
+        "contribution_limits": "N/A.",
+        "tax_benefits": "No specific advantages; investments 10-35% income tax.",
+        "holding_periods": "N/A.",
+        "eligible_investments": "N/A.",
+        "other_details": "No capital gains for individuals."
+      }
+    }
+  }
+]

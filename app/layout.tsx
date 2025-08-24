@@ -46,7 +46,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white`}
       >
         <WalletProvider>
           <PHProvider>
@@ -57,7 +57,8 @@ export default function RootLayout({
                 <ThemeProvider
                   attribute="class"
                   defaultTheme="light"
-                  enableSystem
+                  enableSystem={false}
+                  forcedTheme="light"
                   disableTransitionOnChange
                 >
                   <LanguageProvider>

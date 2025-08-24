@@ -1,12 +1,11 @@
-import Onboard from "@web3-onboard/core";
-import coinbaseWallet from "@web3-onboard/coinbase";
-import injected from "@web3-onboard/injected-wallets";
-import walletConnectModule from "@web3-onboard/walletconnect";
-import trustWallet from "@web3-onboard/trust";
 import bitgetWallet from "@web3-onboard/bitget/dist/index";
+import coinbaseWallet from "@web3-onboard/coinbase";
+import Onboard from "@web3-onboard/core";
+import injected from "@web3-onboard/injected-wallets";
 import metamask from "@web3-onboard/metamask";
+import trustWallet from "@web3-onboard/trust";
+import walletConnectModule from "@web3-onboard/walletconnect";
 
-import { Notify } from "@web3-onboard/core";
 
 const notifyOptions = {
   enabled: false, // Disable all notifications
@@ -18,6 +17,7 @@ const walletConnectOptions = {
   projectId:
     process.env.WALLETCONNECT_PROJECT_ID ||
     "1DSWHiAW1iSFYVb86WQQUPn57iQ6W1DjGo",
+  dappUrl: process.env.NEXT_PUBLIC_DAPP_URL || "http://localhost:3000",
 };
 
 // Detect Rabby provider
@@ -37,7 +37,10 @@ const getRabbyProvider = () => {
 
 const metamaskOptions = {
   options: {
-    dappMetadata: { url: "localhost:3000" },
+    dappMetadata: {
+      url: process.env.NEXT_PUBLIC_DAPP_URL || "http://localhost:3000",
+      name: "ETF Maker Calculator"
+    },
   },
 };
 

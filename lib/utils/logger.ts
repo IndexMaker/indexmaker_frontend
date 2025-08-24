@@ -20,33 +20,85 @@ const getLogLevel = () => {
 // Configure logger based on environment
 const createLogger = () => {
   const isDevelopment = process.env.NODE_ENV === 'development';
+  const isBrowser = typeof window !== 'undefined';
+  const isServer = typeof process !== 'undefined' && process.versions?.node;
 
-  return pino({
-    level: getLogLevel(),
-    // Pretty print in development for better readability
-    transport: isDevelopment
-      ? {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            translateTime: 'HH:MM:ss',
-            ignore: 'pid,hostname',
-            singleLine: true,
-          },
+  // Browser-safe logger configuration
+  if (isBrowser) {
+    try {
+      return pino({
+        level: getLogLevel(),
+        browser: {
+          asObject: true,
+          serialize: true,
+          transmit: {
+            level: 'info',
+            send: function (level, logEvent) {
+              // Use console methods in browser
+              const method = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log';
+              console[method](logEvent);
+            }
+          }
         }
-      : undefined,
-    // Add timestamp and service info
-    timestamp: pino.stdTimeFunctions.isoTime,
-    base: {
-      service: 'calculator',
-      version: process.env.npm_package_version || '1.0.0',
-    },
-    // Redact sensitive information
-    redact: {
-      paths: ['password', 'token', 'apiKey', 'secret'],
-      censor: '[REDACTED]',
-    },
-  });
+      });
+    } catch (error) {
+      return createFallbackLogger();
+    }
+  }
+
+  // Server-side logger configuration
+  try {
+    return pino({
+      level: getLogLevel(),
+      // Only use transport in server environment during development
+      transport: isDevelopment && isServer
+        ? {
+            target: 'pino-pretty',
+            options: {
+              colorize: true,
+              translateTime: 'HH:MM:ss',
+              ignore: 'pid,hostname',
+              singleLine: true,
+            },
+          }
+        : undefined,
+      // Add timestamp and service info
+      timestamp: pino.stdTimeFunctions.isoTime,
+      base: {
+        service: 'calculator',
+        version: (typeof process !== 'undefined' && process.env?.npm_package_version) || '1.0.0',
+      },
+      // Redact sensitive information
+      redact: {
+        paths: ['password', 'token', 'apiKey', 'secret'],
+        censor: '[REDACTED]',
+      },
+    });
+  } catch (error) {
+    // Fallback to basic console logging if pino fails
+    console.warn('Failed to initialize pino logger, falling back to console:', error);
+    return createFallbackLogger();
+  }
+};
+
+// Fallback logger that mimics pino interface
+const createFallbackLogger = () => {
+  const logLevel = getLogLevel();
+  const levels = { trace: 10, debug: 20, info: 30, warn: 40, error: 50, fatal: 60 };
+  const currentLevel = levels[logLevel as keyof typeof levels] || 30;
+
+  const shouldLog = (level: string) => (levels[level as keyof typeof levels] || 30) >= currentLevel;
+
+  return {
+    trace: (...args: any[]) => shouldLog('trace') && console.log('[TRACE]', ...args),
+    debug: (...args: any[]) => shouldLog('debug') && console.log('[DEBUG]', ...args),
+    info: (...args: any[]) => shouldLog('info') && console.info('[INFO]', ...args),
+    warn: (...args: any[]) => shouldLog('warn') && console.warn('[WARN]', ...args),
+    error: (...args: any[]) => shouldLog('error') && console.error('[ERROR]', ...args),
+    fatal: (...args: any[]) => shouldLog('fatal') && console.error('[FATAL]', ...args),
+    child: () => createFallbackLogger(),
+    level: logLevel,
+  };
 };
 
 // Create singleton logger instance
