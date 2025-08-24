@@ -1,0 +1,233 @@
+// lib/types/financial.ts
+// Branded types for financial calculations to prevent mixing incompatible values
+
+/**
+ * Base branded type utility
+ * Creates a nominal type by intersecting with a brand object
+ */
+type Brand<T, B> = T & { readonly __brand: B };
+
+/**
+ * Core financial branded types
+ */
+
+// Base amount type - represents a monetary value
+export type Amount = Brand<number, 'Amount'>;
+
+// Percentage type - represents a value between 0 and 1 (e.g., 0.05 for 5%)
+export type Percentage = Brand<number, 'Percentage'>;
+
+// Tax rate type - represents a tax rate between 0 and 1
+export type TaxRate = Brand<number, 'TaxRate'>;
+
+// Age type - represents age in years
+export type Age = Brand<number, 'Age'>;
+
+// Years type - represents a duration in years
+export type Years = Brand<number, 'Years'>;
+
+/**
+ * Currency-specific amount types
+ */
+export type USD = Brand<Amount, 'USD'>;
+export type CAD = Brand<Amount, 'CAD'>;
+export type GBP = Brand<Amount, 'GBP'>;
+export type EUR = Brand<Amount, 'EUR'>;
+export type AUD = Brand<Amount, 'AUD'>;
+export type JPY = Brand<Amount, 'JPY'>;
+export type INR = Brand<Amount, 'INR'>;
+export type BRL = Brand<Amount, 'BRL'>;
+
+/**
+ * Union type for all supported currencies
+ */
+export type CurrencyAmount = USD | CAD | GBP | EUR | AUD | JPY | INR | BRL;
+
+/**
+ * Currency code type
+ */
+export type CurrencyCode = 'USD' | 'CAD' | 'GBP' | 'EUR' | 'AUD' | 'JPY' | 'INR' | 'BRL';
+
+/**
+ * Type-safe constructors for branded types
+ */
+
+export function createAmount(value: number): Amount {
+  if (!Number.isFinite(value)) {
+    throw new Error(`Invalid amount: ${value}. Amount must be a finite number.`);
+  }
+  if (value < 0) {
+    throw new Error(`Invalid amount: ${value}. Amount cannot be negative.`);
+  }
+  return value as Amount;
+}
+
+export function createPercentage(value: number): Percentage {
+  if (!Number.isFinite(value)) {
+    throw new Error(`Invalid percentage: ${value}. Percentage must be a finite number.`);
+  }
+  if (value < 0 || value > 1) {
+    throw new Error(`Invalid percentage: ${value}. Percentage must be between 0 and 1.`);
+  }
+  return value as Percentage;
+}
+
+export function createTaxRate(value: number): TaxRate {
+  if (!Number.isFinite(value)) {
+    throw new Error(`Invalid tax rate: ${value}. Tax rate must be a finite number.`);
+  }
+  if (value < 0 || value > 1) {
+    throw new Error(`Invalid tax rate: ${value}. Tax rate must be between 0 and 1.`);
+  }
+  return value as TaxRate;
+}
+
+export function createAge(value: number): Age {
+  if (!Number.isInteger(value)) {
+    throw new Error(`Invalid age: ${value}. Age must be an integer.`);
+  }
+  if (value < 0 || value > 150) {
+    throw new Error(`Invalid age: ${value}. Age must be between 0 and 150.`);
+  }
+  return value as Age;
+}
+
+export function createYears(value: number): Years {
+  if (!Number.isInteger(value)) {
+    throw new Error(`Invalid years: ${value}. Years must be an integer.`);
+  }
+  if (value < 0 || value > 100) {
+    throw new Error(`Invalid years: ${value}. Years must be between 0 and 100.`);
+  }
+  return value as Years;
+}
+
+/**
+ * Currency-specific constructors
+ */
+
+export function createUSD(value: number): USD {
+  const amount = createAmount(value);
+  return amount as USD;
+}
+
+export function createCAD(value: number): CAD {
+  const amount = createAmount(value);
+  return amount as CAD;
+}
+
+export function createGBP(value: number): GBP {
+  const amount = createAmount(value);
+  return amount as GBP;
+}
+
+export function createEUR(value: number): EUR {
+  const amount = createAmount(value);
+  return amount as EUR;
+}
+
+export function createAUD(value: number): AUD {
+  const amount = createAmount(value);
+  return amount as AUD;
+}
+
+export function createJPY(value: number): JPY {
+  const amount = createAmount(value);
+  return amount as JPY;
+}
+
+export function createINR(value: number): INR {
+  const amount = createAmount(value);
+  return amount as INR;
+}
+
+export function createBRL(value: number): BRL {
+  const amount = createAmount(value);
+  return amount as BRL;
+}
+
+/**
+ * Type guards for runtime type checking
+ */
+
+export function isAmount(value: unknown): value is Amount {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+export function isPercentage(value: unknown): value is Percentage {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
+}
+
+export function isTaxRate(value: unknown): value is TaxRate {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
+}
+
+export function isAge(value: unknown): value is Age {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 150;
+}
+
+export function isYears(value: unknown): value is Years {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 100;
+}
+
+/**
+ * Utility functions for working with branded types
+ */
+
+// Extract the raw number value from a branded type
+export function unwrapAmount(amount: Amount): number {
+  return amount as number;
+}
+
+export function unwrapPercentage(percentage: Percentage): number {
+  return percentage as number;
+}
+
+export function unwrapTaxRate(taxRate: TaxRate): number {
+  return taxRate as number;
+}
+
+export function unwrapAge(age: Age): number {
+  return age as number;
+}
+
+export function unwrapYears(years: Years): number {
+  return years as number;
+}
+
+// Convert percentage to basis points (for display)
+export function percentageToBasisPoints(percentage: Percentage): number {
+  return unwrapPercentage(percentage) * 10000;
+}
+
+// Convert percentage to display percentage (multiply by 100)
+export function percentageToDisplay(percentage: Percentage): number {
+  return unwrapPercentage(percentage) * 100;
+}
+
+/**
+ * Mathematical operations for branded types
+ */
+
+export function addAmounts(a: Amount, b: Amount): Amount {
+  return createAmount(unwrapAmount(a) + unwrapAmount(b));
+}
+
+export function subtractAmounts(a: Amount, b: Amount): Amount {
+  return createAmount(unwrapAmount(a) - unwrapAmount(b));
+}
+
+export function multiplyAmount(amount: Amount, multiplier: number): Amount {
+  return createAmount(unwrapAmount(amount) * multiplier);
+}
+
+export function divideAmount(amount: Amount, divisor: number): Amount {
+  if (divisor === 0) {
+    throw new Error('Cannot divide by zero');
+  }
+  return createAmount(unwrapAmount(amount) / divisor);
+}
+
+export function multiplyAmountByPercentage(amount: Amount, percentage: Percentage): Amount {
+  return createAmount(unwrapAmount(amount) * unwrapPercentage(percentage));
+}

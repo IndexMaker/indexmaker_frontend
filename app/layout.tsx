@@ -1,18 +1,17 @@
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
+import { LanguageProvider } from "@/contexts/language-context";
+import { QuoteProvider } from "@/contexts/quote-context";
+import { ReduxProvider } from "@/provider/reduxProvider";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { LanguageProvider } from "@/contexts/language-context";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
-import { ReduxProvider } from "@/provider/reduxProvider";
 // import { initPostHog } from "../lib/posthog";
-import {
-  PHProvider,
-  PostHogErrorTracker,
-  PostHogPageview,
-} from "../lib/posthog";
-import SessionTracker from "../components/posthog/sessionTracker";
 import { WalletProvider } from "@/contexts/wallet-context";
+import {
+    PHProvider,
+    PostHogPageview
+} from "../lib/posthog";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -47,24 +46,26 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#15181a]`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <WalletProvider>
           <PHProvider>
             <PostHogPageview />
-            <PostHogErrorTracker />
+
             <ReduxProvider>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="light"
-                enableSystem
-                disableTransitionOnChange
-              >
-                <LanguageProvider>
-                  {children}
-                  <Toaster />
-                </LanguageProvider>
-              </ThemeProvider>
+              <QuoteProvider>
+                <ThemeProvider
+                  attribute="class"
+                  defaultTheme="light"
+                  enableSystem
+                  disableTransitionOnChange
+                >
+                  <LanguageProvider>
+                    {children}
+                    <Toaster />
+                  </LanguageProvider>
+                </ThemeProvider>
+              </QuoteProvider>
             </ReduxProvider>
           </PHProvider>
         </WalletProvider>

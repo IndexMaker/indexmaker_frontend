@@ -2,29 +2,23 @@
 
 import type React from "react";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { TrendingUp, X , LayoutDashboard, Users} from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { usePathname } from "next/navigation";
-import RightArrow from "../icons/right-arrow";
-import EcosystemSvg from "../icons/ecosystem";
-import AnalyticsSvg from "../icons/analytics";
-import IndexMakerSvg from "../icons/indexmakerSvg";
-import IndexMakerDoc from "../icons/indexmakerDoc";
-import Feedback from "../icons/feedback";
-import TOS from "../icons/tos";
-import Image from "next/image";
 import { useLanguage } from "@/contexts/language-context";
-import { ThemeToggle } from "../theme-toggle";
-import { useTheme } from "next-themes";
-import Logo from "../icons/logo";
-import FAVICON from "../../public/logo/blue-logo.png";
 import { useWallet } from "@/contexts/wallet-context";
+import { cn } from "@/lib/utils";
+import { Calculator, TrendingUp, Users, X } from "lucide-react";
+import { useTheme } from "next-themes";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import EcosystemSvg from "../icons/ecosystem";
+import Feedback from "../icons/feedback";
 import IndexMaker from "../icons/indexmaker";
+import IndexMakerDoc from "../icons/indexmakerDoc";
 import IndexMakerLogo from "../icons/indexmakerLogo";
-import GithubLogo from "../icons/githublogo";
+import RightArrow from "../icons/right-arrow";
+import TOS from "../icons/tos";
+import { ThemeToggle } from "../theme-toggle";
 
 interface SidebarProps {
   open: boolean;
@@ -166,6 +160,15 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
               iconClassName={"p-[1px]"}
             >
               {t("common.curators")}
+            </NavItem>
+            <NavItem
+              href="/calculator"
+              active={isRouteActive("/calculator")}
+              className="text-[13px] text-secondary py-[6px] px-[10px] h-[32px]"
+              icon={Calculator}
+              collapsed={collapsed}
+            >
+              {t("common.taxCalculator")}
             </NavItem>
           </nav>
 

@@ -7,6 +7,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ensure proper scrolling for the calculator */
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body {
+  background-color: #f9fafb;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
