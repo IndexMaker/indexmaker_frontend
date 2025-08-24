@@ -997,8 +997,8 @@ function CalculatorContent() {
   const cellClass = (i: number, j: number) => {
     const isRow = i === selectedYearIdx;
     const isCol = j === nearestReturnIdx;
-    if (isRow && isCol) return 'bg-blue-600 text-white font-semibold';
-    if (isRow || isCol) return 'bg-blue-50 border border-blue-200';
+    if (isRow && isCol) return 'bg-red-600 text-white font-semibold';
+    if (isRow || isCol) return 'bg-red-50 border border-red-200';
     return '';
   };
 
@@ -1048,17 +1048,17 @@ function CalculatorContent() {
                     return {
                       fill: isSelected ? countryColors[countryKey] : '#e5e7eb',
                       stroke: '#374151', // Dark gray border for all supported countries
-                      strokeWidth: isSelected ? 3 : 1.5, // Thicker border for selected
+                      strokeWidth: isSelected ? 4 : 2.5, // Bold borders - thicker for selected
                       cursor: 'pointer',
                       opacity: 1
                     };
                   }
 
-                  // Unsupported country - show in very light gray with subtle border
+                  // Unsupported country - show in very light gray with bold border
                   return {
                     fill: '#f9fafb',
                     stroke: '#d1d5db',
-                    strokeWidth: 0.8,
+                    strokeWidth: 1.5, // Bold border for unsupported countries too
                     cursor: 'default',
                     opacity: 0.7
                   };
@@ -1135,11 +1135,11 @@ function CalculatorContent() {
               <p className="text-xs text-gray-500 mt-1">
                 🌍 All 53 countries with crypto tax data are now available! Click on any country in the world map above or select from the dropdown.
               </p>
-              <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-200">
-                <p className="text-sm text-blue-800">
+              <div className="mt-2 p-2 bg-red-50 rounded-md border border-red-200">
+                <p className="text-sm text-red-800">
                   💰 <strong>Currency:</strong> {getCurrencyInfo(safeCountry).name} ({getCurrencyInfo(safeCountry).code}) {getCurrencyInfo(safeCountry).symbol}
                 </p>
-                <p className="text-xs text-blue-600 mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   All amounts will be displayed in {getCurrencyInfo(safeCountry).code} using local formatting conventions.
                 </p>
               </div>
