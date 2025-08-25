@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { fetchProjects } from "@/api/projects";
 import { useLanguage } from "@/contexts/language-context";
 import Dashboard from "@/components/views/Dashboard/dashboard";
-import { Project } from "@/types";
+import { Project } from "../../lib/data";
 import { fallbackProjects } from "@/lib/fallback-projects";
 import { ProjectCard } from "@/components/views/ecosystem/ecosystem";
 import dynamic from "next/dynamic";

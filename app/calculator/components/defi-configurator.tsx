@@ -15,7 +15,7 @@ export function DefiConfigurator() {
   const open = useSelector(selectShowDefiConfig);
   const savedConfig = useSelector(selectDefiConfig);
 
-  const [yieldConfig, setYieldConfig] = useState(null);
+  const [yieldConfig, setYieldConfig] = useState<any>(null);
 
   const handleConfigChange = (config: any) => {
     setYieldConfig(config);

@@ -1,4 +1,4 @@
-import { Project } from "@/types";
+import { Project } from "../lib/data";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API;
 
