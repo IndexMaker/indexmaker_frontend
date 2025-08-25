@@ -30,7 +30,7 @@ export default function VaultPage() {
       : [];
     // First check Redux store
     const vaultFromLocal = localVaults.find(
-      (index) => index.ticker.toLowerCase() === lowerTicker
+      (index) => index && index.ticker && index.ticker.toLowerCase() === lowerTicker
     );
 
     if (vaultFromLocal) {
@@ -48,7 +48,7 @@ export default function VaultPage() {
         dispatch(setIndices(data));
 
         const foundIndex = data.find(
-          (_index) => _index.ticker.toLowerCase() === indexTicker.toLowerCase()
+          (_index) => _index && _index.ticker && _index.ticker.toLowerCase() === indexTicker.toLowerCase()
         );
 
         if (foundIndex) {

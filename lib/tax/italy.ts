@@ -33,7 +33,7 @@ const italyBrackets = {
   },
 };
 
-function getBrackets(status: string): Brackets {
+function getBrackets(status: string): any {
   if (status === 'married') {
     return italyBrackets.married;
   }
@@ -99,7 +99,7 @@ const setups = [
   },
 ];
 
-export const italy: CountryModule = {
+export const italy: any = {
   key: 'italy' as const,
   name: 'Italy',
   currency: 'EUR',

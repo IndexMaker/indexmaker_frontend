@@ -26,7 +26,7 @@ function taxIncrement(
 }
 
 const statuses = ['single'];
-function getBrackets(): Brackets {
+function getBrackets(): any {
   return {
     ordinary: {
       uppers: [18200, 45000, 135000, 190000, Number.POSITIVE_INFINITY],
@@ -80,7 +80,7 @@ function computeDeferredFull(p: TaxableParams) {
   return { tax, niit: 0 };
 }
 
-export const australia: CountryModule = {
+export const australia: any = {
   key: 'australia' as const,
   name: 'Australia',
   currency: 'AUD',
@@ -90,7 +90,7 @@ export const australia: CountryModule = {
   cryptoNote: 'Individuals get 50% CGT discount >12 months.',
   computeTaxable,
   computeDeferredFull,
-  computeSetupTax: (setup, params) => {
+  computeSetupTax: (setup: any, params: any) => {
     const {
       status,
       agiExcl,

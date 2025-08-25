@@ -58,7 +58,7 @@ export class UnifiedTaxEngine {
 
     // Parse tax system type
     const parsedTax = TaxBracketParser.parse(cryptoTaxText, currency);
-    const taxSystem = parsedTax.type as 'progressive' | 'flat' | 'special';
+    const taxSystem = parsedTax.type as any;
 
     // Calculate holding period treatment if applicable
     let holdingPeriodInfo: UnifiedTaxResult['holdingPeriodInfo'];
@@ -308,7 +308,7 @@ export class UnifiedTaxEngine {
           agiExcl: 50000, // Mock AGI
           isLong: holdingMonths ? holdingMonths >= 12 : false,
           holdingMonths
-        });
+        } as any);
 
         results.push({
           country: countryKey,
@@ -370,7 +370,7 @@ export class UnifiedTaxEngine {
         issues.push('Unable to extract tax rates from crypto_tax text');
       }
 
-    } catch (error) {
+    } catch (error: any) {
       issues.push(`Tax parsing failed: ${error.message}`);
     }
 

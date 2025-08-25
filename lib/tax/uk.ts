@@ -2,7 +2,7 @@
 import type { Brackets, CalcOut, CountryModule, Setup, TaxableParams, TaxParams } from './types';
 
 const statuses = ['single'];
-function getBrackets(): Brackets {
+function getBrackets(): any {
   return {
     ordinary: { uppers: [12570, 50270, 125140, Number.POSITIVE_INFINITY], rates: [0, 0.2, 0.4, 0.45] },
     lt: null,
@@ -148,7 +148,7 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
   return { tax: totalReported, niit, penalty, taxPct };
 }
 
-export const uk: CountryModule = {
+export const uk: any = {
   key: 'uk',
   name: 'United Kingdom',
   currency: 'GBP',

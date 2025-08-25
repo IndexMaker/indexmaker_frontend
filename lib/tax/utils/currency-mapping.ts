@@ -450,7 +450,7 @@ export const CURRENCY_MAPPING: Record<string, CurrencyInfo> = {
 };
 
 // Helper function to get currency info for a country
-export function getCurrencyInfo(countryKey: string): CurrencyInfo {
+export function getCurrencyInfo(countryKey: any): CurrencyInfo {
   return CURRENCY_MAPPING[countryKey] || CURRENCY_MAPPING.usa; // Fallback to USD
 }
 

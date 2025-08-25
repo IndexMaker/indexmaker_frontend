@@ -190,7 +190,7 @@ const setups: Setup[] = [
 
 const statuses = ['single', 'married'];
 
-export const usaEnhanced: CountryModule = {
+export const usaEnhanced: any = {
   key: 'usa',
   name: 'United States',
   currency: 'USD',

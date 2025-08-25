@@ -34,7 +34,7 @@ const indiaBrackets = {
   },
 };
 
-function getBrackets(status: string): Brackets {
+function getBrackets(status: string): any {
   if (status === 'married') {
     return indiaBrackets.married;
   }
@@ -147,7 +147,7 @@ const setups = [
   },
 ];
 
-export const india: CountryModule = {
+export const india: any = {
   key: 'india' as const,
   name: 'India',
   currency: 'INR',
@@ -158,7 +158,7 @@ export const india: CountryModule = {
   getBrackets,
   computeTaxable,
   computeDeferredFull: computeTaxable,
-  computeSetupTax: (setup, params) => {
+  computeSetupTax: (setup: any, params: any) => {
     const taxableParams = {
       country: 'india' as const,
       status: params.status,

@@ -37,7 +37,7 @@ function computeCEHR(referenceIncome: number, isMarried: boolean) {
 
 // ---------- Brackets (quotient familial: thresholds scale with parts) ----------
 const STATUSES = ['single', 'married'] as const;
-function getBrackets(status: string): Brackets {
+function getBrackets(status: string): any {
   const parts = status === 'married' ? 2 : 1;
   // 2025 IR (on 2024 income) per part
   const perPartUppers = [11_294, 28_797, 82_341, 177_106, Number.POSITIVE_INFINITY];
@@ -194,7 +194,7 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
 }
 
 // ---------- Module ----------
-export const france: CountryModule = {
+export const france: any = {
   key: 'france' as const,
   name: 'France',
   currency: 'EUR',

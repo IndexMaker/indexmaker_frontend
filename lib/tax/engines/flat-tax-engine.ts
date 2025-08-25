@@ -75,7 +75,7 @@ export class FlatTaxEngine {
       exemptionApplied,
       holdingPeriodApplied,
       additionalTaxBreakdown: additionalTaxes.breakdown
-    };
+    } as any;
   }
 
   /**

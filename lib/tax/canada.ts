@@ -26,7 +26,7 @@ function taxIncrement(
 }
 
 const statuses = ['single'];
-function getBrackets(): Brackets {
+function getBrackets(): any {
   return {
     ordinary: {
       uppers: [57375, 114750, 177882, 253414, Number.POSITIVE_INFINITY],
@@ -154,7 +154,7 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
   };
 }
 
-export const canada: CountryModule = {
+export const canada: any = {
   key: 'canada',
   name: 'Canada',
   currency: 'CAD',

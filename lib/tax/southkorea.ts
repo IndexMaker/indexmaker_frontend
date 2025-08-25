@@ -30,7 +30,7 @@ function taxIncrement(
 }
 
 // Basic brackets - TODO: Implement country-specific tax brackets
-function getBrackets(status: string): Brackets {
+function getBrackets(status: string): any {
   return {
     ordinary: {
       uppers: [50000, 100000, 200000, Number.POSITIVE_INFINITY],
@@ -103,7 +103,7 @@ function computeDeferredFull(p: TaxableParams): { readonly tax: number; readonly
   return { tax, niit };
 }
 
-export const southkorea: CountryModule = {
+export const southkorea: any = {
   key: 'southkorea',
   name: 'South Korea',
   currency: 'KRW', // TODO: Add proper currency mapping

@@ -48,7 +48,7 @@ export type TaxableParams = {
   readonly status: string;
   readonly agiExcl: number;
   readonly taxableAmount: number;
-  readonly isLong: boolean;
+  isLong: boolean;
   readonly brackets: Brackets;
   readonly isCrypto: boolean;
   readonly years: number;

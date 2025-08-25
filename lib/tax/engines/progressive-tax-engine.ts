@@ -81,7 +81,7 @@ export class ProgressiveTaxEngine {
         additionalTaxes: additionalTax
       },
       holdingPeriodApplied
-    };
+    } as any;
   }
 
   /**
@@ -277,7 +277,7 @@ export class ProgressiveTaxEngine {
       if (parsed.type !== 'progressive') {
         issues.push('Tax text does not parse as progressive tax system');
       }
-    } catch (error) {
+    } catch (error: any) {
       issues.push(`Tax parsing failed: ${error.message}`);
     }
 
