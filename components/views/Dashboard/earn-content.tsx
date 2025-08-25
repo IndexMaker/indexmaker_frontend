@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/tooltip";
 import { VaultSupply } from "@/components/elements/vault-supplyposition";
 import { SupplyPosition } from "@/lib/data";
+import { clearSelectedVault } from "@/redux/vaultSlice";
 
 type ColumnType = {
   id: string;
@@ -127,6 +128,8 @@ export function EarnContent({
     };
 
     !totalManaged && fetchInfo();
+
+    dispatch(clearSelectedVault())
   }, []);
 
   useEffect(() => {
@@ -293,7 +296,7 @@ export function EarnContent({
               </Card>
             </Link>
 
-            <Link href={"./analytics"}>
+            {/* <Link href={"./analytics"}>
               <Card className="bg-foreground gap-5 border-none cursor-pointer p-5 flex flex-col h-[98px] min-w-[194px] rounded-[12px]">
                 <CardHeader className="flex flex-row items-center justify-between p-0 w-full">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -311,7 +314,7 @@ export function EarnContent({
                   </div>
                 </CardContent>
               </Card>
-            </Link>
+            </Link> */}
           </div>
         </div>
 
