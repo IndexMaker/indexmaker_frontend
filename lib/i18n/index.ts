@@ -123,7 +123,12 @@ export const translations: Translations = {
       iUnderstand: "I understand",
       undoMaxSupply: "Undo max supply",
       ecosystem: "Ecosystem",
+      taxCalculator: "Tax Calculator",
       submit: "Submit",
+      save: "Save",
+      loading: "Loading...",
+      error: "Error",
+      success: "Success",
     },
     table: {
       name: "Index Name",
@@ -171,6 +176,11 @@ export const translations: Translations = {
       performance: "Average Annual Returns",
       id: 'ID',
       rebalance_timestamp: "Rebalance Date",
+      taxName: "Name",
+      symbol: "Symbol",
+      price: "Price",
+      change: "Change",
+      volume: "Volume",
     },
     type: {
       all: "All Transaction Types",
@@ -179,9 +189,15 @@ export const translations: Translations = {
       index_deposit: "Index Deposit",
       burn: "Index Burn",
       bridge: "Index Bridge",
-      redeem: 'Collateral Redeem'
+      redeem: 'Collateral Redeem',
+      buy: "Buy",
+      sell: "Sell",
+      deposit: "Deposit",
+      withdraw: "Withdraw",
     },
     ecosystem: {
+      title: "Ecosystem",
+      description: "Explore the ecosystem",
       aragon:
         "Building full-stack DAO technology, enabling organizations to govern their protocols and assets on-chain.",
       "brahma-console":
@@ -194,6 +210,7 @@ export const translations: Translations = {
         "Advanced DeFi Management. All the essential tools for creating, tracking, and managing your DeFi portfolio.",
     },
     subscribe: {
+      title: "Subscribe",
       description: "Receive direct updates with the latest observations on markets from our senior investment professionals and discover the latest opportunities across equities, bonds and specialized assets.",
       formTitle: "Manage your subscriptions",
       emailLabel: "EMAIL ADDRESS*",

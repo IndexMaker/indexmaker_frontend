@@ -1,0 +1,283 @@
+// lib/types/currency.ts
+// Currency-specific types and utilities for multi-country tax calculations
+
+import type {
+    Amount,
+    AUD,
+    BRL,
+    CAD,
+    CurrencyAmount, CurrencyCode,
+    EUR,
+    GBP,
+    INR,
+    JPY,
+    USD
+} from './financial';
+
+import {
+    createAUD,
+    createBRL,
+    createCAD,
+    createEUR,
+    createGBP,
+    createINR,
+    createJPY,
+    createUSD,
+    unwrapAmount
+} from './financial';
+
+/**
+ * Country to currency mapping
+ */
+export type CountryCurrencyMap = {
+  readonly usa: 'USD';
+  readonly canada: 'CAD';
+  readonly uk: 'GBP';
+  readonly australia: 'AUD';
+  readonly germany: 'EUR';
+  readonly france: 'EUR';
+  readonly japan: 'JPY';
+  readonly india: 'INR';
+  readonly italy: 'EUR';
+  readonly brazil: 'BRL';
+};
+
+/**
+ * Country code type
+ */
+export type CountryCode = keyof CountryCurrencyMap;
+
+/**
+ * Get currency code for a country
+ */
+export function getCurrencyForCountry(country: CountryCode): CurrencyCode {
+  const currencyMap: CountryCurrencyMap = {
+    usa: 'USD',
+    canada: 'CAD',
+    uk: 'GBP',
+    australia: 'AUD',
+    germany: 'EUR',
+    france: 'EUR',
+    japan: 'JPY',
+    india: 'INR',
+    italy: 'EUR',
+    brazil: 'BRL',
+  };
+  
+  return currencyMap[country];
+}
+
+/**
+ * Currency symbols for display
+ */
+export const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
+  USD: '$',
+  CAD: 'C$',
+  GBP: '£',
+  EUR: '€',
+  AUD: 'A$',
+  JPY: '¥',
+  INR: '₹',
+  BRL: 'R$',
+} as const;
+
+/**
+ * Currency names for display
+ */
+export const CURRENCY_NAMES: Record<CurrencyCode, string> = {
+  USD: 'US Dollar',
+  CAD: 'Canadian Dollar',
+  GBP: 'British Pound',
+  EUR: 'Euro',
+  AUD: 'Australian Dollar',
+  JPY: 'Japanese Yen',
+  INR: 'Indian Rupee',
+  BRL: 'Brazilian Real',
+} as const;
+
+/**
+ * Currency decimal places for formatting
+ */
+export const CURRENCY_DECIMALS: Record<CurrencyCode, number> = {
+  USD: 2,
+  CAD: 2,
+  GBP: 2,
+  EUR: 2,
+  AUD: 2,
+  JPY: 0, // Yen doesn't use decimal places
+  INR: 2,
+  BRL: 2,
+} as const;
+
+/**
+ * Type-safe currency constructors based on country
+ */
+export function createCurrencyAmount(country: CountryCode, value: number): CurrencyAmount {
+  switch (country) {
+    case 'usa':
+      return createUSD(value);
+    case 'canada':
+      return createCAD(value);
+    case 'uk':
+      return createGBP(value);
+    case 'australia':
+      return createAUD(value);
+    case 'germany':
+    case 'france':
+    case 'italy':
+      return createEUR(value);
+    case 'japan':
+      return createJPY(value);
+    case 'india':
+      return createINR(value);
+    case 'brazil':
+      return createBRL(value);
+    default:
+      // TypeScript exhaustiveness check
+      const _exhaustive: never = country;
+      throw new Error(`Unsupported country: ${_exhaustive}`);
+  }
+}
+
+/**
+ * Extract currency code from a currency amount
+ */
+export function getCurrencyCode(amount: CurrencyAmount): CurrencyCode {
+  // This is a runtime check since we can't determine the brand at runtime
+  // In practice, you would track the currency alongside the amount
+  throw new Error('Cannot determine currency code from branded type at runtime. Currency must be tracked separately.');
+}
+
+/**
+ * Format currency amount for display
+ */
+export function formatCurrencyAmount(amount: CurrencyAmount, currencyCode: CurrencyCode): string {
+  const value = unwrapAmount(amount as Amount);
+  const decimals = CURRENCY_DECIMALS[currencyCode];
+  const symbol = CURRENCY_SYMBOLS[currencyCode];
+  
+  // Format with appropriate decimal places
+  const formatted = value.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+  
+  return `${symbol}${formatted}`;
+}
+
+/**
+ * Format amount with country-specific currency
+ */
+export function formatAmountForCountry(amount: Amount, country: CountryCode): string {
+  const currencyCode = getCurrencyForCountry(country);
+  const currencyAmount = createCurrencyAmount(country, unwrapAmount(amount));
+  return formatCurrencyAmount(currencyAmount, currencyCode);
+}
+
+/**
+ * Currency conversion utilities (placeholder for future implementation)
+ * Note: In a real application, you would integrate with a currency exchange API
+ */
+
+export interface ExchangeRate {
+  readonly from: CurrencyCode;
+  readonly to: CurrencyCode;
+  readonly rate: number;
+  readonly timestamp: Date;
+}
+
+export function convertCurrency(
+  amount: CurrencyAmount,
+  fromCurrency: CurrencyCode,
+  toCurrency: CurrencyCode,
+  exchangeRate: number
+): CurrencyAmount {
+  if (fromCurrency === toCurrency) {
+    return amount;
+  }
+  
+  const baseValue = unwrapAmount(amount as Amount);
+  const convertedValue = baseValue * exchangeRate;
+  
+  // Create the appropriate currency type based on target currency
+  switch (toCurrency) {
+    case 'USD':
+      return createUSD(convertedValue);
+    case 'CAD':
+      return createCAD(convertedValue);
+    case 'GBP':
+      return createGBP(convertedValue);
+    case 'EUR':
+      return createEUR(convertedValue);
+    case 'AUD':
+      return createAUD(convertedValue);
+    case 'JPY':
+      return createJPY(convertedValue);
+    case 'INR':
+      return createINR(convertedValue);
+    case 'BRL':
+      return createBRL(convertedValue);
+    default:
+      const _exhaustive: never = toCurrency;
+      throw new Error(`Unsupported target currency: ${_exhaustive}`);
+  }
+}
+
+/**
+ * Type guards for specific currency types
+ */
+export function isUSD(amount: CurrencyAmount): amount is USD {
+  // In practice, you would need additional runtime information to determine this
+  return true; // Placeholder implementation
+}
+
+export function isCAD(amount: CurrencyAmount): amount is CAD {
+  return true; // Placeholder implementation
+}
+
+export function isGBP(amount: CurrencyAmount): amount is GBP {
+  return true; // Placeholder implementation
+}
+
+export function isEUR(amount: CurrencyAmount): amount is EUR {
+  return true; // Placeholder implementation
+}
+
+export function isAUD(amount: CurrencyAmount): amount is AUD {
+  return true; // Placeholder implementation
+}
+
+export function isJPY(amount: CurrencyAmount): amount is JPY {
+  return true; // Placeholder implementation
+}
+
+export function isINR(amount: CurrencyAmount): amount is INR {
+  return true; // Placeholder implementation
+}
+
+export function isBRL(amount: CurrencyAmount): amount is BRL {
+  return true; // Placeholder implementation
+}
+
+/**
+ * Utility type for currency-specific calculations
+ */
+export type CurrencyCalculation<T extends CountryCode> = {
+  readonly country: T;
+  readonly currency: CountryCurrencyMap[T];
+  readonly amount: CurrencyAmount;
+};
+
+/**
+ * Create a currency calculation object
+ */
+export function createCurrencyCalculation<T extends CountryCode>(
+  country: T,
+  amount: number
+): CurrencyCalculation<T> {
+  return {
+    country,
+    currency: getCurrencyForCountry(country),
+    amount: createCurrencyAmount(country, amount),
+  };
+}

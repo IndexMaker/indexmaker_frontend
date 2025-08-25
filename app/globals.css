@@ -7,6 +7,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ensure proper scrolling for the calculator */
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body {
+  background-color: #f9fafb;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -220,4 +231,22 @@
   to {
     height: 0;
   }
+}
+
+/* Force light theme for calculator - Override dark theme */
+.calculator-container,
+.calculator-container *,
+.dark .calculator-container,
+.dark .calculator-container * {
+  --background: #ffffff !important;
+  --foreground: #1f2937 !important;
+  --card: #ffffff !important;
+  --card-foreground: #1f2937 !important;
+  --popover: #ffffff !important;
+  --popover-foreground: #1f2937 !important;
+  --muted: #f9fafb !important;
+  --muted-foreground: #6b7280 !important;
+  --border: #e5e7eb !important;
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
 }

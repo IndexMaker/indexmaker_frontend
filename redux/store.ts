@@ -1,14 +1,17 @@
 import { configureStore } from "@reduxjs/toolkit";
-import walletReducer from "./walletSlice";
+import calculatorReducer from "./calculatorSlice";
+import indexReducer from "./indexSlice";
 import networkReducer from './networkSlice';
 import vaultReducer from "./vaultSlice";
-import indexReducer from "./indexSlice";
+import walletReducer from "./walletSlice";
+
 export const store = configureStore({
   reducer: {
     wallet: walletReducer,
     network: networkReducer,
     vault: vaultReducer,
     index: indexReducer,
+    calculator: calculatorReducer,
   },
 });
 
