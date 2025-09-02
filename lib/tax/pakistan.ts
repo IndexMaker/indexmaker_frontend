@@ -1,5 +1,5 @@
 // lib/tax/pakistan.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Pakistan tax brackets (from data.json: 15% capital gains + CVT 0-15%; up to 45% progressive for mining/staking)
@@ -42,7 +42,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const pakistan: CountryModule = {
+export const pakistan: any = {
   key: 'pakistan',
   name: 'Pakistan',
   currency: 'PKR', // Pakistani Rupee

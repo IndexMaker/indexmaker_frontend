@@ -1,5 +1,5 @@
 // lib/tax/algeria.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Algeria tax brackets (from data.json: Cryptocurrency is banned; no legal tax rate applies)
@@ -40,7 +40,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const algeria: CountryModule = {
+export const algeria: any = {
   key: 'algeria',
   name: 'Algeria',
   currency: 'DZD', // Algerian Dinar

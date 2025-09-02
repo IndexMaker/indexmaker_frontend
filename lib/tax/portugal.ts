@@ -1,5 +1,5 @@
 // lib/tax/portugal.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Portugal tax brackets (from data.json: 28% short-term gains; tax-free if held >1 year; 14.5-53% progressive for mining/staking)
@@ -49,7 +49,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const portugal: CountryModule = {
+export const portugal: any = {
   key: 'portugal',
   name: 'Portugal',
   currency: 'EUR', // Euro

@@ -1,5 +1,5 @@
 // lib/tax/canada.ts
-import type { Brackets, CalcOut, CountryModule, Setup, TaxableParams, TaxParams } from './types';
+import type { Brackets, CalcOut, Setup, TaxableParams, TaxParams } from './types';
 import { createCountryBrackets, taxIncrement } from './utils/tax-calculations';
 
 const statuses = ['single'];
@@ -131,7 +131,7 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
   };
 }
 
-export const canada: CountryModule = {
+export const canada: any = {
   key: 'canada',
   name: 'Canada',
   currency: 'CAD',

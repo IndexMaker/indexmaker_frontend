@@ -1,5 +1,5 @@
 // lib/tax/taiwan.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Taiwan tax brackets (from data.json: Progressive 5-40% rates; 0.1% securities transaction tax may apply)
@@ -40,7 +40,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const taiwan: CountryModule = {
+export const taiwan: any = {
   key: 'taiwan',
   name: 'Taiwan',
   currency: 'TWD', // New Taiwan Dollar

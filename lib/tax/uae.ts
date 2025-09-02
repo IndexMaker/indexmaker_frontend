@@ -1,5 +1,5 @@
 // lib/tax/uae.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // UAE tax brackets (from data.json: 0% personal income/capital gains; 5% VAT; 9% corporate tax over AED 375,000)
@@ -50,7 +50,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const uae: CountryModule = {
+export const uae: any = {
   key: 'uae',
   name: 'UAE',
   currency: 'AED', // UAE Dirham

@@ -1,4 +1,5 @@
 import { IndexListEntry } from "@/types/index";
+import { BrowserProvider, Wallet, ethers, hexlify } from "ethers";
 import { useEffect, useRef, useState } from "react";
 
 export default function useQuoteSocket(
@@ -79,36 +80,64 @@ export default function useQuoteSocket(
     }
   };
 
-  const sendNewIndexOrder = (order: {
+  const sendNewIndexOrder = async (order: {
     address: string;
     symbol: string;
     side: "1" | "2";
     amount: string;
   }) => {
-    const message = {
+    const provider = new BrowserProvider((window as any).ethereum);
+    const signer = await provider.getSigner();
+    const currentTime = new Date().toISOString();
+    const currentTimestamp = Date.now();
+    const seqNum = seqNumRef.current++;
+
+    // Create the unsigned payload
+    const msgToSign = {
       standard_header: {
         msg_type: "NewIndexOrder",
         sender_comp_id: "FE",
         target_comp_id: "SERVER",
-        seq_num: seqNumRef.current++,
-        timestamp: new Date().toISOString(),
+        seq_num: seqNum,
+        timestamp: currentTime,
       },
       chain_id: 1,
       address: order.address,
-      client_order_id: `O-${Date.now()}`,
+      client_order_id: `O-${currentTimestamp}`,
       symbol: order.symbol,
       side: order.side,
       amount: order.amount,
+    };
+
+    // Hash the payload
+    const payloadBytes = ethers.toUtf8Bytes(JSON.stringify(msgToSign));
+    // const hash = ethers.keccak256(payloadBytes);
+
+    // // Sign the hash
+    // const signature = await signer.signMessage(hexToBytes(hash));
+
+    // // Get uncompressed public key (via recovered wallet)
+
+    const messageHash = ethers.keccak256(payloadBytes);
+    const signature = await signer.signMessage(ethers.getBytes(messageHash));
+
+    const recoveredWallet = new Wallet(signature, provider);
+    const pubKey = (recoveredWallet.signingKey as any).publicKey; // Uncompressed SEC1 format
+    const sig = await recoveredWallet.signingKey.sign(messageHash);
+    const _sig = hexlify(sig.r) + hexlify(sig.s).substring(2);
+    // Construct final message with trailer
+    const message = {
+      ...msgToSign,
       standard_trailer: {
-        public_key: [],
-        signature: [],
+        public_key: [pubKey],
+        signature: [_sig],
       },
     };
 
     sendMessage(message);
   };
 
-  const requestQuoteAndWait = ({
+  const requestQuoteAndWait = async ({
     address,
     symbol,
     side,
@@ -119,10 +148,9 @@ export default function useQuoteSocket(
     side: "1" | "2";
     amount: string;
   }): Promise<number> => {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       const quoteId = `Q-${symbol}-${Date.now()}`;
       quoteIdMap.current[quoteId] = symbol;
-
       quoteCallbacks.current[quoteId] = (quantity) => {
         resolve(quantity);
         delete quoteCallbacks.current[quoteId]; // cleanup
@@ -131,7 +159,7 @@ export default function useQuoteSocket(
       const message = {
         standard_header: {
           msg_type: "NewQuoteRequest",
-          sender_comp_id: "CLIENT",
+          sender_comp_id: "FE",
           target_comp_id: "SERVER",
           seq_num: seqNumRef.current++,
           timestamp: new Date().toISOString(),
@@ -169,7 +197,7 @@ export default function useQuoteSocket(
     const message = {
       standard_header: {
         msg_type: "NewQuoteRequest",
-        sender_comp_id: "CLIENT",
+        sender_comp_id: "FE",
         target_comp_id: "SERVER",
         seq_num: seqNumRef.current++,
         timestamp: new Date().toISOString(),
@@ -206,11 +234,10 @@ export default function useQuoteSocket(
         if (index.ticker !== "SY100") return;
         const quoteId = `Q-${index.ticker}-${Date.now()}`;
         quoteIdMap.current[quoteId] = index.ticker;
-
         const message = {
           standard_header: {
             msg_type: "NewQuoteRequest",
-            sender_comp_id: "CLIENT",
+            sender_comp_id: "FE",
             target_comp_id: "SERVER",
             seq_num: seqNumRef.current++,
             timestamp: new Date().toISOString(),
@@ -234,6 +261,17 @@ export default function useQuoteSocket(
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [indexes, isConnected, amount, Network]);
+
+  function hexToBytes(hex: string): Uint8Array {
+    if (hex.startsWith("0x")) hex = hex.slice(2);
+    if (hex.length % 2 !== 0) throw new Error("Invalid hex string");
+
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < bytes.length; i++) {
+      bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+    }
+    return bytes;
+  }
 
   return {
     connect,

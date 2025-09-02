@@ -1,5 +1,5 @@
 // lib/tax/romania.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Romania tax brackets (from data.json: Flat 10% on gains and mining/staking; 0% exemption ended July 31, 2025)
@@ -42,7 +42,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const romania: CountryModule = {
+export const romania: any = {
   key: 'romania',
   name: 'Romania',
   currency: 'RON', // Romanian Leu

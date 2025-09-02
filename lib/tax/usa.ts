@@ -55,7 +55,7 @@ function computeUSLTCGTax(
 }
 
 const statuses = ['single', 'married'];
-function getBrackets(status: string): Brackets {
+function getBrackets(status: string): any {
   const isSingle = status === 'single';
   return {
     ordinary: {
@@ -156,7 +156,7 @@ function computeDeferredFull(p: TaxableParams): { readonly tax: number; readonly
   return { tax, niit };
 }
 
-export const usa: CountryModule = {
+export const usa: any = {
   key: 'usa',
   name: 'United States',
   currency: 'USD',

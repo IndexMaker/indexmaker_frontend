@@ -64,11 +64,11 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
   const [pulsePoint, setPulsePoint] = useState(false);
   const { theme } = useTheme();
   useEffect(() => {
-    return () => {
-      if (chartRef.current) {
-        chartRef.current.destroy();
-      }
-    };
+    const interval = setInterval(() => {
+      chartRef.current?.update(); // Force redraw for blinking effect
+    }, 1000); // ~10 FPS for visible blinking
+
+    return () => clearInterval(interval);
   }, []);
 
   const normalizeData = (
@@ -103,7 +103,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
     gradient.addColorStop(1, "rgba(0, 0, 255, 0.1)");
     return gradient;
   };
-  
+
   const chartPlugins = useMemo(() => {
     return [
       {
@@ -119,7 +119,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
         },
       },
       {
-        id: "lastPriceLine",
+        id: "lastPriceFlasher",
         afterDatasetsDraw(chart: any) {
           if (showComparison || showETHComparison) return;
 
@@ -138,33 +138,19 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
             return;
 
           const ctx = chart.ctx;
-          const chartArea = chart.chartArea;
-          if (!chartArea) return;
 
-          const lastPrice = dataset.data[lastIndex] as any;
+          // Create flashing alpha based on current time
+          const now = Date.now();
+          const blinkAlpha = 0.5 + 0.5 * Math.sin((2 * Math.PI * now) / 1000); // 1s interval
 
           ctx.save();
-          ctx.strokeStyle = theme === "dark" ? "#ff3a33" : "#000000";
-          ctx.fillStyle = theme === "dark" ? "#ff3a33" : "#000000";
-          ctx.lineWidth = 2;
-          ctx.setLineDash([5, 5]);
+          ctx.globalAlpha = blinkAlpha;
+          ctx.fillStyle = theme === "dark" ? "#ff3a33" : "#ff3a33";
 
-          const startX =
-            chartArea.left + 0.75 * (chartArea.right - chartArea.left);
-          const endX = chartArea.right;
-
+          // Draw flashing circle
           ctx.beginPath();
-          ctx.moveTo(startX, point.y);
-          ctx.lineTo(endX, point.y);
-          ctx.stroke();
-
-          const labelText = `Price: ${
-            lastPrice.y !== undefined ? lastPrice.y : lastPrice
-          } USDC`;
-
-          ctx.font = "bold 14px sans-serif";
-          ctx.textBaseline = "bottom";
-          ctx.fillText(labelText, startX + 6, point.y - 4);
+          ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
+          ctx.fill();
           ctx.restore();
         },
       },

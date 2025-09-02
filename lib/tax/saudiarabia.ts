@@ -1,5 +1,5 @@
 // lib/tax/saudiarabia.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Saudi Arabia tax brackets (from data.json: Exempt from taxation; no income or capital gains tax on crypto)
@@ -48,7 +48,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const saudiarabia: CountryModule = {
+export const saudiarabia: any = {
   key: 'saudiarabia',
   name: 'Saudi Arabia',
   currency: 'SAR', // Saudi Riyal

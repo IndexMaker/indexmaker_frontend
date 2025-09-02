@@ -1,5 +1,5 @@
 // lib/tax/southafrica.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // South Africa tax brackets (from data.json: Capital gains tax with 40% inclusion, effective 0-18%; 18-45% for trading/mining)
@@ -51,7 +51,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const southafrica: CountryModule = {
+export const southafrica: any = {
   key: 'southafrica',
   name: 'South Africa',
   currency: 'ZAR', // South African Rand

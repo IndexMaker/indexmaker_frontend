@@ -1,5 +1,5 @@
 // lib/tax/poland.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Poland has flat 19% tax rate (from data.json)
@@ -51,7 +51,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const poland: CountryModule = {
+export const poland: any = {
   key: 'poland',
   name: 'Poland',
   currency: 'PLN', // Polish Zloty

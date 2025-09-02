@@ -1,5 +1,5 @@
 // lib/tax/austria.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Austria tax brackets (from data.json: 0%, 20%, 30%, 40%, 48%, 50%, 55% + flat 27.5% on capital income)
@@ -41,7 +41,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const austria: CountryModule = {
+export const austria: any = {
   key: 'austria',
   name: 'Austria',
   currency: 'EUR', // TODO: Add proper currency mapping

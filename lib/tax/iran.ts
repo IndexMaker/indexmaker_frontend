@@ -1,5 +1,5 @@
 // lib/tax/iran.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Iran tax brackets (from data.json: progressive rates up to 35% - 10% up to 5x exemption, 20% excess)
@@ -38,7 +38,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const iran: CountryModule = {
+export const iran: any = {
   key: 'iran',
   name: 'Iran',
   currency: 'IRR', // Iranian Rial

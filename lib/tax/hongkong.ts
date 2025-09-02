@@ -1,5 +1,5 @@
 // lib/tax/hongkong.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Hong Kong SAR tax brackets (from data.json: 2%, 6%, 10%, 14%, 17%)
@@ -11,7 +11,7 @@ function getBrackets(status: string): Brackets {
     },
     lt: null, // No long-term capital gains distinction
     stdDed: 0, // No standard deduction in Hong Kong
-    niitThresh: 0, // No NIIT in Hong Kong
+    niitThresh: 0, // No NIIT in Hong Kon-g
   });
 }
 
@@ -37,7 +37,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const hongkong: CountryModule = {
+export const hongkong: any = {
   key: 'hongkong',
   name: 'Hong Kong SAR',
   currency: 'HKD', // Hong Kong Dollar

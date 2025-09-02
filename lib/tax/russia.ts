@@ -1,5 +1,5 @@
 // lib/tax/russia.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Russia tax brackets (from data.json: 13% up to 2.4M RUB, 15% above; 25% profit tax for business mining)
@@ -39,7 +39,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const russia: CountryModule = {
+export const russia: any = {
   key: 'russia',
   name: 'Russia',
   currency: 'RUB', // Russian Ruble

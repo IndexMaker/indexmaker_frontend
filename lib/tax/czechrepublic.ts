@@ -1,5 +1,5 @@
 // lib/tax/czechrepublic.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Czech Republic tax brackets (from data.json: Tax-free if held >3 years; otherwise 15-23% progressive; exempt under CZK 30,800/year)
@@ -49,7 +49,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const czechrepublic: CountryModule = {
+export const czechrepublic: any = {
   key: 'czechrepublic',
   name: 'Czech Republic',
   currency: 'CZK', // Czech Koruna

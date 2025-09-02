@@ -1,5 +1,5 @@
 // lib/tax/israel.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Israel tax brackets (from data.json: 25% capital gains; up to 50% progressive for mining/staking)
@@ -48,7 +48,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const israel: CountryModule = {
+export const israel: any = {
   key: 'israel',
   name: 'Israel',
   currency: 'ILS', // Israeli Shekel

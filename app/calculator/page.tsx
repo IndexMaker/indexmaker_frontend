@@ -498,7 +498,7 @@ function calculateTaxes(
   // Taxable accounts use country module
   if (setup.type === 'taxable') {
     const result = mod.computeTaxable({
-      country: countryKey as keyof typeof countryModules,
+      country: countryKey as keyof typeof countryModules as any,
       status,
       agiExcl: agiExcl,
       taxableAmount: gain,
@@ -514,7 +514,7 @@ function calculateTaxes(
 
   // Default deferred = progressive ordinary via country module (difference-of-cumulative)
   const resultFull = mod.computeDeferredFull({
-    country: countryKey as keyof typeof countryModules,
+    country: countryKey as keyof typeof countryModules as any,
     status,
     agiExcl: agiExcl,
     taxableAmount: withdrawn,
@@ -526,7 +526,7 @@ function calculateTaxes(
   const { tax: taxFull, niit: surFull } = resultFull;
 
   const resultPrincipal = mod.computeDeferredFull({
-    country: countryKey as keyof typeof countryModules,
+    country: countryKey as keyof typeof countryModules as any,
     status,
     agiExcl: agiExcl,
     taxableAmount: initial,
@@ -590,7 +590,7 @@ function CalculatorContent() {
   // Safety check: if module doesn't exist, fall back to USA
   const safeCountry = useMemo(() => {
     if (!mod) {
-      log.info(`Country module not found for: ${country}, falling back to USA`, { country });
+      console.warn(`Country module not found for: ${String(country)}, falling back to USA`);
       return 'usa';
     }
     return country;
@@ -600,7 +600,7 @@ function CalculatorContent() {
 
   const brackets = useMemo(() => safeMod.getBrackets(status), [safeMod, status]);
   const setup = useMemo(
-    () => (setupName ? safeMod.setups.find((s) => s.name === setupName) || null : null),
+    () => (setupName ? safeMod.setups.find((s: any) => s.name === setupName) || null : null),
     [safeMod.setups, setupName]
   );
 
@@ -609,15 +609,15 @@ function CalculatorContent() {
     const { compact = false, showCode = false } = options || {};
 
     if (compact && Math.abs(amount) >= 1000) {
-      return CurrencyFormatter.formatCompact(amount, safeCountry);
+      return CurrencyFormatter.formatCompact(amount, safeCountry as any);
     }
 
-    return CurrencyFormatter.formatCurrency(amount, safeCountry, { showCode });
+    return CurrencyFormatter.formatCurrency(amount, safeCountry as any, { showCode });
   }, [safeCountry]);
 
   // Auto-update setup when country changes if current setup doesn't exist in new country
   useEffect(() => {
-    if (setupName && !safeMod.setups.find((s) => s.name === setupName)) {
+    if (setupName && !safeMod.setups.find((s: any) => s.name === setupName)) {
       const defaultSetup = pickDefaultRetirementSetup(safeCountry);
       setSetupName(defaultSetup);
     }
@@ -713,7 +713,7 @@ function CalculatorContent() {
 
   const results = useMemo(() => {
     const annualRate = getAnnualRate;
-    const cryptoSetup = safeMod.setups.find((s) => s.type === 'taxable') || safeMod.setups[0] || null;
+    const cryptoSetup = safeMod.setups.find((s: any) => s.type === 'taxable') || safeMod.setups[0] || null;
 
     const etfTaxes = setup
       ? calculateTaxes(
@@ -790,7 +790,7 @@ function CalculatorContent() {
 
     let matrix: number[][] | undefined;
     // Calculate matrix for the best available tax-advantaged setup vs crypto taxable
-    const matrixSetup = setup || safeMod.setups.find((s) => s.type !== 'taxable') || safeMod.setups[0];
+    const matrixSetup = setup || safeMod.setups.find((s: any) => s.type !== 'taxable') || safeMod.setups[0];
     if (matrixSetup && cryptoSetup) {
       matrix = [];
       for (const y of yearsRange) {
@@ -1097,7 +1097,7 @@ function CalculatorContent() {
             <div>
               <Label className="text-gray-900 font-medium">Country</Label>
               <NativeSelect
-                value={country}
+                value={country as any}
                 onChange={(e) => setCountry(e.target.value as keyof typeof countryModules)}
                 placeholder="Select country"
                 className="mt-1 bg-white border-gray-300 text-gray-900"
@@ -1196,7 +1196,7 @@ function CalculatorContent() {
                   placeholder="Select status"
                   className="mt-1 bg-white border-gray-300 text-gray-900"
                 >
-                  {safeMod.statuses.map((s) => (
+                  {safeMod.statuses.map((s: any) => (
                     <NativeSelectOption key={s} value={s}>
                       {s.charAt(0).toUpperCase() + s.slice(1)}
                     </NativeSelectOption>
@@ -1288,7 +1288,7 @@ function CalculatorContent() {
             <div className="md:col-span-2">
               <Label>ETF Holding Setup</Label>
               <div className="flex flex-wrap gap-2 mt-2">
-                {safeMod.setups.map((s) => (
+                {safeMod.setups.map((s: any) => (
                   <Button
                     key={s.name}
                     variant={setupName === s.name ? 'default' : 'outline'}
@@ -1442,7 +1442,7 @@ function CalculatorContent() {
 
               {/* DeFi builder + surplus/deficit */}
               <AdvancedDefiYieldConfigurator
-                country={country}
+                country={country as any}
                 onConfigChange={onConfigChange}
                 initialConfig={initialConfig}
               />

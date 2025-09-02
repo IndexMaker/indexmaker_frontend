@@ -1,5 +1,5 @@
 // lib/tax/netherlands.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Netherlands tax brackets (from data.json: Wealth tax under Box 3 at up to 36% on deemed yield)
@@ -40,7 +40,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const netherlands: CountryModule = {
+export const netherlands: any = {
   key: 'netherlands',
   name: 'Netherlands',
   currency: 'EUR', // Euro

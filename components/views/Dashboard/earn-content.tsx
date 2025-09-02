@@ -8,7 +8,6 @@ import {
 import { ColumnVisibilityPopover } from "@/components/elements/column-visibility-popover";
 import { VaultSupply } from "@/components/elements/vault-supplyposition";
 import { VaultTable } from "@/components/elements/vault-table";
-import Borrow from "@/components/icons/borrow";
 import Deposit from "@/components/icons/deposit";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +27,7 @@ import {
     setTotalVolume,
 } from "@/redux/indexSlice";
 import { RootState } from "@/redux/store";
+import { clearSelectedVault } from "@/redux/vaultSlice";
 import { IndexListEntry } from "@/types/index";
 import { Search } from "lucide-react";
 import Link from "next/link";
@@ -127,6 +127,8 @@ export function EarnContent({
     };
 
     !totalManaged && fetchInfo();
+
+    dispatch(clearSelectedVault())
   }, []);
 
   useEffect(() => {
@@ -293,7 +295,7 @@ export function EarnContent({
               </Card>
             </Link>
 
-            <Link href={"./analytics"}>
+            {/* <Link href={"./analytics"}>
               <Card className="bg-foreground gap-5 border-none cursor-pointer p-5 flex flex-col h-[98px] min-w-[194px] rounded-[12px]">
                 <CardHeader className="flex flex-row items-center justify-between p-0 w-full">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -311,7 +313,7 @@ export function EarnContent({
                   </div>
                 </CardContent>
               </Card>
-            </Link>
+            </Link> */}
           </div>
         </div>
 

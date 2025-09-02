@@ -1,5 +1,5 @@
 // lib/tax/argentina.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Argentina tax brackets (from data.json: 15% capital gains; 25-35% progressive for mining/staking)
@@ -42,7 +42,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const argentina: CountryModule = {
+export const argentina: any = {
   key: 'argentina',
   name: 'Argentina',
   currency: 'ARS', // Argentine Peso

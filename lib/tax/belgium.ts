@@ -1,5 +1,5 @@
 // lib/tax/belgium.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Belgium tax brackets (from data.json: 25%, 40%, 45%, 50% + 0% for normal investment, 33% speculative)
@@ -41,7 +41,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const belgium: CountryModule = {
+export const belgium: any = {
   key: 'belgium',
   name: 'Belgium',
   currency: 'EUR', // TODO: Add proper currency mapping

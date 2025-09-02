@@ -1,5 +1,5 @@
 // lib/tax/mexico.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Mexico tax brackets (from data.json: 1.92-35% progressive; 10% provisional withholding on exchanges)
@@ -39,7 +39,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const mexico: CountryModule = {
+export const mexico: any = {
   key: 'mexico',
   name: 'Mexico',
   currency: 'MXN', // Mexican Peso

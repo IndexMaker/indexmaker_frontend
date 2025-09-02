@@ -1,5 +1,5 @@
 // lib/tax/thailand.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Thailand tax brackets (from data.json: Capital gains exempt until Dec 31, 2029; 0-35% for mining/staking)
@@ -55,7 +55,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const thailand: CountryModule = {
+export const thailand: any = {
   key: 'thailand',
   name: 'Thailand',
   currency: 'THB', // Thai Baht

@@ -39,7 +39,7 @@ const brazilBrackets = {
  * @param status - Filing status ('single' or 'married')
  * @returns Tax brackets with ordinary income and capital gains rates
  */
-function getBrackets(status: string): Brackets {
+function getBrackets(status: string): any {
   if (status === 'married') {
     return brazilBrackets.married;
   }
@@ -154,7 +154,7 @@ const setups = [
   },
 ];
 
-export const brazil: CountryModule = {
+export const brazil: any = {
   key: 'brazil' as const,
   name: 'Brazil',
   currency: 'BRL',
@@ -171,7 +171,7 @@ export const brazil: CountryModule = {
    * @param params - Tax calculation parameters
    * @returns Tax calculation results including tax amount and percentage
    */
-  computeSetupTax: (setup, params) => {
+  computeSetupTax: (setup: any, params: any) => {
     const {
       status,
       agiExcl,

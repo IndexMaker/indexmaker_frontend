@@ -1,5 +1,5 @@
 // lib/tax/chile.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Chile tax brackets (from data.json: 0-40% progressive Global Complementary Tax; 35% Additional Tax for non-residents)
@@ -40,7 +40,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const chile: CountryModule = {
+export const chile: any = {
   key: 'chile',
   name: 'Chile',
   currency: 'CLP', // Chilean Peso

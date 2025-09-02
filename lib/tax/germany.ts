@@ -26,7 +26,7 @@ function taxIncrement(
 }
 
 const statuses = ['single', 'married'];
-function getBrackets(status: string): Brackets {
+function getBrackets(status: string): any {
   const isSingle = status === 'single';
   return {
     ordinary: { uppers: [12096, 68429, 277825, Number.POSITIVE_INFINITY], rates: [0, 0.14, 0.42, 0.45] },
@@ -94,7 +94,7 @@ function computeDeferredFull(p: TaxableParams) {
   return { tax: t, niit: soli };
 }
 
-export const germany: CountryModule = {
+export const germany: any = {
   key: 'germany' as const,
   name: 'Germany',
   currency: 'EUR',
@@ -104,7 +104,7 @@ export const germany: CountryModule = {
   cryptoNote: 'Crypto tax-free >1y; else progressive with €600 cliff.',
   computeTaxable,
   computeDeferredFull,
-  computeSetupTax: (setup, params) => {
+  computeSetupTax: (setup: any, params: any) => {
     const {
       status,
       agiExcl,

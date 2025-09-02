@@ -79,7 +79,7 @@ export class ProgressiveTaxEngine {
         exemptionUsed: Math.max(0, (parsedTax.exemptions?.annualThreshold || 0) - taxableAmount)
       },
       holdingPeriodApplied
-    };
+    } as any;
   }
 
   /**

@@ -1,5 +1,5 @@
 // lib/tax/kazakhstan.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Kazakhstan tax brackets (from data.json: 10% for residents, 20% for non-residents; VAT on mining services)
@@ -40,7 +40,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const kazakhstan: CountryModule = {
+export const kazakhstan: any = {
   key: 'kazakhstan',
   name: 'Kazakhstan',
   currency: 'KZT', // Kazakhstani Tenge

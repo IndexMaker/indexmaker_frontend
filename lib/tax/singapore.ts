@@ -1,5 +1,5 @@
 // lib/tax/singapore.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Singapore tax brackets (from data.json: 0%, 2%, 3.5%, 7%, 12%, 16%, 19%, 20%, 21%, 22%)
@@ -44,7 +44,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const singapore: CountryModule = {
+export const singapore: any = {
   key: 'singapore',
   name: 'Singapore',
   currency: 'SGD', // Singapore Dollar

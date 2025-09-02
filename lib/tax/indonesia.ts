@@ -1,5 +1,5 @@
 // lib/tax/indonesia.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Indonesia tax brackets (from data.json: 5%, 15%, 25%, 30%, 35% progressive rates)
@@ -39,7 +39,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const indonesia: CountryModule = {
+export const indonesia: any = {
   key: 'indonesia',
   name: 'Indonesia',
   currency: 'IDR', // Indonesian Rupiah

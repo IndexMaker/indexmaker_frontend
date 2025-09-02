@@ -1,5 +1,5 @@
 // lib/tax/finland.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Finland tax brackets (from data.json: 30% capital gains up to €30,000, then 34%)
@@ -41,7 +41,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const finland: CountryModule = {
+export const finland: any = {
   key: 'finland',
   name: 'Finland',
   currency: 'EUR', // Euro

@@ -373,7 +373,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                   isMobile ? "w-full" : "w-[50%]"
                 )}
               >
-                <div
+                {/* <div
                   className={cn(
                     "h-[104px] min-w-[104px] rounded-full overflow-hidden bg-foreground p-[12px] flex items-center justify-center",
                     isMobile ? "" : ""
@@ -386,7 +386,10 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                       {vault.token.symbol.charAt(0) || ""}
                     </div>
                   )}
-                </div>
+                  <div className="text-4xl text-primary">
+                    {vault.token.symbol.charAt(0) || ""}
+                  </div>
+                </div> */}
                 <div className="flex gap-6 flex-col">
                   <h1 className="text-[38px] min-w-[50%] h-[44px] text-primary text-center xl:text-left">
                     {index.ticker}
@@ -430,16 +433,48 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                           <Link href={`#`}>KID</Link>
                         </div>
                       </Link>
-                      <Link target="_blank" href={"#"}>
+                      <Link
+                        target="_blank"
+                        href={`${
+                          process.env.NEXT_PUBLIC_BACKEND_API
+                        }/pdf-generation/pdfview/factsheet/${
+                          index.ticker || "SY100"
+                        }`}
+                      >
                         <div className="flex flex-col items-center justify-center text-[11px] hover:text-[#2470ff]">
                           <FileText className="w-4" />
-                          <Link target="_blank" href={`${process.env.NEXT_PUBLIC_BACKEND_API}/pdf-generation/pdfview/factsheet/${index.ticker || 'SY100'}`}>Factsheet</Link>
+                          <Link
+                            target="_blank"
+                            href={`${
+                              process.env.NEXT_PUBLIC_BACKEND_API
+                            }/pdf-generation/pdfview/factsheet/${
+                              index.ticker || "SY100"
+                            }`}
+                          >
+                            Factsheet
+                          </Link>
                         </div>
                       </Link>
-                      <Link href={"#"}>
+                      <Link
+                        href={`${
+                          process.env.NEXT_PUBLIC_BACKEND_API
+                        }/pdf-generation/pdfview/methodology/${
+                          index.ticker || "SY100"
+                        }`}
+                        target="_blank"
+                      >
                         <div className="flex flex-col items-center justify-center text-[11px] hover:text-[#2470ff]">
                           <FileText className="w-4" />
-                          <Link target="_blank" href={`#`}>Methodology</Link>
+                          <Link
+                            target="_blank"
+                            href={`${
+                              process.env.NEXT_PUBLIC_BACKEND_API
+                            }/pdf-generation/pdfview/methodology/${
+                              index.ticker || "SY100"
+                            }`}
+                          >
+                            Methodology
+                          </Link>
                         </div>
                       </Link>
                     </div>
@@ -747,9 +782,12 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                       {/* Curator */}
                       <InfoCard title={t("table.curator")}>
                         <div className="flex items-center gap-2">
-                          <div className="relative h-[17px] w-[17px] rounded-full overflow-hidden bg-transparent flex items-center justify-center">
+                          {/* <div className="relative h-[17px] w-[17px] rounded-full overflow-hidden bg-transparent flex items-center justify-center">
                             <IndexMaker className="h-5 w-5 text-muted" />
-                          </div>
+                            <div className="text-4xl text-primary">
+                              {vault.token.symbol.charAt(0) || ""}
+                            </div>
+                          </div> */}
                           <span className="text-secondary text-[14px] font-normal">
                             {"SYMMIO"}
                           </span>
@@ -928,11 +966,11 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                     )}
                   >
                     <FundDetail indexId={index.ticker} />
-                    {!isSmallWindow && <FundManager indexId={index.ticker} />}
+                    {/* {!isSmallWindow && <FundManager indexId={index.ticker} />} */}
                     <FundOverview indexId={index.ticker} />
-                    {!isSmallWindow && (
+                    {/* {!isSmallWindow && (
                       <PortfolioManagerInsights indexId={index.ticker} />
-                    )}
+                    )} */}
                     <EquityStyleMap indexId={index.ticker} />
                     {!isSmallWindow && <Risk indexId={index.ticker} />}
                   </div>

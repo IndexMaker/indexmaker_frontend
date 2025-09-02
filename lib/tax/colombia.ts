@@ -1,5 +1,5 @@
 // lib/tax/colombia.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Colombia tax brackets (from data.json: 10-15% capital gains; 0-39% progressive for business activity)
@@ -43,7 +43,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const colombia: CountryModule = {
+export const colombia: any = {
   key: 'colombia',
   name: 'Colombia',
   currency: 'COP', // Colombian Peso

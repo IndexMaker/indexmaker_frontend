@@ -1,5 +1,5 @@
 // lib/tax/denmark.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Denmark tax brackets (from data.json: 37% up to DKK 600,000, then 52%)
@@ -37,7 +37,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const denmark: CountryModule = {
+export const denmark: any = {
   key: 'denmark',
   name: 'Denmark',
   currency: 'DKK', // Danish Krone

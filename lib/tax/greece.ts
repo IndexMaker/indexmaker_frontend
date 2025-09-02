@@ -1,5 +1,5 @@
 // lib/tax/greece.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Greece tax brackets (from data.json: Flat 15% capital gains; 9-44% progressive for mining/staking)
@@ -34,7 +34,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const greece: CountryModule = {
+export const greece: any = {
   key: 'greece',
   name: 'Greece',
   currency: 'EUR', // Euro

@@ -1,5 +1,5 @@
 // lib/tax/bangladesh.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Bangladesh tax brackets (from data.json: Cryptocurrency is banned; no legal tax rate applies)
@@ -39,7 +39,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const bangladesh: CountryModule = {
+export const bangladesh: any = {
   key: 'bangladesh',
   name: 'Bangladesh',
   currency: 'BDT', // Bangladeshi Taka

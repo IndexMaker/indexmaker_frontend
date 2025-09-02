@@ -1,5 +1,5 @@
 // lib/tax/southkorea.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // South Korea tax brackets (from data.json: No capital gains tax until 2028; 6-45% progressive if over KRW 2.5M threshold starting 2028)
@@ -51,7 +51,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const southkorea: CountryModule = {
+export const southkorea: any = {
   key: 'southkorea',
   name: 'South Korea',
   currency: 'KRW', // South Korean Won

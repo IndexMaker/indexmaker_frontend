@@ -1,5 +1,5 @@
 // lib/tax/sweden.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Sweden tax brackets (from data.json: Flat 30% capital gains; 32-52% for mining/staking)
@@ -43,7 +43,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const sweden: CountryModule = {
+export const sweden: any = {
   key: 'sweden',
   name: 'Sweden',
   currency: 'SEK', // Swedish Krona

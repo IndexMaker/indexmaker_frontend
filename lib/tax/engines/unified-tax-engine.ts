@@ -313,7 +313,7 @@ export class UnifiedTaxEngine {
           isCrypto: true,
           years: 1,
           holdingMonths
-        });
+        } as any);
 
         results.push({
           country: countryKey,

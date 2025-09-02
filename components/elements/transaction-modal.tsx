@@ -158,7 +158,7 @@ export function TransactionConfirmModal({
         network: "base",
         userAddress: wallet?.accounts[0]?.address,
         amount: Number(amount),
-        quantity: quantity || 0
+        quantity: quantity || 0,
       });
 
       sendNewIndexOrder({

@@ -1,5 +1,5 @@
 // lib/tax/philippines.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Philippines tax brackets (from data.json: Progressive capital gains up to 15%; up to 32% for mining/staking)
@@ -41,7 +41,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const philippines: CountryModule = {
+export const philippines: any = {
   key: 'philippines',
   name: 'Philippines',
   currency: 'PHP', // Philippine Peso

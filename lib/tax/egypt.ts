@@ -1,5 +1,5 @@
 // lib/tax/egypt.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Egypt tax brackets (from data.json: Cryptocurrency is banned; no legal tax rate applies)
@@ -38,7 +38,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const egypt: CountryModule = {
+export const egypt: any = {
   key: 'egypt',
   name: 'Egypt',
   currency: 'EGP', // Egyptian Pound

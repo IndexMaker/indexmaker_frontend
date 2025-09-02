@@ -2,15 +2,15 @@
 
 import type React from "react";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/language-context";
 import { useWallet } from "@/contexts/wallet-context";
-import { cn } from "@/lib/utils";
-import { Calculator, TrendingUp, Users, X } from "lucide-react";
+import { Calculator, TrendingUp, X, Users } from "lucide-react";
 import { useTheme } from "next-themes";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import EcosystemSvg from "../icons/ecosystem";
 import Feedback from "../icons/feedback";
 import IndexMaker from "../icons/indexmaker";
@@ -19,6 +19,9 @@ import IndexMakerLogo from "../icons/indexmakerLogo";
 import RightArrow from "../icons/right-arrow";
 import TOS from "../icons/tos";
 import { ThemeToggle } from "../theme-toggle";
+import GithubLogo from "../icons/githublogo";
+import Slack from "../icons/slack";
+import Github from "../icons/github";
 
 interface SidebarProps {
   open: boolean;
@@ -88,9 +91,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
         >
           <Link href="/" className="flex items-center">
             {collapsed ? (
-              <IndexMaker
-                className="object-cover text-muted w-6 h-6"
-              />
+              <IndexMaker className="object-cover text-muted w-6 h-6" />
             ) : (
               // <Logo
               //   className="w-40 h-6 dark:text-ring"
@@ -202,7 +203,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
               </NavItem>
               <NavItem
                 href="https://github.com/IndexMaker/index-maker"
-                icon={IndexMaker}
+                icon={Github}
                 external
                 className="text-muted h-[28px] px-[6px] py-[2px]"
                 collapsed={collapsed}
@@ -213,15 +214,15 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
 
               <NavItem
                 href="https://psymm.gitbook.io/indexmaker"
-                icon={IndexMakerDoc}
+                icon={IndexMaker}
                 external
                 className="text-muted h-[28px] px-[6px] py-[2px]"
                 collapsed={collapsed}
-                iconClassName="mr-[2px]"
+                iconClassName="mr-[2px] text-muted"
               >
                 {t("common.indexmakerDocs")}
               </NavItem>
-              <NavItem
+              {/* <NavItem
                 active={isRouteActive('/contact-us')}
                 href="/contact-us"
                 icon={Feedback}
@@ -231,7 +232,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
                 iconClassName="mr-[2px]"
               >
                 {t("common.support")}
-              </NavItem>
+              </NavItem> */}
               <NavItem
                 href="https://psymm.gitbook.io/indexmaker/index-maker-hld/compliance/terms-of-use"
                 icon={TOS}
@@ -311,6 +312,13 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
                 <span className="sr-only">Collapse sidebar</span>
               </Button>
               <ThemeToggle />
+              <Link
+                href="https://join.slack.com/t/indexmaker/shared_invite/zt-3bjud4ge8-RSubr2u~zSNZzQYtd1RrDA"
+                target="_blank"
+                className="inline-block hover:text-primary"
+              >
+                <Slack className="w-4 h-4" />
+              </Link>
             </div>
           )}
         </div>

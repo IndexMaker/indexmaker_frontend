@@ -1,5 +1,5 @@
 // lib/tax/spain.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Spain tax brackets (from data.json: 19-28% capital gains; up to 47% for mining/staking; exempt under €1,000/year)
@@ -41,7 +41,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const spain: CountryModule = {
+export const spain: any = {
   key: 'spain',
   name: 'Spain',
   currency: 'EUR', // Euro

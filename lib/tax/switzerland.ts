@@ -1,5 +1,5 @@
 // lib/tax/switzerland.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Switzerland tax brackets (from data.json: Exempt capital gains for private investors; wealth tax 0.3-1%; mining/staking 0-40%)
@@ -45,7 +45,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const switzerland: CountryModule = {
+export const switzerland: any = {
   key: 'switzerland',
   name: 'Switzerland',
   currency: 'CHF', // Swiss Franc

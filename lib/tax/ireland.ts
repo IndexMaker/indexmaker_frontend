@@ -1,5 +1,5 @@
 // lib/tax/ireland.ts
-import type { Brackets, CountryModule, Setup } from './types';
+import type { Brackets, Setup } from './types';
 import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
 // Ireland tax brackets (from data.json: Flat 33% capital gains; up to 52% for mining/staking)
@@ -44,7 +44,7 @@ const setups: Setup[] = [
 // Use shared computation functions
 const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-export const ireland: CountryModule = {
+export const ireland: any = {
   key: 'ireland',
   name: 'Ireland',
   currency: 'EUR', // Euro

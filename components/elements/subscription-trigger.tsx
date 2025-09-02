@@ -12,7 +12,7 @@ export default function SubscriptionTrigger() {
     if (alreadySubscribed === "true") return;
 
     const timer = setTimeout(() => {
-      setShowModal(true);
+      // setShowModal(true);
     }, 30000); // 30 seconds
 
     return () => clearTimeout(timer);
