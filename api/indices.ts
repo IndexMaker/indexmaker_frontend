@@ -1,7 +1,7 @@
 // src/api/indices.ts
-import { IndexData } from "@/components/views/vault/vault-detail";
 import { Activity, SupplyPosition } from "@/lib/data";
-import { IndexListEntry } from "@/types";
+import { log } from "@/lib/utils/logger";
+import { IndexListEntry } from "@/types/index";
 import axios from "axios";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API;
@@ -10,7 +10,7 @@ export const fetchAllIndices = async (): Promise<IndexListEntry[]> => {
   const response = await fetch(`${API_BASE_URL}/indices/getIndexLists`);
 
   if (!response.ok) {
-    console.log("Failed to fetch indices");
+    log.error("Failed to fetch indices", { status: response.status, statusText: response.statusText });
     return []
   }
 
@@ -21,7 +21,7 @@ export const deposit = async (address: string, amount: string): Promise<any> => 
   const response = await fetch(`${API_BASE_URL}/indices/deposit/${address}/${amount}`);
 
   if (!response.ok) {
-    console.log("Failed to fetch indices");
+    log.error("Failed to fetch indices", { status: response.status, statusText: response.statusText });
     return []
   }
 
@@ -32,7 +32,7 @@ export const fetchRebalancesById = async (indexId: number): Promise<any[]> => {
   const response = await fetch(`${API_BASE_URL}/indices/getCalculatedRebalances/${indexId}`);
 
   if (!response.ok) {
-    console.log("Failed to fetch rebalances");
+    log.error("Failed to fetch rebalances", { status: response.status, statusText: response.statusText });
     return []
   }
 
@@ -43,7 +43,7 @@ export const fetchCurrentRebalanceById = async (indexId: number): Promise<any[]>
   const response = await fetch(`${API_BASE_URL}/indices/fetchCurrentRebalanceById/${indexId}`);
 
   if (!response.ok) {
-    console.log("Failed to fetch rebalances");
+    log.error("Failed to fetch rebalances", { status: response.status, statusText: response.statusText });
     return []
   }
 
@@ -56,11 +56,11 @@ export const fetchIndexByTicker = async (
   const response = await fetch(`${API_BASE_URL}/indices/by-ticker/${ticker}`);
 
   if (response.status === 404) {
-    console.log("Index not found");
+    log.info("Index not found", { ticker });
   }
 
   if (!response.ok) {
-    console.log("Failed to fetch index");
+    log.error("Failed to fetch index", { status: response.status, statusText: response.statusText, ticker });
   }
 
   return response.json();
@@ -72,7 +72,7 @@ export const fetchBtcHistoricalData = async (): Promise<any[]> => {
   );
 
   if (!response.ok) {
-    console.log("Failed to fetch BTC historical data");
+    log.error("Failed to fetch BTC historical data", { status: response.status, statusText: response.statusText });
   }
 
   return response.json();
@@ -84,7 +84,7 @@ export const fetchEthHistoricalData = async (): Promise<any[]> => {
   );
 
   if (!response.ok) {
-    console.log("Failed to fetch ETH historical data");
+    log.error("Failed to fetch ETH historical data", { status: response.status, statusText: response.statusText });
     return [];
   }
 
@@ -97,7 +97,7 @@ export const fetchVaultAssets = async (indexId: number): Promise<any[]> => {
   );
 
   if (!response.ok) {
-    console.log("Failed to fetch Index assets data");
+    log.error("Failed to fetch Index assets data", { status: response.status, statusText: response.statusText });
     return [];
   }
 
@@ -112,7 +112,7 @@ export const fetchHistoricalData = async (
   );
 
   if (!response.ok) {
-    console.log("Failed to fetch historical data");
+    log.error("Failed to fetch historical data", { status: response.status, statusText: response.statusText });
     return null
   }
   else{
@@ -126,7 +126,7 @@ export const getIndexMakerInfo = async () => {
   );
 
   if (!response.ok) {
-    console.log("Failed to fetch deposit transaction data");
+    log.error("Failed to fetch deposit transaction data", { status: response.status, statusText: response.statusText });
     return null
   }
 
@@ -142,7 +142,7 @@ export const fetchDepositTransactionData = async (
   );
 
   if (!response.ok) {
-    console.log("Failed to fetch deposit transaction data");
+    log.error("Failed to fetch deposit transaction data", { status: response.status, statusText: response.statusText });
     return []
   }
 
@@ -157,7 +157,7 @@ export const fetchUserTransactionData = async (
   );
 
   if (!response.ok) {
-    console.log("Failed to fetch user transaction data");
+    log.error("Failed to fetch user transaction data", { status: response.status, statusText: response.statusText });
     return []
   }
 
@@ -186,11 +186,9 @@ export const downloadRebalanceData = async (
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
   } catch (error) {
-    console.log(
-      axios.isAxiosError(error)
-        ? error.message
-        : "Failed to download rebalance data"
-    );
+    log.error("Failed to download rebalance data", {
+      error: axios.isAxiosError(error) ? error.message : "Failed to download rebalance data"
+    });
   }
 };
 
@@ -216,11 +214,9 @@ export const downloadDailyPriceData = async (
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
   } catch (error) {
-    console.log(
-      axios.isAxiosError(error)
-        ? error.message
-        : "Failed to download rebalance data"
-    );
+    log.error("Failed to download daily price data", {
+      error: axios.isAxiosError(error) ? error.message : "Failed to download rebalance data"
+    });
   }
 };
 
@@ -230,11 +226,9 @@ export const sendMintInvoiceToBackend = async (
   try {
     await axios.post(`${API_BASE_URL}/indices/deposit_transaction`, payload);
   } catch (error) {
-    console.error(
-      axios.isAxiosError(error)
-        ? error.message
-        : "Failed to send mint invoice"
-    );
+    log.error("Failed to create deposit transaction", {
+      error: axios.isAxiosError(error) ? error.message : "Failed to send mint invoice"
+    });
   }
 };
 
@@ -244,10 +238,8 @@ export const subscribeEmail = async (
   try {
     await axios.post(`${API_BASE_URL}/indices/subscribe`, payload);
   } catch (error) {
-    console.error(
-      axios.isAxiosError(error)
-        ? error.message
-        : "Failed to send email"
-    );
+    log.error("Failed to subscribe to index", {
+      error: axios.isAxiosError(error) ? error.message : "Failed to send email"
+    });
   }
 };

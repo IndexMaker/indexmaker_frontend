@@ -1,8 +1,7 @@
-import { Card, CardContent } from "@/components/ui/card"
-import Chri_Lin from "../../../public/images/chris-lin.png"
-import Chri_Lin_Bio from "../../../public/images/Chris Lin biotech.jpg"
-import Image from 'next/image'
+import { Card, CardContent } from "@/components/ui/card";
 import { getIndexData } from "@/lib/IndexMockupData";
+import Image from 'next/image';
+import Chri_Lin_Bio from "../../../public/images/Chris Lin biotech.jpg";
 export default function PortfolioManagerInsights({indexId = 'SY100'}: {indexId: string}) {
   const portfolioManagerInsights = getIndexData(indexId).portfolioManagerInsights || []
   return (
@@ -16,7 +15,7 @@ export default function PortfolioManagerInsights({indexId = 'SY100'}: {indexId: 
           <div key={insight.id} className="space-y-3">
             <div className="w-full">
               <Image
-                src={insight.imageUrl === 'chris-lin-bio' ? Chri_Lin_Bio : Chri_Lin}
+                src={Chri_Lin_Bio}
                 alt={insight.title}
                 width={400}
                 height={300}

@@ -1,15 +1,15 @@
 // lib/tax/engines/unified-tax-engine.ts
 // Unified tax calculation engine that integrates all tax system types
 
-import { ProgressiveTaxEngine, type ProgressiveTaxConfig } from './progressive-tax-engine';
-import { FlatTaxEngine, type FlatTaxConfig } from './flat-tax-engine';
-import { SpecialTaxEngine, type SpecialTaxConfig } from './special-tax-engine';
-import { HoldingPeriodEngine, type HoldingPeriodConfig } from './holding-period-engine';
 import { TaxBracketParser } from '../parsers/bracket-parser';
+import type { TaxableParams } from '../types';
+import type { TaxResult } from '../types/enhanced';
 import { CurrencyFormatter } from '../utils/currency-formatter';
 import { getCurrencyInfo } from '../utils/currency-mapping';
-import type { TaxResult } from '../types/enhanced';
-import type { TaxableParams } from '../types';
+import { FlatTaxEngine } from './flat-tax-engine';
+import { HoldingPeriodEngine } from './holding-period-engine';
+import { ProgressiveTaxEngine, type ProgressiveTaxConfig } from './progressive-tax-engine';
+import { SpecialTaxEngine } from './special-tax-engine';
 
 export interface UnifiedTaxConfig {
   countryKey: string;
@@ -58,7 +58,7 @@ export class UnifiedTaxEngine {
 
     // Parse tax system type
     const parsedTax = TaxBracketParser.parse(cryptoTaxText, currency);
-    const taxSystem = parsedTax.type as 'progressive' | 'flat' | 'special';
+    const taxSystem = parsedTax.type as 'progressive' | 'flat' | 'special' | 'exempt' | 'complex';
 
     // Calculate holding period treatment if applicable
     let holdingPeriodInfo: UnifiedTaxResult['holdingPeriodInfo'];
@@ -72,8 +72,8 @@ export class UnifiedTaxEngine {
           monthsHeld: params.holdingMonths
         };
         
-        // Update isLong parameter based on holding period
-        params.isLong = holdingResult.isLongTerm;
+        // Create updated params with holding period result
+        params = { ...params, isLong: holdingResult.isLongTerm };
       }
     }
 
@@ -304,9 +304,14 @@ export class UnifiedTaxEngine {
         const mockCryptoTax = "Progressive tax system"; // Would get from data source
         
         const result = await this.calculateTax(countryKey, mockCryptoTax, {
+          country: countryKey,
+          status: 'single', // Default status
           taxableAmount: gainAmount,
           agiExcl: 50000, // Mock AGI
           isLong: holdingMonths ? holdingMonths >= 12 : false,
+          brackets: { ordinary: { uppers: [], rates: [] }, lt: null, stdDed: 0, niitThresh: 0 }, // Mock brackets
+          isCrypto: true,
+          years: 1,
           holdingMonths
         });
 
@@ -371,7 +376,7 @@ export class UnifiedTaxEngine {
       }
 
     } catch (error) {
-      issues.push(`Tax parsing failed: ${error.message}`);
+      issues.push(`Tax parsing failed: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     return {

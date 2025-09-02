@@ -16,6 +16,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { log } from '@/lib/utils/logger';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CountryContext } from 'react-svg-worldmap';
 import WorldMap from 'react-svg-worldmap';
@@ -32,24 +33,12 @@ import {
 } from '@/lib/tax';
 import { CurrencyFormatter } from '@/lib/tax/utils/currency-formatter';
 import { getCurrencyInfo } from '@/lib/tax/utils/currency-mapping';
-import { UnifiedTaxEngine } from '@/lib/tax/engines/unified-tax-engine';
-import { log } from '@/lib/utils/client-logger';
 // Removed branded types - using plain numbers instead
 
 // Removed unused type TaxableResult
 
-const countryMapping: Record<string, keyof typeof countryModules> = {
-  US: 'usa',
-  CA: 'canada',
-  GB: 'uk',
-  AU: 'australia',
-  DE: 'germany',
-  FR: 'france',
-  JP: 'japan',
-  IN: 'india',
-  IT: 'italy',
-  BR: 'brazil',
-};
+// Legacy country mapping - now replaced by mapCountryToKey
+// Kept for reference but no longer used in the code
 
 // Comprehensive country colors for world map - each country gets a distinct color
 const countryColors: Record<string, string> = {
@@ -169,6 +158,19 @@ const mapCountryToKey: Record<string, string> = {
   'iq': 'iraq',
   'gr': 'greece',
   'dz': 'algeria',
+
+  // Territories and dependencies that should map to parent countries
+  'gl': 'denmark',    // Greenland (part of Denmark)
+  'fo': 'denmark',    // Faroe Islands (part of Denmark)
+  'aw': 'netherlands', // Aruba (part of Netherlands)
+  'cw': 'netherlands', // Curaçao (part of Netherlands)
+  'sx': 'netherlands', // Sint Maarten (part of Netherlands)
+  'bq': 'netherlands', // Caribbean Netherlands (part of Netherlands)
+  'pr': 'usa',        // Puerto Rico (US territory)
+  'vi': 'usa',        // US Virgin Islands (US territory)
+  'gu': 'usa',        // Guam (US territory)
+  'as': 'usa',        // American Samoa (US territory)
+  'mp': 'usa',        // Northern Mariana Islands (US territory)
 };
 
 const yearsRange = [1, 3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
@@ -588,7 +590,7 @@ function CalculatorContent() {
   // Safety check: if module doesn't exist, fall back to USA
   const safeCountry = useMemo(() => {
     if (!mod) {
-      console.warn(`Country module not found for: ${country}, falling back to USA`);
+      log.info(`Country module not found for: ${country}, falling back to USA`, { country });
       return 'usa';
     }
     return country;
@@ -648,10 +650,10 @@ function CalculatorContent() {
   // };
 
   const mapData = useMemo(
-    () => Object.entries(mapCountryToKey).map(([countryCode, countryKey]) => ({
+    () => Object.entries(mapCountryToKey).map(([countryCode]) => ({
       country: countryCode,
-      value: 1,
-      color: countryColors[countryKey]
+      value: 1
+      // Removed color from data - let styleFunction handle all styling
     })),
     []
   );
@@ -887,20 +889,27 @@ function CalculatorContent() {
   ]);
 
   const handleMapClick = ({ countryCode }: CountryContext) => {
-    // First try the old mapping for supported countries
-    const mapped = countryMapping[countryCode.toUpperCase()];
-    if (mapped) {
-      setCountry(mapped);
-      return;
+    // Check if it's in our comprehensive mapping first
+    const countryKey = mapCountryToKey[countryCode.toLowerCase()];
+
+    if (countryKey) {
+      // Check if the country module actually exists
+      const moduleExists = countryModules[countryKey as keyof typeof countryModules];
+
+      if (moduleExists) {
+        // Country has full calculator support - select it
+        setCountry(countryKey as keyof typeof countryModules);
+        return;
+      } else {
+        // Country has data but no calculator implementation yet
+        const countryName = countryKey.charAt(0).toUpperCase() + countryKey.slice(1).replace(/([A-Z])/g, ' $1');
+        alert(`${countryName}: Full tax calculator coming soon! This country has crypto tax data available in our database. Click on a highlighted country in the dropdown for full calculator support.`);
+        return;
+      }
     }
 
-    // Then check if it's in our comprehensive mapping
-    const countryKey = mapCountryToKey[countryCode.toLowerCase()];
-    if (countryKey) {
-      // Show info for countries with data but no calculator yet
-      const countryName = countryKey.charAt(0).toUpperCase() + countryKey.slice(1).replace(/([A-Z])/g, ' $1');
-      alert(`${countryName}: Full tax calculator coming soon! This country has crypto tax data available in our database. Click on a highlighted country in the dropdown for full calculator support.`);
-    }
+    // If we reach here, the country is not supported
+    // This should rarely happen since mapCountryToKey contains all supported countries
   };
 
   // Move hooks outside conditional rendering
@@ -1035,32 +1044,48 @@ function CalculatorContent() {
           <div className="w-full flex justify-center items-center">
             <div className="w-full max-w-[900px] mb-6 bg-white p-4 rounded-lg border border-gray-200">
               <WorldMap
+                key={`worldmap-${country}`} // Force re-render when country changes
                 color="#f9fafb"
                 size="xl"
                 data={mapData}
                 onClickFunction={handleMapClick}
                 styleFunction={(context) => {
-                  const countryKey = mapCountryToKey[context.countryCode];
+                  const countryKey = mapCountryToKey[context.countryCode?.toLowerCase()];
                   const isSelected = country === countryKey;
 
-                  if (countryKey) {
-                    // Supported country - show in full color if selected, light gray if not
-                    return {
-                      fill: isSelected ? countryColors[countryKey] : '#e5e7eb',
-                      stroke: '#374151', // Dark gray border for all supported countries
-                      strokeWidth: isSelected ? 4 : 2.5, // Bold borders - thicker for selected
-                      cursor: 'pointer',
-                      opacity: 1
-                    };
+                  if (countryKey && countryColors[countryKey]) {
+                    // Supported country with defined color
+                    const baseColor = countryColors[countryKey];
+
+                    if (isSelected) {
+                      // Selected country - use full vibrant color with thick border
+                      return {
+                        fill: baseColor,
+                        stroke: '#000000', // Black border for selected countries
+                        strokeWidth: 3,
+                        cursor: 'pointer',
+                        opacity: 1,
+                        transition: 'all 0.2s ease'
+                      };
+                    } else {
+                      // Unselected supported country - use muted version
+                      return {
+                        fill: '#e5e7eb', // Light gray for unselected
+                        stroke: '#9ca3af', // Medium gray border
+                        strokeWidth: 1.5,
+                        cursor: 'pointer',
+                        opacity: 0.8
+                      };
+                    }
                   }
 
-                  // Unsupported country - show in very light gray with bold border
+                  // Unsupported country - very light styling
                   return {
                     fill: '#f9fafb',
                     stroke: '#d1d5db',
-                    strokeWidth: 1.5, // Bold border for unsupported countries too
+                    strokeWidth: 1,
                     cursor: 'default',
-                    opacity: 0.7
+                    opacity: 0.6
                   };
                 }}
               />

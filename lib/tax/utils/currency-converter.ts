@@ -107,7 +107,7 @@ export class CurrencyConverter {
 
     } catch (error) {
       console.error('Currency conversion failed:', error);
-      throw new Error(`Failed to convert ${fromCurrency} to ${toCurrency}: ${error.message}`);
+      throw new Error(`Failed to convert ${fromCurrency} to ${toCurrency}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -193,7 +193,7 @@ export class CurrencyConverter {
       };
 
     } catch (error) {
-      throw new Error(`API fetch failed: ${error.message}`);
+      throw new Error(`API fetch failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

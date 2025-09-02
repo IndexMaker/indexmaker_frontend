@@ -1,38 +1,30 @@
 "use client";
 
-import { CircleCheck, RefreshCw, Search } from "lucide-react";
+import {
+    fetchAllIndices,
+    fetchCurrentRebalanceById,
+    fetchRebalancesById,
+} from "@/api/indices";
+import { RebalanceTable } from "@/components/elements/index-rebalances-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { VaultTable } from "@/components/elements/vault-table";
-import Deposit from "@/components/icons/deposit";
-import Borrow from "@/components/icons/borrow";
-import { CustomButton } from "@/components/ui/custom-button";
-import { ColumnVisibilityPopover } from "@/components/elements/column-visibility-popover";
-import { useEffect, useMemo, useState } from "react";
-import { useLanguage } from "@/contexts/language-context";
-import Link from "next/link";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/redux/store";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useWallet } from "../../../contexts/wallet-context";
-import { IndexListEntry } from "@/types";
-import { setIndices } from "@/redux/indexSlice";
-import {
-  fetchAllIndices,
-  fetchCurrentRebalanceById,
-  fetchRebalancesById,
-} from "@/api/indices";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RebalanceTable } from "@/components/elements/index-rebalances-table";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { useLanguage } from "@/contexts/language-context";
+import { cn } from "@/lib/utils";
+import { setIndices } from "@/redux/indexSlice";
+import { RootState } from "@/redux/store";
+import { CircleCheck, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useWallet } from "../../../contexts/wallet-context";
 
 type ColumnType = {
   id: string;

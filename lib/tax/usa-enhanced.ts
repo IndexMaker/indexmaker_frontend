@@ -1,8 +1,8 @@
 // lib/tax/usa-enhanced.ts
 // Enhanced USA tax implementation with accurate 2024/2025 brackets
 
-import type { EnhancedBrackets, BracketStructure, CapitalGainsBrackets, TaxResult } from './types/enhanced';
 import type { CountryModule, Setup, TaxableParams } from './types';
+import type { EnhancedBrackets } from './types/enhanced';
 
 // 2024 Federal Income Tax Brackets (ordinary income)
 const ordinaryBrackets2024 = {
@@ -84,6 +84,7 @@ function getBrackets(status: string): EnhancedBrackets {
   return {
     // Legacy support
     ordinary: ordinaryBrackets2024[filingStatus],
+    lt: null, // No long-term capital gains brackets
     stdDed: standardDeductions2024[filingStatus],
     niitThresh: niitThresholds[filingStatus],
     
@@ -112,7 +113,7 @@ function getBrackets(status: string): EnhancedBrackets {
 }
 
 // Enhanced tax calculation
-function computeTaxable(p: TaxableParams): TaxResult {
+function computeTaxable(p: TaxableParams): { readonly tax: number; readonly niit: number } {
   const { agiExcl, taxableAmount, brackets } = p;
   const enhancedBrackets = brackets as EnhancedBrackets;
   
@@ -134,17 +135,11 @@ function computeTaxable(p: TaxableParams): TaxResult {
   
   return {
     tax: totalTax,
-    niit,
-    effectiveRate,
-    breakdown: {
-      ordinary: tax,
-      capitalGains: 0, // This would be calculated separately for long-term gains
-      exemptionUsed: 0
-    }
+    niit
   };
 }
 
-function computeDeferredFull(p: TaxableParams): TaxResult {
+function computeDeferredFull(p: TaxableParams): { readonly tax: number; readonly niit: number } {
   // For deferred accounts, everything is taxed as ordinary income
   return computeTaxable(p);
 }

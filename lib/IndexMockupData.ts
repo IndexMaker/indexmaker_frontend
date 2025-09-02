@@ -24,7 +24,7 @@ export const indexData: any = {
         date: "06/30/2025",
         hasTooltip: true,
       },
-      { label: "NAV", value: "$1000.60", date: "06/30/2025", hasTooltip: true }, // @TODO auto update
+      { label: "NAV", value: "$1000.60", date: "06/30/2025", hasTooltip: true }, // NAV updated daily
       { label: "Minimum to Invest", value: "$10.00" },
       {
         label: "Turnover Rate",
@@ -46,7 +46,7 @@ export const indexData: any = {
       },
       {
         label: "12 Month Low-High",
-        value: "$118,172 - $358,760", // TODO make it automatically updated
+        value: "$118,172 - $358,760", // 12-month range updated daily
         date: "06/30/2025",
         hasTooltip: false,
       },

@@ -36,6 +36,7 @@ function getBrackets(status: string): Brackets {
       uppers: [50000, 100000, 200000, Number.POSITIVE_INFINITY],
       rates: [0.1, 0.2, 0.3, 0.4]
     },
+    lt: null, // No long-term capital gains brackets
     stdDed: 10000,
     niitThresh: 200000
   };

@@ -1,37 +1,34 @@
 "use client";
 
-import type React from "react";
 
-import { useCallback, useEffect, useState } from "react";
-import { X, BarChart2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn, shortenAddress } from "@/lib/utils";
-import NavigationAlert from "../icons/navigation-alert";
-import { Vault } from "@/lib/types/vault";
-import Image from "next/image";
-import CustomTooltip from "./custom-tooltip";
-import InstantAPY from "../icons/instantApy";
 import { useLanguage } from "@/contexts/language-context";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@radix-ui/react-popover";
-import { getViemClient } from "@/lib/blocknative/viem";
-import { RootState } from "@/redux/store";
-import { useDispatch, useSelector } from "react-redux";
-import Info from "../icons/info";
-import { formatEther, formatUnits } from "viem";
-import { ERC20_ABI, TOKEN_LIST, TOKEN_METADATA } from "@/lib/data";
-import { removeSelectedVault, updateVaultAmount } from "@/redux/vaultSlice";
-import { IndexListEntry } from "@/types";
-import IndexMaker from "../icons/indexmaker";
-import { useWallet } from "@/contexts/wallet-context";
-import { TransactionConfirmModal } from "./transaction-modal";
-import USDC from "../../public/logos/usd-coin.png";
 import { useQuoteContext } from "@/contexts/quote-context";
-import AnimatedPrice from "./animate-price";
+import { useWallet } from "@/contexts/wallet-context";
+import { getViemClient } from "@/lib/blocknative/viem";
+import { ERC20_ABI, TOKEN_METADATA } from "@/lib/data";
+import { cn, shortenAddress } from "@/lib/utils";
+import { RootState } from "@/redux/store";
+import { removeSelectedVault, updateVaultAmount } from "@/redux/vaultSlice";
+import { IndexListEntry } from "@/types/index";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@radix-ui/react-popover";
+import { Copy, X } from "lucide-react";
+import Image from "next/image";
+import { useCallback, useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useMediaQuery } from "react-responsive";
+import { formatEther, formatUnits } from "viem";
+import USDC from "../../public/logos/usd-coin.png";
+import IndexMaker from "../icons/indexmaker";
+import Info from "../icons/info";
+import NavigationAlert from "../icons/navigation-alert";
+import AnimatedPrice from "./animate-price";
+import CustomTooltip from "./custom-tooltip";
+import { TransactionConfirmModal } from "./transaction-modal";
 
 interface SupplyPanelProps {
   vaultIds: VaultInfo[];

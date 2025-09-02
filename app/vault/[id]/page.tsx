@@ -1,13 +1,13 @@
 "use client";
-import { notFound, redirect, useParams } from "next/navigation";
-import { VaultDetailPage } from "@/components/views/vault/vault-detail";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/redux/store";
-import axios from "axios";
-import { setIndices } from "@/redux/indexSlice";
-import { IndexListEntry } from "@/types";
-import { useEffect, useState } from "react";
 import { fetchAllIndices } from "@/api/indices";
+import { VaultDetailPage } from "@/components/views/vault/vault-detail";
+import { log } from "@/lib/utils/logger";
+import { setIndices } from "@/redux/indexSlice";
+import { RootState } from "@/redux/store";
+import { IndexListEntry } from "@/types/index";
+import { notFound, redirect, useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function VaultPage() {
   const params = useParams();
@@ -57,7 +57,7 @@ export default function VaultPage() {
           redirect("/");
         }
       } catch (error) {
-        console.error("Error fetching performance data:", error);
+        log.error("Error fetching performance data", { error: error instanceof Error ? error.message : String(error), indexTicker });
         redirect("/");
       } finally {
         setLoading(false);

@@ -1,5 +1,5 @@
+import { IndexListEntry } from "@/types/index";
 import { useEffect, useRef, useState } from "react";
-import { IndexListEntry } from "@/types";
 
 export default function useQuoteSocket(
   indexes: IndexListEntry[] = [],

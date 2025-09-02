@@ -1,43 +1,20 @@
 // lib/tax/australia.ts
 import type { Brackets, CountryModule, Setup, TaxableParams } from './types';
-
-function calcProgressiveTax(income: number, uppers: readonly number[], rates: readonly number[]) {
-  let tax = 0,
-    prev = 0;
-  for (let i = 0; i < uppers.length; i++) {
-    const upper = uppers[i],
-      rate = rates[i];
-    const seg = Math.min(income, upper) - prev;
-    if (seg > 0) tax += seg * rate;
-    prev = upper;
-    if (income <= upper) break;
-  }
-  return tax;
-}
-function taxIncrement(
-  uppers: readonly number[],
-  rates: readonly number[],
-  baseTaxable: number,
-  delta: number
-) {
-  const base = Math.max(0, baseTaxable);
-  const d = Math.max(0, delta);
-  return calcProgressiveTax(base + d, uppers, rates) - calcProgressiveTax(base, uppers, rates);
-}
+import { createCountryBrackets, taxIncrement } from './utils/tax-calculations';
 
 const statuses = ['single'];
 function getBrackets(): Brackets {
-  return {
+  return createCountryBrackets({
     ordinary: {
       uppers: [18200, 45000, 135000, 190000, Number.POSITIVE_INFINITY],
-      rates: [0, 0.16, 0.3, 0.37, 0.45],
+      rates: [0, 0.19, 0.30, 0.37, 0.45], // Updated to match data.json: 19% not 16%
     },
     lt: null,
     stdDed: 18200,
     niitThresh: 0,
-    capGainDiscount: 0.5,
-    medicareLevyRate: 0.02,
-  };
+    capGainDiscount: 0.5, // 50% discount for assets held >12 months
+    medicareLevyRate: 0.02, // 2% Medicare levy
+  });
 }
 
 const setups: Setup[] = [

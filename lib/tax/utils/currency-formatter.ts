@@ -276,7 +276,7 @@ export class CurrencyFormatter {
       }
       
     } catch (error) {
-      issues.push(`Formatting error: ${error.message}`);
+      issues.push(`Formatting error: ${error instanceof Error ? error.message : String(error)}`);
     }
     
     return {

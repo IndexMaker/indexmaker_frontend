@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { log } from "@/lib/utils/logger";
 import { selectCalculationHistory, selectRecentCalculations } from "@/redux/calculatorSelectors";
 import { removeFromHistory } from "@/redux/calculatorSlice";
 import type { AppDispatch } from "@/redux/store";
@@ -31,7 +32,7 @@ export function CalculationHistory() {
 
   const handleExport = () => {
     // Export functionality
-    console.log("Exporting calculation history...");
+    log.info("Exporting calculation history", { historyCount: history.length });
   };
 
   if (history.length === 0) {

@@ -10,14 +10,24 @@ import type { AppDispatch } from "@/redux/store";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
+type YieldConfig = {
+  allocations: Array<{
+    assetKey: string;
+    allocation: number;
+    customRate?: number;
+  }>;
+  totalYield: number;
+  weightedYield: number;
+};
+
 export function DefiConfigurator() {
   const dispatch = useDispatch<AppDispatch>();
   const open = useSelector(selectShowDefiConfig);
   const savedConfig = useSelector(selectDefiConfig);
 
-  const [yieldConfig, setYieldConfig] = useState(null);
+  const [yieldConfig, setYieldConfig] = useState<YieldConfig | null>(null);
 
-  const handleConfigChange = (config: any) => {
+  const handleConfigChange = (config: YieldConfig) => {
     setYieldConfig(config);
   };
 
@@ -30,7 +40,6 @@ export function DefiConfigurator() {
         stakingPeriod: 12,
         compoundFrequency: "daily",
         riskLevel: "medium",
-        allocations: yieldConfig.allocations,
       };
       dispatch(setDefiConfig(defiConfig));
     }
