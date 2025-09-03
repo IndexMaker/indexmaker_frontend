@@ -129,6 +129,9 @@ export const translations: Translations = {
       loading: "Loading...",
       error: "Error",
       success: "Success",
+      sell: "Sell",
+      // Mint Invoices
+      invoices: "Invoice"
     },
     table: {
       name: "Index Name",
