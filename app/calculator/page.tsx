@@ -525,22 +525,13 @@ function calculateTaxes(
   });
   const { tax: taxFull, niit: surFull } = resultFull;
 
-  const resultPrincipal = mod.computeDeferredFull({
-    country: countryKey as keyof typeof countryModules as any,
-    status,
-    agiExcl: agiExcl,
-    taxableAmount: initial,
-    isLong,
-    brackets,
-    isCrypto,
-    years: years,
-  });
-  const { tax: taxOnPrincipal, niit: surOnPrincipal } = resultPrincipal;
+  // For deferred accounts, we tax the entire withdrawal amount
 
   const penalty = 0;
-  const taxOnGainOnly = Math.max(0, taxFull + surFull - (taxOnPrincipal + surOnPrincipal));
   const totalReported = taxFull + surFull + penalty;
-  const taxPct = gain > 0 ? (taxOnGainOnly / gain) * 100 : 0;
+
+  // For deferred accounts, tax is on entire withdrawal, so calculate percentage accordingly
+  const taxPct = withdrawn > 0 ? (totalReported / withdrawn) * 100 : 0;
 
   return {
     tax: totalReported,
@@ -1044,7 +1035,7 @@ function CalculatorContent() {
           <div className="w-full flex justify-center items-center">
             <div className="w-full max-w-[900px] mb-6 bg-white p-4 rounded-lg border border-gray-200">
               <WorldMap
-                key={`worldmap-${country}`} // Force re-render when country changes
+                key={`worldmap-${String(country)}`} // Force re-render when country changes
                 color="#f9fafb"
                 size="xl"
                 data={mapData}
@@ -1450,9 +1441,9 @@ function CalculatorContent() {
               {results.matrix && (
                 <Card className="mt-4 bg-white border border-gray-200 shadow-sm">
                   <CardHeader className="bg-white border-b border-gray-200">
-                    <CardTitle className="text-gray-900 text-xl font-bold">Surplus vs Break-Even (pp)</CardTitle>
+                    <CardTitle className="text-gray-900 text-xl font-bold">ITP Yield Surplus vs ETF</CardTitle>
                     <CardDescription className="text-gray-600">
-                      Computed DeFi extra minus required break-even. Positive favors crypto.
+                      Additional returns from ITP tokenized yield compared to traditional ETF investments. Values shown in local currency.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="overflow-x-auto bg-white">
@@ -1472,14 +1463,22 @@ function CalculatorContent() {
                               {y}
                             </TableCell>
                             {results.matrix?.[i]?.map((requiredExtra, j) => {
-                              const surplus = (adjustedCryptoYield - requiredExtra) * 100;
+                              // Calculate the surplus yield percentage
+                              const surplusYieldPercent = (adjustedCryptoYield - requiredExtra);
+
+                              // Convert to currency amount based on initial investment and years
+                              const etfFinalValue = initial * Math.pow(1 + returnsRange[j], y);
+                              const surplusAmount = etfFinalValue * surplusYieldPercent;
+
                               const cls = cellClass(i, j);
+                              const isPositive = surplusAmount > 0;
+
                               return (
                                 <TableCell
                                   key={j}
-                                  className={`text-center font-medium ${cls} ${getPercentageColor(surplus, (i === selectedYearIdx && j === nearestReturnIdx))}`}
+                                  className={`text-center font-medium ${cls} ${isPositive ? 'text-green-600' : 'text-red-600'} ${(i === selectedYearIdx && j === nearestReturnIdx) ? 'bg-blue-50 border-2 border-blue-300' : ''}`}
                                 >
-                                  {formatPercentage(surplus)}
+                                  {formatCurrency(surplusAmount, { showCode: false })}
                                 </TableCell>
                               );
                             })}

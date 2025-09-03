@@ -125,7 +125,16 @@ export const australia: any = {
     }
 
     const totalReported = tax + niit + penalty;
-    const taxPct = gain > 0 ? (taxOnGainOnly / gain) * 100 : 0;
+
+    // For super accounts, tax calculation is different - show as percentage of withdrawal
+    let taxPct = 0;
+    if (setup.type === 'super') {
+      // For super accounts, show tax as percentage of total withdrawal
+      taxPct = withdrawn > 0 ? (taxOnGainOnly / withdrawn) * 100 : 0;
+    } else {
+      // For taxable accounts, show tax as percentage of gains
+      taxPct = gain > 0 ? (taxOnGainOnly / gain) * 100 : 0;
+    }
 
     return {
       tax: totalReported,

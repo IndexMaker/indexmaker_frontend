@@ -194,7 +194,7 @@ function ChartTooltipContent({
                 indicator === 'dot' && 'items-center'
               )}
             >
-              {item?.value !== undefined && item.name ? (
+              {item?.value !== undefined && item.name && formatter ? (
                 formatter(item.value, item.name, item, index, item.payload)
               ) : (
                 <>

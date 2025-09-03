@@ -254,6 +254,80 @@ body {
   --muted: #f9fafb !important;
   --muted-foreground: #6b7280 !important;
   --border: #e5e7eb !important;
+  --primary: #000000 !important;
+  --primary-foreground: #ffffff !important;
+  --secondary: #f3f4f6 !important;
+  --secondary-foreground: #1f2937 !important;
+  --ring: #000000 !important;
   background-color: #ffffff !important;
   color: #1f2937 !important;
+}
+
+/* Crypto Yield Slider Styling - Force visible colors with multiple selectors */
+.crypto-yield-slider [data-radix-slider-track],
+.crypto-yield-slider .relative.h-2 {
+  height: 8px !important;
+  background-color: #e5e7eb !important;
+  border-radius: 9999px !important;
+  position: relative !important;
+}
+
+.crypto-yield-slider [data-radix-slider-range],
+.crypto-yield-slider .absolute.h-full {
+  height: 100% !important;
+  background-color: #3b82f6 !important;
+  border-radius: 9999px !important;
+  position: absolute !important;
+}
+
+.crypto-yield-slider [data-radix-slider-thumb],
+.crypto-yield-slider .block.h-5.w-5 {
+  width: 20px !important;
+  height: 20px !important;
+  background-color: #ffffff !important;
+  border: 2px solid #3b82f6 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.crypto-yield-slider [data-radix-slider-thumb]:hover,
+.crypto-yield-slider .block.h-5.w-5:hover {
+  background-color: #f8fafc !important;
+  transform: scale(1.1) !important;
+}
+
+.crypto-yield-slider [data-radix-slider-thumb]:focus,
+.crypto-yield-slider .block.h-5.w-5:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
+}
+
+.crypto-yield-slider [data-radix-slider-thumb]:focus-visible,
+.crypto-yield-slider .block.h-5.w-5:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Additional fallback selectors for Radix UI Slider */
+.crypto-yield-slider span[role="slider"] {
+  width: 20px !important;
+  height: 20px !important;
+  background-color: #ffffff !important;
+  border: 2px solid #3b82f6 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.crypto-yield-slider span[data-orientation="horizontal"] {
+  height: 8px !important;
+  background-color: #e5e7eb !important;
+  border-radius: 9999px !important;
+}
+
+.crypto-yield-slider span[data-orientation="horizontal"] > span {
+  height: 100% !important;
+  background-color: #3b82f6 !important;
+  border-radius: 9999px !important;
 }

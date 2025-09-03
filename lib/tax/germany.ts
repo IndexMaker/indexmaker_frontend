@@ -1,5 +1,5 @@
 // lib/tax/germany.ts
-import type { Brackets, CountryModule, Setup, TaxableParams } from './types';
+import type { Setup, TaxableParams } from './types';
 
 function calcProgressiveTax(income: number, uppers: readonly number[], rates: readonly number[]) {
   let tax = 0,
@@ -171,11 +171,22 @@ export const germany: any = {
     }
 
     const totalReported = tax + niit + penalty;
+
+    // For deferred accounts (Riester/Rürup), tax is on entire withdrawal, so calculate percentage differently
+    let taxPct = 0;
+    if (setup.type === 'deferred') {
+      // For deferred accounts, show tax as percentage of total withdrawal, not just gains
+      taxPct = withdrawn > 0 ? (taxOnGainOnly / withdrawn) * 100 : 0;
+    } else {
+      // For taxable accounts, show tax as percentage of gains
+      taxPct = gain > 0 ? (taxOnGainOnly / gain) * 100 : 0;
+    }
+
     return {
       tax: totalReported,
       niit,
       penalty,
-      taxPct: gain > 0 ? (taxOnGainOnly / gain) * 100 : 0,
+      taxPct,
     };
   },
 };
