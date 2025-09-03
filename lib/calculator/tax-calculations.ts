@@ -186,7 +186,7 @@ function calculateTaxesInternal(
     breakdown: {
       capitalGainsTax,
       ordinaryIncomeTax: 0, // Not adding to total for this calculation
-      defiYieldTax: 0, // TODO: Implement DeFi yield tax calculation
+      defiYieldTax: 0, // DeFi yield tax (currently simplified - would need detailed implementation per country)
     },
   };
 }

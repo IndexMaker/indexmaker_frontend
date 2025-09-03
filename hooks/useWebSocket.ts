@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { IndexListEntry } from "@/types";
+import { IndexListEntry } from "@/types/index";
 import { BrowserProvider, Wallet, ethers, hexlify } from "ethers";
+import { useEffect, useRef, useState } from "react";
+
 export default function useQuoteSocket(
   indexes: IndexListEntry[] = [],
   amount = 1000,

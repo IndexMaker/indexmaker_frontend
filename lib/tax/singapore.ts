@@ -1,44 +1,18 @@
 // lib/tax/singapore.ts
-import type { Brackets, CalcOut, CountryModule, Setup, TaxableParams, TaxParams } from './types';
+import type { Brackets, Setup } from './types';
+import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
-// Helpers (local)
-function calcProgressiveTax(income: number, uppers: readonly number[], rates: readonly number[]) {
-  let tax = 0,
-    prev = 0;
-  const inc = Math.max(0, income);
-  for (let i = 0; i < uppers.length; i++) {
-    const upper = uppers[i],
-      rate = rates[i];
-    const seg = Math.min(inc, upper) - prev;
-    if (seg > 0) tax += seg * rate;
-    prev = upper;
-    if (inc <= upper) break;
-  }
-  return tax;
-}
-
-function taxIncrement(
-  uppers: readonly number[],
-  rates: readonly number[],
-  baseTaxable: number,
-  delta: number
-) {
-  const d = Math.max(0, delta);
-  const x0 = Math.max(0, baseTaxable);
-  const x1 = Math.max(0, baseTaxable + d);
-  return calcProgressiveTax(x1, uppers, rates) - calcProgressiveTax(x0, uppers, rates);
-}
-
-// Basic brackets - TODO: Implement country-specific tax brackets
-function getBrackets(status: string): any {
-  return {
+// Singapore tax brackets (from data.json: 0%, 2%, 3.5%, 7%, 12%, 16%, 19%, 20%, 21%, 22%)
+function getBrackets(status: string): Brackets {
+  return createCountryBrackets({
     ordinary: {
-      uppers: [50000, 100000, 200000, Number.POSITIVE_INFINITY],
-      rates: [0.1, 0.2, 0.3, 0.4]
+      uppers: [20000, 30000, 40000, 80000, 120000, 160000, 200000, 240000, 280000, Number.POSITIVE_INFINITY],
+      rates: [0, 0.02, 0.035, 0.07, 0.12, 0.16, 0.19, 0.20, 0.21, 0.22], // Singapore progressive rates
     },
-    stdDed: 10000,
-    niitThresh: 200000
-  };
+    lt: null, // 0% capital gains tax for individual investors
+    stdDed: 0, // No standard deduction in Singapore
+    niitThresh: 0, // No NIIT in Singapore
+  });
 }
 
 const statuses = ['single'];
@@ -67,46 +41,13 @@ const setups: Setup[] = [
   }
 ];
 
-function computeTaxable(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
-
-  // Basic implementation - TODO: Implement country-specific logic
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // Basic NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-function computeDeferredFull(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
-
-  // For deferred accounts, everything is taxed as ordinary income
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
+// Use shared computation functions
+const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
 export const singapore: any = {
   key: 'singapore',
   name: 'Singapore',
-  currency: 'SGD', // TODO: Add proper currency mapping
+  currency: 'SGD', // Singapore Dollar
   statuses,
   cryptoNote: '0% capital gains tax for individual investors; income tax up to 22% if frequent trading or business activity (brackets: 0% SGD 0-20,000, 2% 20,001-30,000, 3.5% 30,001-40,000, 7% 40,001-80,000, 12% 80,001-120,000, 16% 120,001-160,000, 19% 160,001-200,000, 20% 200,001-240,000, 21% 240,001-280,000, 22% >280,000). 8% GST on purchases; no distinction for holding periods.',
   setups,

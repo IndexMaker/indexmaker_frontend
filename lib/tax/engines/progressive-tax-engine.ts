@@ -2,9 +2,8 @@
 // Progressive tax calculation engine for countries with bracket-based tax systems
 
 import { TaxBracketParser } from '../parsers/bracket-parser';
-import { getCurrencyInfo } from '../utils/currency-mapping';
-import type { EnhancedBrackets, TaxResult, BracketStructure } from '../types/enhanced';
 import type { TaxableParams } from '../types';
+import type { BracketStructure, TaxResult } from '../types/enhanced';
 
 export interface ProgressiveTaxConfig {
   countryKey: string;
@@ -77,8 +76,7 @@ export class ProgressiveTaxEngine {
       breakdown: {
         ordinary: result.tax,
         capitalGains: 0,
-        exemptionUsed: Math.max(0, (parsedTax.exemptions?.annualThreshold || 0) - taxableAmount),
-        additionalTaxes: additionalTax
+        exemptionUsed: Math.max(0, (parsedTax.exemptions?.annualThreshold || 0) - taxableAmount)
       },
       holdingPeriodApplied
     } as any;
@@ -277,8 +275,8 @@ export class ProgressiveTaxEngine {
       if (parsed.type !== 'progressive') {
         issues.push('Tax text does not parse as progressive tax system');
       }
-    } catch (error: any) {
-      issues.push(`Tax parsing failed: ${error.message}`);
+    } catch (error) {
+      issues.push(`Tax parsing failed: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     return {

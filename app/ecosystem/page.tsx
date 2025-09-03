@@ -1,12 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
 import { fetchProjects } from "@/api/projects";
-import { useLanguage } from "@/contexts/language-context";
 import Dashboard from "@/components/views/Dashboard/dashboard";
-import { Project } from "../../lib/data";
-import { fallbackProjects } from "@/lib/fallback-projects";
 import { ProjectCard } from "@/components/views/ecosystem/ecosystem";
+import { useLanguage } from "@/contexts/language-context";
+import { fallbackProjects } from "@/lib/fallback-projects";
+import { Project } from "@/types/index";
 import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 
 // Disable SSR completely for this page
 const EcosystemClient = () => {

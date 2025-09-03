@@ -1,9 +1,8 @@
 "use client";
-import { createContext, ReactNode, useContext } from "react";
-import { IndexListEntry } from "@/types";
 import useQuoteSocket from "@/hooks/useWebSocket";
-import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
+import { createContext, ReactNode, useContext } from "react";
+import { useSelector } from "react-redux";
 
 interface QuoteContextType {
   connect: () => void;

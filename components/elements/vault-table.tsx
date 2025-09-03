@@ -1,37 +1,35 @@
 "use client";
 
-import { Copy, BarChart2, Info, ArrowUp, ArrowDown } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
 } from "@/components/ui/tooltip";
-import Image from "next/image";
-import CustomTooltip from "./custom-tooltip";
-import { useState } from "react";
-import RightArrow from "../icons/right-arrow";
-import LeftArrow from "../icons/left-arrow";
-import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/language-context";
 import { cn } from "@/lib/utils";
-import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
-import { IndexListEntry } from "@/types";
-import IndexMaker from "../icons/indexmaker";
+import { IndexListEntry } from "@/types/index";
+import { ArrowDown, ArrowUp, Copy, Info } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useWallet } from "../../contexts/wallet-context";
 import USDC from "../../public/logos/usd-coin.png";
-import { getIndexData } from "@/lib/IndexMockupData";
-import { addSelectedVault } from "@/redux/vaultSlice";
+import IndexMaker from "../icons/indexmaker";
+import LeftArrow from "../icons/left-arrow";
+import RightArrow from "../icons/right-arrow";
+import CustomTooltip from "./custom-tooltip";
 
 interface VaultTableProps {
   visibleColumns: {

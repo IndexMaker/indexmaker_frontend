@@ -1,18 +1,16 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-} from "react";
 import onboard from "@/lib/blocknative/web3-onboard";
 import { shortenAddress } from "@/lib/utils";
-import { ethers } from "ethers";
-import { setTimeout } from "timers";
 import { clearSelectedVault } from "@/redux/vaultSlice";
-import { useDispatch } from "react-redux";
+import { ethers } from "ethers";
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
+} from "react";
 
 type WalletState = {
   label: string;
@@ -62,8 +60,17 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     : false;
 
   const checkWhitelistStatus = async (address: string): Promise<boolean> => {
-    // TODO: Replace with real logic later for checking connected wallet is in our whitelist
-    return false;
+    // Whitelist checking logic - currently returns false for all addresses
+    // In production, this would check against a backend API or smart contract
+    try {
+      // Example implementation:
+      // const response = await fetch(`/api/whitelist/${address}`);
+      // return response.ok;
+      return false; // Default to not whitelisted
+    } catch (error) {
+      console.error('Error checking whitelist status:', error);
+      return false;
+    }
   };
   // Check if wallet is still connected
   const checkConnection = useCallback(async () => {

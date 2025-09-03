@@ -1,5 +1,5 @@
 // Italy tax calculations
-import type { Brackets, CalcOut, CountryModule, TaxableParams } from './types';
+import type { CalcOut, TaxableParams } from './types';
 
 // Italy tax brackets for ordinary income
 // 23% €0-€28,000, 25% €28,001-€50,000, 35% €50,001-€75,000, 43% >€75,000
@@ -109,7 +109,7 @@ export const italy: any = {
   getBrackets,
   computeTaxable,
   computeDeferredFull: computeTaxable,
-  computeSetupTax: (_setup, params) => {
+  computeSetupTax: (_setup: any, params: any) => {
     const taxableParams = {
       country: 'italy' as const,
       status: params.status,
