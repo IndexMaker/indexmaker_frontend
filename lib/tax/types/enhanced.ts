@@ -1,6 +1,8 @@
 // lib/tax/types/enhanced.ts
 // Enhanced type definitions for country-specific tax calculations
 
+import type { Brackets } from '../types';
+
 export interface BracketStructure {
   uppers: readonly number[];
   rates: readonly number[];

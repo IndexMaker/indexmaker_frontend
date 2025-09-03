@@ -1,44 +1,20 @@
 // lib/tax/russia.ts
-import type { Brackets, CalcOut, CountryModule, Setup, TaxableParams, TaxParams } from './types';
+import type { Brackets, Setup } from './types';
+import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
-// Helpers (local)
-function calcProgressiveTax(income: number, uppers: readonly number[], rates: readonly number[]) {
-  let tax = 0,
-    prev = 0;
-  const inc = Math.max(0, income);
-  for (let i = 0; i < uppers.length; i++) {
-    const upper = uppers[i],
-      rate = rates[i];
-    const seg = Math.min(inc, upper) - prev;
-    if (seg > 0) tax += seg * rate;
-    prev = upper;
-    if (inc <= upper) break;
-  }
-  return tax;
-}
-
-function taxIncrement(
-  uppers: readonly number[],
-  rates: readonly number[],
-  baseTaxable: number,
-  delta: number
-) {
-  const d = Math.max(0, delta);
-  const x0 = Math.max(0, baseTaxable);
-  const x1 = Math.max(0, baseTaxable + d);
-  return calcProgressiveTax(x1, uppers, rates) - calcProgressiveTax(x0, uppers, rates);
-}
-
-// Basic brackets - TODO: Implement country-specific tax brackets
+// Russia tax brackets (from data.json: 13% up to 2.4M RUB, 15% above; 25% profit tax for business mining)
 function getBrackets(status: string): Brackets {
-  return {
+  return createCountryBrackets({
     ordinary: {
-      uppers: [50000, 100000, 200000, Number.POSITIVE_INFINITY],
-      rates: [0.1, 0.2, 0.3, 0.4]
+      uppers: [2400000, Number.POSITIVE_INFINITY],
+      rates: [0.13, 0.15], // 13% up to 2.4M RUB, 15% above for individuals
     },
-    stdDed: 10000,
-    niitThresh: 200000
-  };
+    lt: null, // No distinction for holding periods
+    stdDed: 0, // No standard deduction mentioned
+    niitThresh: 0, // No NIIT in Russia
+    businessProfitTax: 0.25, // 25% profit tax for business mining
+    iiaBenefits: true, // Individual Investment Accounts (IIA) benefits available
+  });
 }
 
 const statuses = ['single'];
@@ -60,46 +36,13 @@ const setups: Setup[] = [
   }
 ];
 
-function computeTaxable(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
+// Use shared computation functions
+const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-  // Basic implementation - TODO: Implement country-specific logic
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // Basic NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-function computeDeferredFull(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
-
-  // For deferred accounts, everything is taxed as ordinary income
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-export const russia: CountryModule = {
+export const russia: any = {
   key: 'russia',
   name: 'Russia',
-  currency: 'RUB', // TODO: Add proper currency mapping
+  currency: 'RUB', // Russian Ruble
   statuses,
   cryptoNote: '13% on gains up to 2.4 million RUB; 15% above. No distinction for holding periods; mining taxed at 25% profit tax for businesses.',
   setups,

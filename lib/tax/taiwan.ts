@@ -1,44 +1,21 @@
 // lib/tax/taiwan.ts
-import type { Brackets, CalcOut, CountryModule, Setup, TaxableParams, TaxParams } from './types';
+import type { Brackets, Setup } from './types';
+import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
-// Helpers (local)
-function calcProgressiveTax(income: number, uppers: readonly number[], rates: readonly number[]) {
-  let tax = 0,
-    prev = 0;
-  const inc = Math.max(0, income);
-  for (let i = 0; i < uppers.length; i++) {
-    const upper = uppers[i],
-      rate = rates[i];
-    const seg = Math.min(inc, upper) - prev;
-    if (seg > 0) tax += seg * rate;
-    prev = upper;
-    if (inc <= upper) break;
-  }
-  return tax;
-}
-
-function taxIncrement(
-  uppers: readonly number[],
-  rates: readonly number[],
-  baseTaxable: number,
-  delta: number
-) {
-  const d = Math.max(0, delta);
-  const x0 = Math.max(0, baseTaxable);
-  const x1 = Math.max(0, baseTaxable + d);
-  return calcProgressiveTax(x1, uppers, rates) - calcProgressiveTax(x0, uppers, rates);
-}
-
-// Basic brackets - TODO: Implement country-specific tax brackets
+// Taiwan tax brackets (from data.json: Progressive 5-40% rates; 0.1% securities transaction tax may apply)
 function getBrackets(status: string): Brackets {
-  return {
+  return createCountryBrackets({
     ordinary: {
-      uppers: [50000, 100000, 200000, Number.POSITIVE_INFINITY],
-      rates: [0.1, 0.2, 0.3, 0.4]
+      uppers: [560000, 1260000, 2800000, 5600000, Number.POSITIVE_INFINITY],
+      rates: [0.05, 0.12, 0.20, 0.30, 0.40], // Progressive rates for gains/mining/staking as income in TWD
     },
-    stdDed: 10000,
-    niitThresh: 200000
-  };
+    lt: null, // No specific capital gains tax distinction
+    stdDed: 0, // No standard deduction mentioned
+    niitThresh: 0, // No NIIT in Taiwan
+    securitiesTransactionTax: 0.001, // 0.1% securities transaction tax may apply if classified as securities
+    treatedAsProperty: true, // Treated as property
+    laborPensionBenefits: true, // Labor Pension Fund benefits available
+  });
 }
 
 const statuses = ['single'];
@@ -60,46 +37,13 @@ const setups: Setup[] = [
   }
 ];
 
-function computeTaxable(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
+// Use shared computation functions
+const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-  // Basic implementation - TODO: Implement country-specific logic
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // Basic NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-function computeDeferredFull(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
-
-  // For deferred accounts, everything is taxed as ordinary income
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-export const taiwan: CountryModule = {
+export const taiwan: any = {
   key: 'taiwan',
   name: 'Taiwan',
-  currency: 'TWD', // TODO: Add proper currency mapping
+  currency: 'TWD', // New Taiwan Dollar
   statuses,
   cryptoNote: 'Treated as property; gains taxed as income at progressive rates 5-40% (brackets: 5% NTD 0-560,000, 12% 560,001-1,260,000, 20% 1,260,001-2,800,000, 30% 2,800,001-5,600,000, 40% >5,600,000). No specific capital gains tax; 0.1% securities transaction tax may apply if classified as securities. Mining/staking taxed as income.',
   setups,

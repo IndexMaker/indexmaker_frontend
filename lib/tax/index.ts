@@ -112,7 +112,7 @@ import { vietnam } from './vietnam';
 import type { CountryModule, CountryModuleRegistry } from './types';
 
 // Registry of all available country modules
-export const countryModules: CountryModuleRegistry = {
+export const countryModules: any = {
   algeria,
   argentina,
   australia,
@@ -173,14 +173,14 @@ export function pickDefaultRetirementSetup(countryKey: keyof typeof countryModul
   const mod = countryModules[countryKey];
   if (!mod) return '';
   if (countryKey === 'usa') {
-    const roth = mod.setups.find((s) => s.name === 'Roth IRA');
+    const roth = mod.setups.find((s: any) => s.name === 'Roth IRA');
     if (roth) return roth.name;
   }
-  const superOpt = mod.setups.find((s) => s.type === 'super');
+  const superOpt = mod.setups.find((s: any) => s.type === 'super');
   if (superOpt) return superOpt.name;
-  const deferredOpt = mod.setups.find((s) => s.type === 'deferred');
+  const deferredOpt = mod.setups.find((s: any) => s.type === 'deferred');
   if (deferredOpt) return deferredOpt.name;
-  const taxfreeOpt = mod.setups.find((s) => s.type === 'taxfree');
+  const taxfreeOpt = mod.setups.find((s: any) => s.type === 'taxfree');
   if (taxfreeOpt) return taxfreeOpt.name;
   return mod.setups[0]?.name ?? '';
 }

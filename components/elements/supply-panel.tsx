@@ -1,37 +1,34 @@
 "use client";
 
-import type React from "react";
-
-import { useCallback, useEffect, useState } from "react";
-import { X, BarChart2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn, shortenAddress } from "@/lib/utils";
-import NavigationAlert from "../icons/navigation-alert";
-import { Vault } from "@/lib/types/vault";
-import Image from "next/image";
-import CustomTooltip from "./custom-tooltip";
-import InstantAPY from "../icons/instantApy";
 import { useLanguage } from "@/contexts/language-context";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@radix-ui/react-popover";
-import { getViemClient } from "@/lib/blocknative/viem";
-import { RootState } from "@/redux/store";
-import { useDispatch, useSelector } from "react-redux";
-import Info from "../icons/info";
-import { formatEther, formatUnits } from "viem";
-import { ERC20_ABI, TOKEN_LIST, TOKEN_METADATA } from "@/lib/data";
-import { removeSelectedVault, updateVaultAmount } from "@/redux/vaultSlice";
-import { IndexListEntry } from "@/types";
-import IndexMaker from "../icons/indexmaker";
-import { useWallet } from "@/contexts/wallet-context";
-import { TransactionConfirmModal } from "./transaction-modal";
-import USDC from "../../public/logos/usd-coin.png";
 import { useQuoteContext } from "@/contexts/quote-context";
-import AnimatedPrice from "./animate-price";
+import { useWallet } from "@/contexts/wallet-context";
+import { getViemClient } from "@/lib/blocknative/viem";
+import { ERC20_ABI, TOKEN_METADATA } from "@/lib/data";
+import { cn, shortenAddress } from "@/lib/utils";
+import { RootState } from "@/redux/store";
+import { removeSelectedVault, updateVaultAmount } from "@/redux/vaultSlice";
+import { IndexListEntry } from "@/types/index";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@radix-ui/react-popover";
+import { Copy, X } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useMediaQuery } from "react-responsive";
+import { formatEther, formatUnits } from "viem";
+import USDC from "../../public/logos/usd-coin.png";
+import IndexMaker from "../icons/indexmaker";
+import Info from "../icons/info";
+import NavigationAlert from "../icons/navigation-alert";
+import AnimatedPrice from "./animate-price";
+import CustomTooltip from "./custom-tooltip";
+import { TransactionConfirmModal } from "./transaction-modal";
 
 interface SupplyPanelProps {
   vaultIds: VaultInfo[];
@@ -64,9 +61,7 @@ export function SupplyPanel({
   open,
   setOpen,
 }: SupplyPanelProps) {
-  const {
-    wallet,
-  } = useWallet();
+  const { wallet, isWhitelisted, connectWallet } = useWallet();
   const { indexPrices } = useQuoteContext();
   const [quantity, setQuantity] = useState<{ [key: string]: number }>({});
   const { t } = useLanguage();
@@ -621,75 +616,99 @@ export function SupplyPanel({
             })}
           </div>
           {/* Footer */}
-          <div className="mt-auto px-4 py-6 border-t border-accent relative flex flex-col gap-2">
-            <div className="relative z-0 opacity-90 select-none pointer-events-none"></div>
-            <div className={`absolute inset-0 z-10 backdrop-blur-[8px] bg-black/30 flex items-center justify-center mb-[-60px] ${isSmallWindow ? 'mt-[calc(-100vh+600px)]' : 'mt-[calc(-100vh+650px)]'}`}>
-              <div className="text-center px-6">
-                <p className="text-secondary text-[14px] font-bold">
-                  🚫 Non-whitelisted wallet connected
-                </p>
-              </div>
-            </div>
-            <div className="p-0 flex flex-col">
-              <span className="text-yellow-500 text-[11px] text-right">
-                ⚠️Withdraw and Rebalances are pause until DAO is formed.
-              </span>
-              <div className="w-full text-[13px] text-secondary text-right">
-                Estimated Fill Time : ~15 Minutes
-              </div>
-            </div>
-            <div className="flex gap-10 lg:gap-30 items-center h-[40px] justify-between relative">
-              <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="h-[26px] px-[8px] py-[5px] border-accent w-[50px] bg-accent text-[11px] hover:bg-foreground text-primary cursor-pointer"
-                  >
-                    {t("common.cancel")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[300px] p-4 bg-ring text-card rounded-md flex flex-col gap-4 shadow-[0px_1px_20px_0px_rgba(0,0,0,0.04),0px_12px_16px_0px_rgba(6,9,11,0.05),0px_6px_12px_0px_rgba(0,0,0,0.07)] z-100"
-                  align="start"
-                  sideOffset={10}
-                >
-                  <p className="text-[11px] font-normal text-card text-center">
-                    {t("common.transactionConfrimTitle")}
-                  </p>
-                  <div className="flex justify-end items-end gap-2">
-                    <Button
-                      variant="secondary"
-                      className="text-[11px] px-[8px] py-[5px] bg-accent cursor-pointer h-[26px] rounded-[4px]"
-                      onClick={() => setPopoverOpen(false)}
-                    >
-                      {t("common.noKeep")}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      className="text-[11px] px-[8px] py-[5px] cursor-pointer !bg-[#c73e59e6] h-[26px] rounded-[4px]"
-                      onClick={onClose}
-                    >
-                      {t("common.yesCancel")}
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-
+          {!wallet ? (
+            // Not Connected
+            <div className="p-4 flex flex-col gap-2 border-t border-accent bottom-[50px] absolute w-full">
               <Button
-                className="flex-1 h-[40px] bg-blue-600 hover:bg-blue-700 text-white text-[14px] cursor-pointer"
-                disabled={
-                  selectedVault.filter(
-                    (_vault) =>
-                      isNaN(Number(_vault.amount)) ||
-                      Number(_vault.amount) === 0
-                  ).length > 0 || !wallet
-                }
-                onClick={handleSupply}
+                onClick={connectWallet}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[14px] cursor-pointer"
               >
-                {t("common.finalizeTransactions")}
+                {t("common.connectWallet")}
               </Button>
             </div>
-          </div>
+          ) : !isWhitelisted ? (
+            // Connected but Not Whitelisted
+            <div className="p-4 flex flex-col gap-2 border-t border-accent text-center bottom-[50px] absolute w-full">
+              <span className="text-red-500 text-[13px] font-bold">
+                Your connected wallet is not whitelisted.
+              </span>
+              <Link
+                href={
+                  process.env.NEXT_PUBLIC_CRYPTO_FINANCIAL_ADVISOR ||
+                  "https://cal.com"
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[14px] cursor-pointer">
+                  📅 Book a call with a crypto financial advisor
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            // Connected & Whitelisted
+            <div className="bottom-[50px] absolute w-full p-2 border-t border-accent">
+              <div className="p-0 flex flex-col">
+                <span className="text-yellow-500 text-[11px] text-right">
+                  ⚠️Withdraw and Rebalances are pause until DAO is formed.
+                </span>
+                <div className="w-full text-[13px] text-secondary text-right">
+                  Estimated Fill Time : ~15 Minutes
+                </div>
+              </div>
+              <div className="flex gap-10 lg:gap-30 items-center h-[40px] justify-between relative">
+                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-[26px] px-[8px] py-[5px] border-accent w-[50px] bg-accent text-[11px] hover:bg-foreground text-primary cursor-pointer"
+                    >
+                      {t("common.cancel")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[300px] p-4 bg-ring text-card rounded-md flex flex-col gap-4 shadow-[0px_1px_20px_0px_rgba(0,0,0,0.04),0px_12px_16px_0px_rgba(6,9,11,0.05),0px_6px_12px_0px_rgba(0,0,0,0.07)] z-100"
+                    align="start"
+                    sideOffset={10}
+                  >
+                    <p className="text-[11px] font-normal text-card text-center">
+                      {t("common.transactionConfrimTitle")}
+                    </p>
+                    <div className="flex justify-end items-end gap-2">
+                      <Button
+                        variant="secondary"
+                        className="text-[11px] px-[8px] py-[5px] bg-accent cursor-pointer h-[26px] rounded-[4px]"
+                        onClick={() => setPopoverOpen(false)}
+                      >
+                        {t("common.noKeep")}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        className="text-[11px] px-[8px] py-[5px] cursor-pointer !bg-[#c73e59e6] h-[26px] rounded-[4px]"
+                        onClick={onClose}
+                      >
+                        {t("common.yesCancel")}
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                <Button
+                  className="flex-1 h-[40px] bg-blue-600 hover:bg-blue-700 text-white text-[14px] cursor-pointer"
+                  disabled={
+                    selectedVault.filter(
+                      (_vault) =>
+                        isNaN(Number(_vault.amount)) ||
+                        Number(_vault.amount) === 0
+                    ).length > 0 || !wallet
+                  }
+                  onClick={handleSupply}
+                >
+                  {t("common.finalizeTransactions")}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <TransactionConfirmModal

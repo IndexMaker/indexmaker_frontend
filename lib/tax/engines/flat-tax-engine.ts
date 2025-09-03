@@ -2,9 +2,8 @@
 // Flat tax calculation engine for countries with single-rate tax systems
 
 import { TaxBracketParser } from '../parsers/bracket-parser';
-import { getCurrencyInfo } from '../utils/currency-mapping';
-import type { TaxResult } from '../types/enhanced';
 import type { TaxableParams } from '../types';
+import type { TaxResult } from '../types/enhanced';
 
 export interface FlatTaxConfig {
   countryKey: string;
@@ -68,14 +67,13 @@ export class FlatTaxEngine {
       breakdown: {
         ordinary: baseTax,
         capitalGains: 0,
-        exemptionUsed: exemptionApplied,
-        additionalTaxes: additionalTaxes
+        exemptionUsed: exemptionApplied
       },
       flatRate,
       exemptionApplied,
       holdingPeriodApplied,
       additionalTaxBreakdown: additionalTaxes.breakdown
-    };
+    } as any;
   }
 
   /**

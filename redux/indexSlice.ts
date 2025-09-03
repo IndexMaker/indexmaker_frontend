@@ -1,4 +1,4 @@
-import { IndexListEntry } from "@/types";
+import { IndexListEntry } from "@/types/index";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface IndexState {

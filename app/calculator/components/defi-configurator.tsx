@@ -4,20 +4,29 @@ import DefiYieldConfigurator from "@/components/defi/defi-yield-configurator";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { DefiConfig } from "@/lib/calculator/types";
-import { selectDefiConfig, selectShowDefiConfig } from "@/redux/calculatorSelectors";
+import { selectShowDefiConfig } from "@/redux/calculatorSelectors";
 import { setDefiConfig, toggleDefiConfigModal } from "@/redux/calculatorSlice";
 import type { AppDispatch } from "@/redux/store";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
+type YieldConfig = {
+  allocations: Array<{
+    assetKey: string;
+    allocation: number;
+    customRate?: number;
+  }>;
+  totalYield: number;
+  weightedYield: number;
+};
+
 export function DefiConfigurator() {
   const dispatch = useDispatch<AppDispatch>();
   const open = useSelector(selectShowDefiConfig);
-  const savedConfig = useSelector(selectDefiConfig);
 
-  const [yieldConfig, setYieldConfig] = useState(null);
+  const [yieldConfig, setYieldConfig] = useState<YieldConfig | null>(null);
 
-  const handleConfigChange = (config: any) => {
+  const handleConfigChange = (config: YieldConfig) => {
     setYieldConfig(config);
   };
 
@@ -28,9 +37,9 @@ export function DefiConfigurator() {
         protocol: "custom",
         yieldRate: yieldConfig.weightedYield * 100,
         stakingPeriod: 12,
+        allocations: "Custom allocation",
         compoundFrequency: "daily",
         riskLevel: "medium",
-        allocations: yieldConfig.allocations,
       };
       dispatch(setDefiConfig(defiConfig));
     }
@@ -45,9 +54,9 @@ export function DefiConfigurator() {
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Advanced DeFi Yield Configuration</DialogTitle>
+          <DialogTitle>Crypto Investment Tax Comparison</DialogTitle>
           <DialogDescription>
-            Configure your asset allocation and expected yields for more accurate tax calculations
+            Configure crypto investment options to compare against tax-advantaged traditional investments.
           </DialogDescription>
         </DialogHeader>
 
@@ -59,7 +68,7 @@ export function DefiConfigurator() {
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={!yieldConfig}>
-              Save Configuration
+              Apply Configuration
             </Button>
           </div>
         </div>

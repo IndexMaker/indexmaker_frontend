@@ -1,44 +1,22 @@
 // lib/tax/finland.ts
-import type { Brackets, CalcOut, CountryModule, Setup, TaxableParams, TaxParams } from './types';
+import type { Brackets, Setup } from './types';
+import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
-// Helpers (local)
-function calcProgressiveTax(income: number, uppers: readonly number[], rates: readonly number[]) {
-  let tax = 0,
-    prev = 0;
-  const inc = Math.max(0, income);
-  for (let i = 0; i < uppers.length; i++) {
-    const upper = uppers[i],
-      rate = rates[i];
-    const seg = Math.min(inc, upper) - prev;
-    if (seg > 0) tax += seg * rate;
-    prev = upper;
-    if (inc <= upper) break;
-  }
-  return tax;
-}
-
-function taxIncrement(
-  uppers: readonly number[],
-  rates: readonly number[],
-  baseTaxable: number,
-  delta: number
-) {
-  const d = Math.max(0, delta);
-  const x0 = Math.max(0, baseTaxable);
-  const x1 = Math.max(0, baseTaxable + d);
-  return calcProgressiveTax(x1, uppers, rates) - calcProgressiveTax(x0, uppers, rates);
-}
-
-// Basic brackets - TODO: Implement country-specific tax brackets
+// Finland tax brackets (from data.json: 30% capital gains up to €30,000, then 34%)
 function getBrackets(status: string): Brackets {
-  return {
+  return createCountryBrackets({
     ordinary: {
-      uppers: [50000, 100000, 200000, Number.POSITIVE_INFINITY],
-      rates: [0.1, 0.2, 0.3, 0.4]
+      uppers: [Number.POSITIVE_INFINITY],
+      rates: [0.44], // Up to 44% for mining/staking (progressive state + municipal)
     },
-    stdDed: 10000,
-    niitThresh: 200000
-  };
+    lt: {
+      uppers: [30000, Number.POSITIVE_INFINITY],
+      rates: [0.30, 0.34], // Capital gains: 30% up to €30,000, 34% above
+    },
+    stdDed: 0, // No standard deduction mentioned
+    niitThresh: 0, // No NIIT in Finland
+    exemptThreshold: 1000, // Exempt under €1,000/year
+  });
 }
 
 const statuses = ['single'];
@@ -60,46 +38,13 @@ const setups: Setup[] = [
   }
 ];
 
-function computeTaxable(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
+// Use shared computation functions
+const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-  // Basic implementation - TODO: Implement country-specific logic
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // Basic NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-function computeDeferredFull(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
-
-  // For deferred accounts, everything is taxed as ordinary income
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-export const finland: CountryModule = {
+export const finland: any = {
   key: 'finland',
   name: 'Finland',
-  currency: 'EUR', // TODO: Add proper currency mapping
+  currency: 'EUR', // Euro
   statuses,
   cryptoNote: 'Progressive capital gains 30-34% (30% up to €30,000, 34% above); exempt under €1,000/year. No distinction for holding periods; mining/staking taxed as income at up to 44% (progressive state + municipal avg 20%, total 5.5-31.25% state + municipal).',
   setups,

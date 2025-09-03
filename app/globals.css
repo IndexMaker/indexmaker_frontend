@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -16,14 +17,16 @@ html, body {
 
 body {
   background-color: #f9fafb;
+  /* Set IBM Plex Sans as the default font for the entire body */
+  font-family: 'IBM Plex Sans', sans-serif;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: 'IBM Plex Sans', sans-serif; /* Updated to IBM Plex Sans */
   --font-mono: var(--font-geist-mono);
-  --font-custom: FK Grotesk, sans-serif;
+  --font-custom: 'IBM Plex Sans', sans-serif; /* Updated to IBM Plex Sans */
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -62,7 +65,6 @@ body {
 :root {
   --radius: 0.625rem;
   --background: #f0f2f7;
-  /* --foreground: #191d200f; */
   --foreground: #fafcff;
   --secondary: #191d20b3;
   --primary: #000000;
@@ -128,6 +130,8 @@ body {
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
+
+/* You can keep these font-face declarations if you still need them for fallback */
 @font-face {
   font-family: "FK Grotesk";
   src: url("/fonts/FKGroteskNeueTrial-Regular-BF6576818c3af74.otf")
@@ -157,6 +161,7 @@ body {
   font-weight: bold;
   font-style: normal;
 }
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -169,15 +174,17 @@ body {
   }
   body,
   html {
-    /* font-family: "FK Grotesk", sans-serif; */
-    font-family: Inter, sans-serif;
+    /* Set IBM Plex Sans as the default font */
+    font-family: 'IBM Plex Sans', sans-serif;
   }
 
   .font-custom {
-    font-family: Inter, sans-serif;
+    /* Updated to use IBM Plex Sans */
+    font-family: 'IBM Plex Sans', sans-serif;
     font-weight: 200;
   }
 }
+
 @media (min-width: 1920px) {
   .custom-3xl-padding {
     padding-left: 200px;
@@ -247,6 +254,80 @@ body {
   --muted: #f9fafb !important;
   --muted-foreground: #6b7280 !important;
   --border: #e5e7eb !important;
+  --primary: #000000 !important;
+  --primary-foreground: #ffffff !important;
+  --secondary: #f3f4f6 !important;
+  --secondary-foreground: #1f2937 !important;
+  --ring: #000000 !important;
   background-color: #ffffff !important;
   color: #1f2937 !important;
+}
+
+/* Crypto Yield Slider Styling - Force visible colors with multiple selectors */
+.crypto-yield-slider [data-radix-slider-track],
+.crypto-yield-slider .relative.h-2 {
+  height: 8px !important;
+  background-color: #e5e7eb !important;
+  border-radius: 9999px !important;
+  position: relative !important;
+}
+
+.crypto-yield-slider [data-radix-slider-range],
+.crypto-yield-slider .absolute.h-full {
+  height: 100% !important;
+  background-color: #3b82f6 !important;
+  border-radius: 9999px !important;
+  position: absolute !important;
+}
+
+.crypto-yield-slider [data-radix-slider-thumb],
+.crypto-yield-slider .block.h-5.w-5 {
+  width: 20px !important;
+  height: 20px !important;
+  background-color: #ffffff !important;
+  border: 2px solid #3b82f6 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.crypto-yield-slider [data-radix-slider-thumb]:hover,
+.crypto-yield-slider .block.h-5.w-5:hover {
+  background-color: #f8fafc !important;
+  transform: scale(1.1) !important;
+}
+
+.crypto-yield-slider [data-radix-slider-thumb]:focus,
+.crypto-yield-slider .block.h-5.w-5:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
+}
+
+.crypto-yield-slider [data-radix-slider-thumb]:focus-visible,
+.crypto-yield-slider .block.h-5.w-5:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Additional fallback selectors for Radix UI Slider */
+.crypto-yield-slider span[role="slider"] {
+  width: 20px !important;
+  height: 20px !important;
+  background-color: #ffffff !important;
+  border: 2px solid #3b82f6 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.crypto-yield-slider span[data-orientation="horizontal"] {
+  height: 8px !important;
+  background-color: #e5e7eb !important;
+  border-radius: 9999px !important;
+}
+
+.crypto-yield-slider span[data-orientation="horizontal"] > span {
+  height: 100% !important;
+  background-color: #3b82f6 !important;
+  border-radius: 9999px !important;
 }

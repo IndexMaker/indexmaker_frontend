@@ -1,20 +1,19 @@
 "use client";
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import Image from "next/image";
-import Dashboard from "../Dashboard/dashboard";
-import { CustomButton } from "@/components/ui/custom-button";
-import URL from "@/components/icons/url";
-import Docs from "@/components/icons/docs";
-import Social from "@/components/icons/social";
-import { useLanguage } from "@/contexts/language-context";
-import { useTheme } from "next-themes";
 import { fetchProjectById } from "@/api/projects";
-import { Project } from "@/types";
-import { getFallbackProject } from "@/lib/fallback-projects";
-import Logo from "@/components/icons/logo";
+import Docs from "@/components/icons/docs";
 import IndexMaker from "@/components/icons/indexmaker";
+import Social from "@/components/icons/social";
+import URL from "@/components/icons/url";
+import { CustomButton } from "@/components/ui/custom-button";
+import { useLanguage } from "@/contexts/language-context";
+import { getFallbackProject } from "@/lib/fallback-projects";
+import { Project } from "@/types/index";
+import { ArrowRight } from "lucide-react";
+import { useTheme } from "next-themes";
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import Dashboard from "../Dashboard/dashboard";
 
 interface ProjectDetailPageProps {
   projectId: string;

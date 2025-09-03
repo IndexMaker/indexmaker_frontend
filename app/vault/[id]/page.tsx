@@ -1,13 +1,13 @@
 "use client";
-import { notFound, redirect, useParams } from "next/navigation";
-import { VaultDetailPage } from "@/components/views/vault/vault-detail";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/redux/store";
-import axios from "axios";
-import { setIndices } from "@/redux/indexSlice";
-import { IndexListEntry } from "@/types";
-import { useEffect, useState } from "react";
 import { fetchAllIndices } from "@/api/indices";
+import { VaultDetailPage } from "@/components/views/vault/vault-detail";
+import { log } from "@/lib/utils/logger";
+import { setIndices } from "@/redux/indexSlice";
+import { RootState } from "@/redux/store";
+import { IndexListEntry } from "@/types/index";
+import { notFound, redirect, useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function VaultPage() {
   const params = useParams();
@@ -30,7 +30,7 @@ export default function VaultPage() {
       : [];
     // First check Redux store
     const vaultFromLocal = localVaults.find(
-      (index) => index.ticker.toLowerCase() === lowerTicker
+      (index) => index && index.ticker && index.ticker.toLowerCase() === lowerTicker
     );
 
     if (vaultFromLocal) {
@@ -48,7 +48,7 @@ export default function VaultPage() {
         dispatch(setIndices(data));
 
         const foundIndex = data.find(
-          (_index) => _index.ticker.toLowerCase() === indexTicker.toLowerCase()
+          (_index) => _index && _index.ticker && _index.ticker.toLowerCase() === indexTicker.toLowerCase()
         );
 
         if (foundIndex) {
@@ -57,7 +57,7 @@ export default function VaultPage() {
           redirect("/");
         }
       } catch (error) {
-        console.error("Error fetching performance data:", error);
+        log.error("Error fetching performance data", { error: error instanceof Error ? error.message : String(error), indexTicker });
         redirect("/");
       } finally {
         setLoading(false);

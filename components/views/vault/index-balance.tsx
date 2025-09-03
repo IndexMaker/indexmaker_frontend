@@ -1,16 +1,12 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import IndexMaker from "@/components/icons/indexmaker";
 import { CustomButton } from "@/components/ui/custom-button";
-import { useCallback } from "react";
-import { IndexListEntry } from "@/types";
-import CustomTooltip from "@/components/elements/custom-tooltip";
-import Image from "next/image";
-import { Copy } from "lucide-react";
 import { useWallet } from "@/contexts/wallet-context";
-import { toast } from "sonner";
 import { SupplyPosition } from "@/lib/data";
+import { IndexListEntry } from "@/types/index";
+import { useCallback } from "react";
+import { toast } from "sonner";
 
 interface IndexBalanceProps {
   className?: string;

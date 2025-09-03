@@ -41,6 +41,7 @@ export interface DefiConfig {
   protocol: string;
   yieldRate: number;
   stakingPeriod: number;
+  allocations: string;
   compoundFrequency: "daily" | "weekly" | "monthly" | "quarterly";
   riskLevel: "low" | "medium" | "high";
 }

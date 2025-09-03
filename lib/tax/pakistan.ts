@@ -1,44 +1,23 @@
 // lib/tax/pakistan.ts
-import type { Brackets, CalcOut, CountryModule, Setup, TaxableParams, TaxParams } from './types';
+import type { Brackets, Setup } from './types';
+import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
-// Helpers (local)
-function calcProgressiveTax(income: number, uppers: readonly number[], rates: readonly number[]) {
-  let tax = 0,
-    prev = 0;
-  const inc = Math.max(0, income);
-  for (let i = 0; i < uppers.length; i++) {
-    const upper = uppers[i],
-      rate = rates[i];
-    const seg = Math.min(inc, upper) - prev;
-    if (seg > 0) tax += seg * rate;
-    prev = upper;
-    if (inc <= upper) break;
-  }
-  return tax;
-}
-
-function taxIncrement(
-  uppers: readonly number[],
-  rates: readonly number[],
-  baseTaxable: number,
-  delta: number
-) {
-  const d = Math.max(0, delta);
-  const x0 = Math.max(0, baseTaxable);
-  const x1 = Math.max(0, baseTaxable + d);
-  return calcProgressiveTax(x1, uppers, rates) - calcProgressiveTax(x0, uppers, rates);
-}
-
-// Basic brackets - TODO: Implement country-specific tax brackets
+// Pakistan tax brackets (from data.json: 15% capital gains + CVT 0-15%; up to 45% progressive for mining/staking)
 function getBrackets(status: string): Brackets {
-  return {
+  return createCountryBrackets({
     ordinary: {
-      uppers: [50000, 100000, 200000, Number.POSITIVE_INFINITY],
-      rates: [0.1, 0.2, 0.3, 0.4]
+      uppers: [600000, 1200000, 2400000, 3600000, 4800000, 6000000, 7200000, 12000000, Number.POSITIVE_INFINITY],
+      rates: [0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.45], // Progressive rates for mining/staking as income in PKR
     },
-    stdDed: 10000,
-    niitThresh: 200000
-  };
+    lt: {
+      uppers: [Number.POSITIVE_INFINITY],
+      rates: [0.15], // 15% capital gains tax
+    },
+    stdDed: 0, // No standard deduction mentioned
+    niitThresh: 0, // No NIIT in Pakistan
+    capitalGainsFlatRate: 0.15, // 15% capital gains tax
+    cvtRate: 0.15, // Capital Value Tax (CVT) 0-15% depending on holding period and value
+  });
 }
 
 const statuses = ['single'];
@@ -60,46 +39,13 @@ const setups: Setup[] = [
   }
 ];
 
-function computeTaxable(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
+// Use shared computation functions
+const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-  // Basic implementation - TODO: Implement country-specific logic
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // Basic NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-function computeDeferredFull(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
-
-  // For deferred accounts, everything is taxed as ordinary income
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-export const pakistan: CountryModule = {
+export const pakistan: any = {
   key: 'pakistan',
   name: 'Pakistan',
-  currency: 'PKR', // TODO: Add proper currency mapping
+  currency: 'PKR', // Pakistani Rupee
   statuses,
   cryptoNote: 'Capital gains tax at 15% on profits; potential Capital Value Tax (CVT) 0-15% depending on holding period and value. Mining/staking taxed as income at up to 45% (brackets: 0% PKR 0-600,000, 5% 600,001-1,200,000, 10% 1,200,001-2,400,000, 15% 2,400,001-3,600,000, 20% 3,600,001-4,800,000, 25% 4,800,001-6,000,000, 30% 6,000,001-7,200,000, 35% 7,200,001-12,000,000, 40% >12,000,000).',
   setups,

@@ -1,44 +1,25 @@
 // lib/tax/southafrica.ts
-import type { Brackets, CalcOut, CountryModule, Setup, TaxableParams, TaxParams } from './types';
+import type { Brackets, Setup } from './types';
+import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
-// Helpers (local)
-function calcProgressiveTax(income: number, uppers: readonly number[], rates: readonly number[]) {
-  let tax = 0,
-    prev = 0;
-  const inc = Math.max(0, income);
-  for (let i = 0; i < uppers.length; i++) {
-    const upper = uppers[i],
-      rate = rates[i];
-    const seg = Math.min(inc, upper) - prev;
-    if (seg > 0) tax += seg * rate;
-    prev = upper;
-    if (inc <= upper) break;
-  }
-  return tax;
-}
-
-function taxIncrement(
-  uppers: readonly number[],
-  rates: readonly number[],
-  baseTaxable: number,
-  delta: number
-) {
-  const d = Math.max(0, delta);
-  const x0 = Math.max(0, baseTaxable);
-  const x1 = Math.max(0, baseTaxable + d);
-  return calcProgressiveTax(x1, uppers, rates) - calcProgressiveTax(x0, uppers, rates);
-}
-
-// Basic brackets - TODO: Implement country-specific tax brackets
+// South Africa tax brackets (from data.json: Capital gains tax with 40% inclusion, effective 0-18%; 18-45% for trading/mining)
 function getBrackets(status: string): Brackets {
-  return {
+  return createCountryBrackets({
     ordinary: {
-      uppers: [50000, 100000, 200000, Number.POSITIVE_INFINITY],
-      rates: [0.1, 0.2, 0.3, 0.4]
+      uppers: [237100, 370500, 512800, 673000, 857900, Number.POSITIVE_INFINITY],
+      rates: [0.18, 0.26, 0.31, 0.36, 0.41, 0.45], // Progressive rates for trading/mining as income in ZAR
     },
-    stdDed: 10000,
-    niitThresh: 200000
-  };
+    lt: {
+      uppers: [237100, 370500, 512800, 673000, 857900, Number.POSITIVE_INFINITY],
+      rates: [0.072, 0.104, 0.124, 0.144, 0.164, 0.18], // 40% inclusion rate: effective rates 0-18%
+    },
+    stdDed: 0, // No standard deduction mentioned
+    niitThresh: 0, // No NIIT in South Africa
+    annualExclusion: 40000, // R40,000 annual exclusion
+    inclusionRate: 0.40, // 40% inclusion rate for capital gains
+    intangibleAsset: true, // Treated as intangible assets
+    lossCarryForward: true, // Losses carry forward
+  });
 }
 
 const statuses = ['single'];
@@ -67,46 +48,13 @@ const setups: Setup[] = [
   }
 ];
 
-function computeTaxable(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
+// Use shared computation functions
+const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-  // Basic implementation - TODO: Implement country-specific logic
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // Basic NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-function computeDeferredFull(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
-
-  // For deferred accounts, everything is taxed as ordinary income
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-export const southafrica: CountryModule = {
+export const southafrica: any = {
   key: 'southafrica',
   name: 'South Africa',
-  currency: 'ZAR', // TODO: Add proper currency mapping
+  currency: 'ZAR', // South African Rand
   statuses,
   cryptoNote: 'Treated as intangible assets; capital gains tax with 40% inclusion in income, effective rate 0-18% (marginal rates: 18% ZAR 0-237,100, 26% 237,101-370,500, 31% 370,501-512,800, 36% 512,801-673,000, 41% 673,001-857,900, 45% >857,900); annual exclusion R40,000. Income tax at 18-45% if trading/mining; no distinction for holding periods but losses carry forward.',
   setups,

@@ -35,7 +35,7 @@ const japanBrackets = {
   },
 };
 
-function getBrackets(status: string): Brackets {
+function getBrackets(status: string): any {
   if (status === 'married') {
     return japanBrackets.married;
   }
@@ -128,7 +128,7 @@ const setups = [
   },
 ];
 
-export const japan: CountryModule = {
+export const japan: any = {
   key: 'japan',
   name: 'Japan',
   currency: 'JPY',
@@ -139,7 +139,7 @@ export const japan: CountryModule = {
   getBrackets,
   computeTaxable,
   computeDeferredFull: computeTaxable,
-  computeSetupTax: (setup, params) => {
+  computeSetupTax: (setup: any, params: any) => {
     const {
       status,
       agiExcl,

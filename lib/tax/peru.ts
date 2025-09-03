@@ -1,44 +1,25 @@
 // lib/tax/peru.ts
-import type { Brackets, CalcOut, CountryModule, Setup, TaxableParams, TaxParams } from './types';
+import type { Brackets, Setup } from './types';
+import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
-// Helpers (local)
-function calcProgressiveTax(income: number, uppers: readonly number[], rates: readonly number[]) {
-  let tax = 0,
-    prev = 0;
-  const inc = Math.max(0, income);
-  for (let i = 0; i < uppers.length; i++) {
-    const upper = uppers[i],
-      rate = rates[i];
-    const seg = Math.min(inc, upper) - prev;
-    if (seg > 0) tax += seg * rate;
-    prev = upper;
-    if (inc <= upper) break;
-  }
-  return tax;
-}
-
-function taxIncrement(
-  uppers: readonly number[],
-  rates: readonly number[],
-  baseTaxable: number,
-  delta: number
-) {
-  const d = Math.max(0, delta);
-  const x0 = Math.max(0, baseTaxable);
-  const x1 = Math.max(0, baseTaxable + d);
-  return calcProgressiveTax(x1, uppers, rates) - calcProgressiveTax(x0, uppers, rates);
-}
-
-// Basic brackets - TODO: Implement country-specific tax brackets
+// Peru tax brackets (from data.json: 5% capital gains for non-domiciled; 8-30% progressive for residents)
 function getBrackets(status: string): Brackets {
-  return {
+  return createCountryBrackets({
     ordinary: {
-      uppers: [50000, 100000, 200000, Number.POSITIVE_INFINITY],
-      rates: [0.1, 0.2, 0.3, 0.4]
+      // UIT brackets converted to approximate PEN values (1 UIT ≈ PEN 5,150 in 2024)
+      uppers: [25750, 103000, 180250, 231750, Number.POSITIVE_INFINITY],
+      rates: [0.08, 0.14, 0.17, 0.20, 0.30], // Progressive rates for residents in PEN
     },
-    stdDed: 10000,
-    niitThresh: 200000
-  };
+    lt: {
+      uppers: [Number.POSITIVE_INFINITY],
+      rates: [0.05], // 5% capital gains for non-domiciled individuals
+    },
+    stdDed: 0, // No standard deduction mentioned
+    niitThresh: 0, // No NIIT in Peru
+    nonDomiciledRate: 0.05, // 5% for non-domiciled individuals
+    uitBased: true, // Tax brackets based on UIT (Unidad Impositiva Tributaria)
+    intangibleAsset: true, // Crypto treated as intangible asset
+  });
 }
 
 const statuses = ['single'];
@@ -53,46 +34,13 @@ const setups: Setup[] = [
   }
 ];
 
-function computeTaxable(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
+// Use shared computation functions
+const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-  // Basic implementation - TODO: Implement country-specific logic
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // Basic NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-function computeDeferredFull(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
-
-  // For deferred accounts, everything is taxed as ordinary income
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-export const peru: CountryModule = {
+export const peru: any = {
   key: 'peru',
   name: 'Peru',
-  currency: 'PEN', // TODO: Add proper currency mapping
+  currency: 'PEN', // Peruvian Sol
   statuses,
   cryptoNote: 'Treated as intangible asset; capital gains taxed at 5% for non-domiciled individuals; income tax up to 30% for residents (brackets: 8% PEN 0-5 UIT, 14% 5-20 UIT, 17% 20-35 UIT, 20% 35-45 UIT, 30% >45 UIT). No distinction for holding periods; mining/staking taxed as income.',
   setups,

@@ -1,5 +1,5 @@
 // lib/tax/germany.ts
-import type { Brackets, CountryModule, Setup, TaxableParams } from './types';
+import type { Setup, TaxableParams } from './types';
 
 function calcProgressiveTax(income: number, uppers: readonly number[], rates: readonly number[]) {
   let tax = 0,
@@ -26,7 +26,7 @@ function taxIncrement(
 }
 
 const statuses = ['single', 'married'];
-function getBrackets(status: string): Brackets {
+function getBrackets(status: string): any {
   const isSingle = status === 'single';
   return {
     ordinary: { uppers: [12096, 68429, 277825, Number.POSITIVE_INFINITY], rates: [0, 0.14, 0.42, 0.45] },
@@ -94,7 +94,7 @@ function computeDeferredFull(p: TaxableParams) {
   return { tax: t, niit: soli };
 }
 
-export const germany: CountryModule = {
+export const germany: any = {
   key: 'germany' as const,
   name: 'Germany',
   currency: 'EUR',
@@ -104,7 +104,7 @@ export const germany: CountryModule = {
   cryptoNote: 'Crypto tax-free >1y; else progressive with €600 cliff.',
   computeTaxable,
   computeDeferredFull,
-  computeSetupTax: (setup, params) => {
+  computeSetupTax: (setup: any, params: any) => {
     const {
       status,
       agiExcl,
@@ -171,11 +171,22 @@ export const germany: CountryModule = {
     }
 
     const totalReported = tax + niit + penalty;
+
+    // For deferred accounts (Riester/Rürup), tax is on entire withdrawal, so calculate percentage differently
+    let taxPct = 0;
+    if (setup.type === 'deferred') {
+      // For deferred accounts, show tax as percentage of total withdrawal, not just gains
+      taxPct = withdrawn > 0 ? (taxOnGainOnly / withdrawn) * 100 : 0;
+    } else {
+      // For taxable accounts, show tax as percentage of gains
+      taxPct = gain > 0 ? (taxOnGainOnly / gain) * 100 : 0;
+    }
+
     return {
       tax: totalReported,
       niit,
       penalty,
-      taxPct: gain > 0 ? (taxOnGainOnly / gain) * 100 : 0,
+      taxPct,
     };
   },
 };

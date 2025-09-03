@@ -1,44 +1,23 @@
 // lib/tax/portugal.ts
-import type { Brackets, CalcOut, CountryModule, Setup, TaxableParams, TaxParams } from './types';
+import type { Brackets, Setup } from './types';
+import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
-// Helpers (local)
-function calcProgressiveTax(income: number, uppers: readonly number[], rates: readonly number[]) {
-  let tax = 0,
-    prev = 0;
-  const inc = Math.max(0, income);
-  for (let i = 0; i < uppers.length; i++) {
-    const upper = uppers[i],
-      rate = rates[i];
-    const seg = Math.min(inc, upper) - prev;
-    if (seg > 0) tax += seg * rate;
-    prev = upper;
-    if (inc <= upper) break;
-  }
-  return tax;
-}
-
-function taxIncrement(
-  uppers: readonly number[],
-  rates: readonly number[],
-  baseTaxable: number,
-  delta: number
-) {
-  const d = Math.max(0, delta);
-  const x0 = Math.max(0, baseTaxable);
-  const x1 = Math.max(0, baseTaxable + d);
-  return calcProgressiveTax(x1, uppers, rates) - calcProgressiveTax(x0, uppers, rates);
-}
-
-// Basic brackets - TODO: Implement country-specific tax brackets
+// Portugal tax brackets (from data.json: 28% short-term gains; tax-free if held >1 year; 14.5-53% progressive for mining/staking)
 function getBrackets(status: string): Brackets {
-  return {
+  return createCountryBrackets({
     ordinary: {
-      uppers: [50000, 100000, 200000, Number.POSITIVE_INFINITY],
-      rates: [0.1, 0.2, 0.3, 0.4]
+      uppers: [8500, 11623, 16472, 21321, 27146, 39791, 51997, 78834, 250000, Number.POSITIVE_INFINITY],
+      rates: [0.145, 0.23, 0.265, 0.285, 0.345, 0.37, 0.43, 0.46, 0.48, 0.53], // Progressive rates for mining/staking
     },
-    stdDed: 10000,
-    niitThresh: 200000
-  };
+    lt: {
+      uppers: [Number.POSITIVE_INFINITY],
+      rates: [0], // Tax-free if held over 1 year
+    },
+    stdDed: 0, // No standard deduction mentioned
+    niitThresh: 0, // No NIIT in Portugal
+    shortTermRate: 0.28, // 28% on short-term gains (held less than 1 year)
+    longTermHoldingPeriod: 1, // 1 year for tax-free treatment
+  });
 }
 
 const statuses = ['single'];
@@ -67,46 +46,13 @@ const setups: Setup[] = [
   }
 ];
 
-function computeTaxable(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
+// Use shared computation functions
+const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
-  // Basic implementation - TODO: Implement country-specific logic
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // Basic NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-function computeDeferredFull(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
-
-  // For deferred accounts, everything is taxed as ordinary income
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-export const portugal: CountryModule = {
+export const portugal: any = {
   key: 'portugal',
   name: 'Portugal',
-  currency: 'EUR', // TODO: Add proper currency mapping
+  currency: 'EUR', // Euro
   statuses,
   cryptoNote: '28% on short-term gains (held less than 1 year); tax-free if held over 1 year. Staking/mining taxed as income at 14.5-53% progressive (brackets: 14.5% €0-€8,500, 23% €8,501-€11,623, 26.5% €11,624-€16,472, 28.5% €16,473-€21,321, 34.5% €21,322-€27,146, 37% €27,147-€39,791, 43% €39,792-€51,997, 46% €51,998-€78,834, 48% €78,835-€250,000, 53% >€250,000).',
   setups,
