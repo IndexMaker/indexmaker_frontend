@@ -621,7 +621,6 @@ export function SupplyPanel({
           </div>
           {/* Footer */}
           {!wallet ? (
-            // Not Connected
             <div className="p-4 flex flex-col gap-2 border-t border-accent bottom-[50px] absolute w-full">
               <Button
                 onClick={connectWallet}
@@ -629,25 +628,6 @@ export function SupplyPanel({
               >
                 {t("common.connectWallet")}
               </Button>
-            </div>
-          ) : !isWhitelisted ? (
-            // Connected but Not Whitelisted
-            <div className="p-4 flex flex-col gap-2 border-t border-accent text-center bottom-[50px] absolute w-full">
-              <span className="text-red-500 text-[13px] font-bold">
-                Your connected wallet is not whitelisted.
-              </span>
-              <Link
-                href={
-                  process.env.NEXT_PUBLIC_CRYPTO_FINANCIAL_ADVISOR ||
-                  "https://cal.com"
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[14px] cursor-pointer">
-                  📅 Book a call with a crypto financial advisor
-                </Button>
-              </Link>
             </div>
           ) : (
             // Connected & Whitelisted
@@ -660,7 +640,7 @@ export function SupplyPanel({
                   Estimated Fill Time : ~15 Minutes
                 </div>
               </div>
-              <div className="flex gap-10 lg:gap-30 items-center h-[40px] justify-between relative">
+              <div className="flex gap-10 lg:gap-10 items-center h-[40px] justify-between relative">
                 <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                   <PopoverTrigger asChild>
                     <Button
@@ -697,19 +677,33 @@ export function SupplyPanel({
                   </PopoverContent>
                 </Popover>
 
-                <Button
-                  className="flex-1 h-[40px] bg-blue-600 hover:bg-blue-700 text-white text-[14px] cursor-pointer"
-                  disabled={
-                    selectedVault.filter(
-                      (_vault) =>
-                        isNaN(Number(_vault.amount)) ||
-                        Number(_vault.amount) === 0
-                    ).length > 0 || !wallet
-                  }
-                  onClick={handleSupply}
-                >
-                  {t("common.finalizeTransactions")}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <div className="relative group">
+                    <Button
+                      className="h-[40px] bg-gray-500 text-white text-[13px] cursor-not-allowed opacity-70"
+                      disabled
+                    >
+                      {t("common.sell")}
+                    </Button>
+                    <div className="absolute hidden group-hover:block bottom-full mb-2 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-800 text-xs text-white rounded whitespace-nowrap">
+                      Sell not available during alpha
+                    </div>
+                  </div>
+
+                  <Button
+                    className="flex-1 h-[40px] bg-blue-600 hover:bg-blue-700 text-white text-[13px] cursor-pointer"
+                    disabled={
+                      selectedVault.filter(
+                        (_vault) =>
+                          isNaN(Number(_vault.amount)) ||
+                          Number(_vault.amount) === 0
+                      ).length > 0 || !wallet
+                    }
+                    onClick={handleSupply}
+                  >
+                    {t("common.finalizeTransactions")}
+                  </Button>
+                </div>
               </div>
             </div>
           )}
