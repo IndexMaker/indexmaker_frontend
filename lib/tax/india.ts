@@ -1,5 +1,5 @@
 // India tax calculations
-import type { Brackets, CalcOut, CountryModule, TaxableParams } from './types';
+import type { CalcOut, TaxableParams } from './types';
 
 // India tax brackets for regular income (slab rates)
 // 0% ₹0-3 lakh, 5% 3-6 lakh, 10% 6-9 lakh, 15% 9-12 lakh, 20% 12-15 lakh, 30% >15 lakh
@@ -82,7 +82,7 @@ function computeTaxable(params: TaxableParams): CalcOut {
     tax,
     niit: 0, // India doesn't have equivalent to US NIIT
     penalty,
-    taxPct: taxableAmount > 0 ? tax / taxableAmount : 0,
+    taxPct: taxableAmount > 0 ? (tax / taxableAmount) * 100 : 0,
   };
 }
 

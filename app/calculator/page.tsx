@@ -508,7 +508,7 @@ function calculateTaxes(
       years: years,
     });
     const { tax, niit } = result;
-    const taxPct = gain > 0 ? tax / gain : 0;
+    const taxPct = gain > 0 ? (tax / gain) * 100 : 0;
     return { tax, niit, penalty: 0, taxPct };
   }
 
@@ -597,10 +597,15 @@ function CalculatorContent() {
 
   // Currency formatting helper
   const formatCurrency = useCallback((amount: number, options?: { compact?: boolean; showCode?: boolean }) => {
-    const { compact = false, showCode = false } = options || {};
+    const { compact = false, showCode = true } = options || {}; // Changed default to true to show currency codes
 
     if (compact && Math.abs(amount) >= 1000) {
       return CurrencyFormatter.formatCompact(amount, safeCountry as any);
+    }
+
+    // Use formatTaxAmount for consistent "CODE number" format when showCode is true
+    if (showCode) {
+      return CurrencyFormatter.formatTaxAmount(amount, safeCountry as any);
     }
 
     return CurrencyFormatter.formatCurrency(amount, safeCountry as any, { showCode });
@@ -1153,10 +1158,10 @@ function CalculatorContent() {
               </p>
               <div className="mt-2 p-2 bg-red-50 rounded-md border border-red-200">
                 <p className="text-sm text-red-800">
-                  💰 <strong>Currency:</strong> {getCurrencyInfo(safeCountry).name} ({getCurrencyInfo(safeCountry).code}) {getCurrencyInfo(safeCountry).symbol}
+                  💰 <strong>Currency:</strong> {getCurrencyInfo(safeCountry).name} ({getCurrencyInfo(safeCountry).code})
                 </p>
                 <p className="text-xs text-red-600 mt-1">
-                  All amounts will be displayed in {getCurrencyInfo(safeCountry).code} using local formatting conventions.
+                  All amounts will be displayed with currency codes (e.g., &ldquo;{getCurrencyInfo(safeCountry).code} 1,000.00&rdquo;) using local formatting conventions.
                 </p>
               </div>
 
@@ -1368,14 +1373,14 @@ function CalculatorContent() {
 
                   <TableRow className="border-b border-gray-200">
                     <TableCell className="text-gray-900 font-medium">Fees/Notes</TableCell>
-                    {results.etf && <TableCell className="text-gray-700 text-sm">{results.etf.fees}</TableCell>}
-                    <TableCell className="text-gray-700 text-sm">
+                    {results.etf && <TableCell className="text-gray-700 text-sm whitespace-normal break-words">{results.etf.fees}</TableCell>}
+                    <TableCell className="text-gray-700 text-sm whitespace-normal break-words">
                       {'No specific fees for crypto in taxable accounts. '} {safeMod.cryptoNote}
                     </TableCell>
                     {maritalFeature && divorce && status === 'married' && results.divorcedEtf && (
                       <>
-                        <TableCell className="text-gray-700 text-sm">{results.divorcedEtf.fees}</TableCell>
-                        <TableCell className="text-gray-700 text-sm">
+                        <TableCell className="text-gray-700 text-sm whitespace-normal break-words">{results.divorcedEtf.fees}</TableCell>
+                        <TableCell className="text-gray-700 text-sm whitespace-normal break-words">
                           {'No specific fees for crypto in taxable accounts. '} {safeMod.cryptoNote}
                         </TableCell>
                       </>
@@ -1478,7 +1483,7 @@ function CalculatorContent() {
                                   key={j}
                                   className={`text-center font-medium ${cls} ${isPositive ? 'text-green-600' : 'text-red-600'} ${(i === selectedYearIdx && j === nearestReturnIdx) ? 'bg-blue-50 border-2 border-blue-300' : ''}`}
                                 >
-                                  {formatCurrency(surplusAmount, { showCode: false })}
+                                  {formatCurrency(surplusAmount)}
                                 </TableCell>
                               );
                             })}

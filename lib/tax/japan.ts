@@ -105,7 +105,7 @@ const setups = [
     fees: 'Tax deduction on contributions, taxed on withdrawal',
     penaltyRate: 0, // No early withdrawal allowed
     thresholdAge: 60,
-    contributionLimit: 900000, // ¥75,000/month * 12 for self-employed
+    contributionLimit: 900000, // JPY 75,000/month * 12 for self-employed
     description: 'Individual Defined Contribution pension plan',
   },
   {
@@ -114,7 +114,7 @@ const setups = [
     fees: 'Tax-free growth and withdrawals',
     penaltyRate: 0, // Tax-free withdrawals
     thresholdAge: 0, // No age restriction
-    contributionLimit: 1800000, // ¥1.8M annually for growth type
+    contributionLimit: 1800000, // JPY 1.8M annually for growth type
     description: 'Nippon Individual Savings Account - Growth type',
   },
   {
@@ -123,7 +123,7 @@ const setups = [
     fees: 'Tax-free growth and withdrawals',
     penaltyRate: 0,
     thresholdAge: 0,
-    contributionLimit: 1200000, // ¥1.2M annually for accumulation type
+    contributionLimit: 1200000, // JPY 1.2M annually for accumulation type
     description: 'Nippon Individual Savings Account - Accumulation type',
   },
 ];

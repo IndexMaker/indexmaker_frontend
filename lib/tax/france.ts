@@ -63,7 +63,7 @@ const setups: Setup[] = [
   {
     name: 'Assurance-Vie',
     type: 'deferred',
-    fees: 'Tax on gains depending on holding time: <8y 30%, >=8y 24.7% on gains over abatement (€4,600 single, €9,200 couple).',
+    fees: 'Tax on gains depending on holding time: <8y 30%, >=8y 24.7% on gains over abatement (EUR 4,600 single, EUR 9,200 couple).',
     penaltyRate: 0,
     thresholdAge: Number.POSITIVE_INFINITY,
   },
@@ -87,7 +87,7 @@ const setups: Setup[] = [
 
 /**
  * CTO and crypto => PFU 30% (2025): 12.8% IR + 17.2% social.
- * Crypto gets €305 annual allowance.
+ * Crypto gets EUR 305 annual allowance.
  * Return the full flat tax in `tax` so UI shows total actually paid.
  */
 function computeTaxable(p: TaxableParams) {

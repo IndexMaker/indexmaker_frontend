@@ -64,7 +64,7 @@ function computeTaxable(params: TaxableParams): CalcOut {
     tax,
     niit: 0, // Italy doesn't have equivalent to US NIIT
     penalty: 0,
-    taxPct: taxableAmount > 0 ? tax / taxableAmount : 0,
+    taxPct: taxableAmount > 0 ? (tax / taxableAmount) * 100 : 0,
   };
 }
 

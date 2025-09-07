@@ -11,7 +11,7 @@ function getBrackets(status: string): Brackets {
     },
     lt: null, // No long-term capital gains distinction
     stdDed: 0, // No standard deduction in Hong Kong
-    niitThresh: 0, // No NIIT in Hong Kon-g
+    niitThresh: 0, // No NIIT in Hong Kong
   });
 }
 

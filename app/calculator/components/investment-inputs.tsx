@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { getCurrencyInfo } from "@/lib/tax/utils/currency-mapping";
 import {
     selectCanCalculate,
     selectDefiEnabled,
@@ -68,7 +69,7 @@ export function InvestmentInputs() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="investment-amount">Investment Amount ($)</Label>
+          <Label htmlFor="investment-amount">Investment Amount ({getCurrencyInfo(selectedCountry).code})</Label>
           <Input
             id="investment-amount"
             type="number"
@@ -99,7 +100,7 @@ export function InvestmentInputs() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="additional-income">Additional Income ($)</Label>
+          <Label htmlFor="additional-income">Additional Income ({getCurrencyInfo(selectedCountry).code})</Label>
           <Input
             id="additional-income"
             type="number"

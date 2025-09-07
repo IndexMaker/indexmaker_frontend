@@ -2,20 +2,20 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { selectCurrentResult, selectSelectedCountryInfo } from "@/redux/calculatorSelectors";
+import { CurrencyFormatter } from "@/lib/tax/utils/currency-formatter";
+import { selectCurrentResult, selectSelectedCountry, selectSelectedCountryInfo } from "@/redux/calculatorSelectors";
 import { DollarSign, Percent, TrendingUp } from "lucide-react";
 import { useSelector } from "react-redux";
 
 export function ResultsDisplay() {
   const results = useSelector(selectCurrentResult);
   const countryInfo = useSelector(selectSelectedCountryInfo);
+  const selectedCountry = useSelector(selectSelectedCountry);
 
   if (!results) return null;
+
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+    return CurrencyFormatter.formatTaxAmount(amount, selectedCountry);
   };
 
   const formatPercentage = (rate: number) => {
