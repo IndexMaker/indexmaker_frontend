@@ -144,7 +144,9 @@ export const germany: any = {
       // Early withdrawal penalties
       if (currentAge + years < setup.thresholdAge) {
         if (name.includes('riester')) {
-          penalty = withdrawn; // Repay subsidies + tax penalty (simplified as 100%)
+          // Riester early withdrawal: repay subsidies + tax penalty
+          // Realistic penalty: ~20-30% of withdrawal (subsidies + tax clawback)
+          penalty = withdrawn * 0.25; // 25% penalty for early withdrawal
         }
         // Rürup doesn't allow early withdrawal
       }

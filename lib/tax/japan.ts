@@ -209,11 +209,25 @@ export const japan: any = {
     }
 
     const totalReported = tax + niit + penalty;
+
+    // Calculate tax percentage correctly based on account type
+    let taxPct = 0;
+    if (setup.type === 'deferred') {
+      // iDeCo: Tax is on entire withdrawal, so percentage should be against withdrawal
+      taxPct = withdrawn > 0 ? (taxOnGainOnly / withdrawn) * 100 : 0;
+    } else if (setup.type === 'taxfree') {
+      // NISA: No tax, so 0%
+      taxPct = 0;
+    } else {
+      // Taxable accounts: Tax is on gains only, so percentage should be against gains
+      taxPct = gain > 0 ? (taxOnGainOnly / gain) * 100 : 0;
+    }
+
     return {
       tax: totalReported,
       niit,
       penalty,
-      taxPct: gain > 0 ? (taxOnGainOnly / gain) * 100 : 0,
+      taxPct,
     };
   },
 };
