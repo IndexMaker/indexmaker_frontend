@@ -3,7 +3,7 @@ import type { Brackets, Setup, TaxableParams, CountryModule } from './types';
 import { createCountryBrackets, taxIncrement } from './utils/tax-calculations';
 
 // Austria tax brackets (from data.json: 0%, 20%, 30%, 40%, 48%, 50%, 55% + flat 27.5% on capital income)
-function getBrackets(_status: string): Brackets {
+function getBrackets(): Brackets {
   return createCountryBrackets({
     ordinary: {
       uppers: [12816, 20818, 34513, 66612, 99266, 1000000, Number.POSITIVE_INFINITY],
@@ -43,7 +43,7 @@ const setups: Setup[] = [
  */
 function computeTaxable(params: TaxableParams) {
   const { taxableAmount, brackets } = params;
-  const { capitalGainsFlatRate } = brackets;
+  const capitalGainsFlatRate = brackets.capitalGainsFlatRate ?? 0.275; // Default to 27.5% if undefined
 
   // Austria applies flat 27.5% rate to all capital gains (crypto and regular investments)
   const tax = taxableAmount * capitalGainsFlatRate;
