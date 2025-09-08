@@ -1,42 +1,19 @@
 // lib/tax/canada.ts
-import type { Brackets, CalcOut, CountryModule, Setup, TaxableParams, TaxParams } from './types';
-
-function calcProgressiveTax(income: number, uppers: readonly number[], rates: readonly number[]) {
-  let tax = 0,
-    prev = 0;
-  for (let i = 0; i < uppers.length; i++) {
-    const upper = uppers[i],
-      rate = rates[i];
-    const seg = Math.min(income, upper) - prev;
-    if (seg > 0) tax += seg * rate;
-    prev = upper;
-    if (income <= upper) break;
-  }
-  return tax;
-}
-function taxIncrement(
-  uppers: readonly number[],
-  rates: readonly number[],
-  baseTaxable: number,
-  delta: number
-) {
-  const base = Math.max(0, baseTaxable);
-  const d = Math.max(0, delta);
-  return calcProgressiveTax(base + d, uppers, rates) - calcProgressiveTax(base, uppers, rates);
-}
+import type { Brackets, CalcOut, Setup, TaxableParams, TaxParams } from './types';
+import { createCountryBrackets, taxIncrement } from './utils/tax-calculations';
 
 const statuses = ['single'];
-function getBrackets(): any {
-  return {
+function getBrackets(): Brackets {
+  return createCountryBrackets({
     ordinary: {
       uppers: [57375, 114750, 177882, 253414, Number.POSITIVE_INFINITY],
-      rates: [0.15, 0.205, 0.26, 0.29, 0.33],
+      rates: [0.15, 0.205, 0.26, 0.29, 0.33], // Federal tax brackets from data.json
     },
     lt: null,
     stdDed: 0,
     niitThresh: 0,
-    capGainInclusion: 0.5,
-  };
+    capGainInclusion: 0.5, // 50% of capital gains included in income
+  });
 }
 
 const setups: Setup[] = [
@@ -96,7 +73,6 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
   let tax = 0;
   let niit = 0;
   let penalty = 0;
-  let taxOnGainOnly = 0;
 
   if (setup.type === 'taxable') {
     // Taxable account: only pay tax on gains
@@ -113,7 +89,6 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
     });
     tax = result.tax;
     niit = result.niit;
-    taxOnGainOnly = tax;
   } else if (setup.type === 'deferred') {
     // RRSP: tax on full withdrawal
     const result = computeDeferredFull({
@@ -144,7 +119,19 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
   penalty += withdrawn * additionalPenalty;
 
   const totalTax = tax + niit + penalty;
-  const taxPct = withdrawn > 0 ? (totalTax / withdrawn) * 100 : 0;
+
+  // Calculate tax percentage correctly based on account type
+  let taxPct = 0;
+  if (setup.type === 'deferred') {
+    // RRSP: Tax is on entire withdrawal, so percentage should be against withdrawal
+    taxPct = withdrawn > 0 ? (totalTax / withdrawn) * 100 : 0;
+  } else if (setup.type === 'taxfree') {
+    // TFSA: No tax, so 0%
+    taxPct = 0;
+  } else {
+    // Taxable accounts: Tax is on gains only, so percentage should be against gains
+    taxPct = gain > 0 ? (totalTax / gain) * 100 : 0;
+  }
 
   return {
     tax: totalTax,

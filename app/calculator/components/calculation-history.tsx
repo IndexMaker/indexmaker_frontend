@@ -3,6 +3,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CurrencyFormatter } from "@/lib/tax/utils/currency-formatter";
+import { log } from "@/lib/utils/logger";
 import { selectCalculationHistory, selectRecentCalculations } from "@/redux/calculatorSelectors";
 import { removeFromHistory } from "@/redux/calculatorSlice";
 import type { AppDispatch } from "@/redux/store";
@@ -14,11 +16,8 @@ export function CalculationHistory() {
   const history = useSelector(selectCalculationHistory);
   const recentCalculations = useSelector(selectRecentCalculations);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+  const formatCurrency = (amount: number, country: string) => {
+    return CurrencyFormatter.formatTaxAmount(amount, country);
   };
 
   const formatDate = (dateString: string) => {
@@ -31,7 +30,7 @@ export function CalculationHistory() {
 
   const handleExport = () => {
     // Export functionality
-    console.log("Exporting calculation history...");
+    log.info("Exporting calculation history", { historyCount: history.length });
   };
 
   if (history.length === 0) {
@@ -94,11 +93,11 @@ export function CalculationHistory() {
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Amount: </span>
-                    <span className="font-medium">{formatCurrency(calculation.input.amount)}</span>
+                    <span className="font-medium">{formatCurrency(calculation.input.amount, calculation.country)}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Tax: </span>
-                    <span className="font-medium text-red-600">{formatCurrency(calculation.result.totalTax)}</span>
+                    <span className="font-medium text-red-600">{formatCurrency(calculation.result.totalTax, calculation.country)}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Rate: </span>

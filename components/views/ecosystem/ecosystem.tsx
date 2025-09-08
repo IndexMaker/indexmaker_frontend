@@ -1,15 +1,13 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { Project } from "@/types";
-import { useTheme } from "next-themes";
 import External from "@/components/icons/external";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
-import Logo from "@/components/icons/logo";
 import IndexMaker from "@/components/icons/indexmaker";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { Project } from "@/types/index";
+import { useTheme } from "next-themes";
+import Link from "next/link";
 
 interface ProjectCardProps {
   project: Project;

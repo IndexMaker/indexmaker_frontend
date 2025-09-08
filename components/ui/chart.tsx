@@ -1,10 +1,8 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import * as React from 'react';
 import * as RechartsPrimitive from 'recharts';
-import { LegendProps } from 'recharts';
-import { cn } from '@/lib/utils';
-import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: '', dark: '.dark' } as const;
@@ -126,7 +124,20 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey,
-}: ChartTooltipContentProps<ValueType, NameType>) {
+}: React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
+  React.ComponentProps<'div'> & {
+    hideLabel?: boolean;
+    hideIndicator?: boolean;
+    indicator?: 'line' | 'dot' | 'dashed';
+    nameKey?: string;
+    labelKey?: string;
+    payload?: any[];
+    label?: any;
+    labelFormatter?: (label: any, payload: any[]) => React.ReactNode;
+    labelClassName?: string;
+    formatter?: (value: any, name: any, props: any) => React.ReactNode;
+    color?: string;
+  }) {
   const { config } = useChart();
 
   const tooltipLabel = React.useMemo(() => {
@@ -183,7 +194,7 @@ function ChartTooltipContent({
                 indicator === 'dot' && 'items-center'
               )}
             >
-              {item?.value !== undefined && item.name ? (
+              {item?.value !== undefined && item.name && formatter ? (
                 formatter(item.value, item.name, item, index, item.payload)
               ) : (
                 <>
@@ -246,7 +257,12 @@ function ChartLegendContent({
   payload,
   verticalAlign = 'bottom',
   nameKey,
-}: any) {
+}: React.ComponentProps<'div'> & {
+    hideIcon?: boolean;
+    nameKey?: string;
+    payload?: any[];
+    verticalAlign?: 'top' | 'middle' | 'bottom';
+  }) {
   const { config } = useChart();
 
   if (!payload?.length) {

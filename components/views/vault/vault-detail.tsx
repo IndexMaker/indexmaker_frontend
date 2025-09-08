@@ -1,88 +1,85 @@
 "use client";
 
-import type React from "react";
-import { useMediaQuery } from "react-responsive";
-import Link from "next/link";
 import {
-  ArrowUpRight,
-  CheckCircle,
-  Copy,
-  Eye,
-  EyeOff,
-  FileText,
-  HelpCircle,
-  Search,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useEffect, useRef, useState } from "react";
-import Dashboard from "../Dashboard/dashboard";
-import { toast } from "sonner";
-import {
-  Activity,
-  SupplyPosition,
-  VaultAsset,
-  mockup_vaults,
-} from "@/lib/data";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@radix-ui/react-popover";
-import { Input } from "@/components/ui/input";
-import { CustomButton } from "@/components/ui/custom-button";
-import { VaultReAllocation } from "@/components/elements/vault-reallocation";
-import { VaultSupply } from "@/components/elements/vault-supplyposition";
-import { TransactionTypeSelector } from "@/components/elements/transaction-types";
-import { VaultActivity } from "@/components/elements/vault-activity";
-import Image from "next/image";
-import { useLanguage } from "@/contexts/language-context";
-import { VaultLiteratureSection } from "./vault-literature";
-import { cn, getERC20AddressForIndex, shortenAddress } from "@/lib/utils";
+    fetchBtcHistoricalData,
+    fetchDepositTransactionData,
+    fetchEthHistoricalData,
+    fetchHistoricalData,
+    fetchUserTransactionData,
+    fetchVaultAssets,
+} from "@/api/indices";
 import { PerformanceChart } from "@/components/elements/performance-chart";
 import { TimePeriodSelector } from "@/components/elements/time-period";
-import { IndexListEntry } from "@/types";
+import { TransactionTypeSelector } from "@/components/elements/transaction-types";
+import { VaultActivity } from "@/components/elements/vault-activity";
+import { VaultAssets } from "@/components/elements/vault-assets";
+import { VaultReAllocation } from "@/components/elements/vault-reallocation";
+import { VaultSupply } from "@/components/elements/vault-supplyposition";
+import IndexMaker from "@/components/icons/indexmaker";
+import SymmioIndices from "@/components/icons/symmioIndices";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordian";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { CustomButton } from "@/components/ui/custom-button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  fetchBtcHistoricalData,
-  fetchDepositTransactionData,
-  fetchEthHistoricalData,
-  fetchHistoricalData,
-  fetchUserTransactionData,
-  fetchVaultAssets,
-} from "@/api/indices";
-import IndexMaker from "@/components/icons/indexmaker";
-import { VaultAssets } from "@/components/elements/vault-assets";
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useLanguage } from "@/contexts/language-context";
+import { useQuoteContext } from "@/contexts/quote-context";
+import { useWallet } from "@/contexts/wallet-context";
+import {
+    Activity,
+    SupplyPosition,
+    VaultAsset,
+    mockup_vaults,
+} from "@/lib/data";
+import { getIndexData } from "@/lib/IndexMockupData";
+import { cn, getERC20AddressForIndex, shortenAddress } from "@/lib/utils";
+import { RootState } from "@/redux/store";
+import { addSelectedVault } from "@/redux/vaultSlice";
+import { IndexListEntry } from "@/types/index";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@radix-ui/react-popover";
+import {
+    ArrowUpRight,
+    CheckCircle,
+    Copy,
+    Eye,
+    EyeOff,
+    FileText,
+    HelpCircle,
+    Search,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useMediaQuery } from "react-responsive";
+import { toast } from "sonner";
+import USDC from "../../../public/logos/usd-coin.png";
+import Dashboard from "../Dashboard/dashboard";
 import FundDetail from "./fund-details";
 import FundManager from "./fund-manager";
 import FundOverview from "./fund-overview";
-import PortfolioManagerInsights from "./portfolio-manager-insignts";
 import Risk from "./fund-risk";
-import FundRiskReturn from "./fund-risk-return";
-import { AdditionalMenu } from "@/components/layouts/additionalMenu";
-import IndexBalance from "./index-balance";
-import { getBalance } from "viem/actions";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/redux/store";
-import { useWallet } from "@/contexts/wallet-context";
-import { addSelectedVault } from "@/redux/vaultSlice";
-import USDC from "../../../public/logos/usd-coin.png";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordian";
-import { getIndexData } from "@/lib/IndexMockupData";
-import SymmioIndices from "@/components/icons/symmioIndices";
-import { useQuoteContext } from "@/contexts/quote-context";
 import EquityStyleMap from "./fund-style-map";
+import IndexBalance from "./index-balance";
+import PortfolioManagerInsights from "./portfolio-manager-insignts";
+import { VaultLiteratureSection } from "./vault-literature";
 interface VaultDetailPageProps {
   index: IndexListEntry | null;
 }

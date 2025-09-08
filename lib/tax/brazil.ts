@@ -1,5 +1,5 @@
 // Brazil tax calculations
-import type { Brackets, CalcOut, CountryModule, TaxableParams } from './types';
+import type { CalcOut, TaxableParams } from './types';
 
 // Brazil tax brackets for ordinary income
 // 0% <R$28,559.70, 7.5% R$28,559.71-R$39,168.43, 15% R$39,168.44-R$50,788.28,
@@ -75,7 +75,7 @@ function computeTaxable(params: TaxableParams): CalcOut {
     tax,
     niit: 0, // Brazil doesn't have equivalent to US NIIT
     penalty: 0,
-    taxPct: taxableAmount > 0 ? tax / taxableAmount : 0,
+    taxPct: taxableAmount > 0 ? (tax / taxableAmount) * 100 : 0,
   };
 }
 
@@ -137,8 +137,8 @@ const setups = [
   {
     name: 'PGBL (Plano Gerador de Benefício Livre)',
     type: 'deferred' as const,
-    fees: 'Regression tax table (35% if withdrawn <2 years)',
-    penaltyRate: 0.35, // Regression table: 35% if withdrawn <2 years
+    fees: 'Regression tax table (35% if withdrawn <2 years, decreasing to 10% after 10 years)',
+    penaltyRate: 0, // No additional penalty - regression table is the tax
     thresholdAge: 0, // No specific age, but regression table applies
     contributionLimit: 0, // 12% of income (calculated dynamically)
     description: 'Tax-deductible contributions, regression tax table on withdrawals',
@@ -146,8 +146,8 @@ const setups = [
   {
     name: 'VGBL (Vida Gerador de Benefício Livre)',
     type: 'taxfree' as const, // Tax on gains only
-    fees: 'Tax on gains only with regression table',
-    penaltyRate: 0.35, // Same regression table as PGBL
+    fees: 'Tax on gains only with regression table (35% if withdrawn <2 years, decreasing to 10% after 10 years)',
+    penaltyRate: 0, // No additional penalty - regression table is the tax
     thresholdAge: 0,
     contributionLimit: Number.POSITIVE_INFINITY, // No contribution limit
     description: 'After-tax contributions, tax on gains only with regression table',
@@ -209,11 +209,10 @@ export const brazil: any = {
                   : 0.1;
       tax = withdrawn * regressionRate;
 
-      // Early withdrawal penalty
-      const isQualified = currentAge + years >= setup.thresholdAge && years >= 10;
-      if (!isQualified) {
-        penalty = withdrawn * setup.penaltyRate; // 10% penalty
-      }
+      // Additional penalty for very early withdrawal (if any)
+      // Note: The regression table IS the tax, not a penalty
+      // Only apply additional penalty if specified
+      penalty = 0; // No additional penalty for PGBL beyond regression table
 
       penalty += additionalPenalty * withdrawn;
       taxOnGainOnly = tax + penalty;
@@ -234,11 +233,10 @@ export const brazil: any = {
                   : 0.1;
       tax = gain * regressionRate;
 
-      // Early withdrawal penalty
-      const isQualified = currentAge + years >= setup.thresholdAge && years >= 10;
-      if (!isQualified) {
-        penalty = withdrawn * setup.penaltyRate; // 10% penalty
-      }
+      // Additional penalty for very early withdrawal (if any)
+      // Note: The regression table IS the tax, not a penalty
+      // Only apply additional penalty if specified
+      penalty = 0; // No additional penalty for VGBL beyond regression table
 
       penalty += additionalPenalty * withdrawn;
       taxOnGainOnly = tax + penalty;
@@ -262,11 +260,25 @@ export const brazil: any = {
     }
 
     const totalReported = tax + niit + penalty;
+
+    // Calculate tax percentage correctly based on account type
+    let taxPct = 0;
+    if (name.includes('pgbl')) {
+      // PGBL: Tax is on entire withdrawal (EET model), so percentage should be against withdrawal
+      taxPct = withdrawn > 0 ? (taxOnGainOnly / withdrawn) * 100 : 0;
+    } else if (name.includes('vgbl')) {
+      // VGBL: Tax is on gains only (TEE model), so percentage should be against gains
+      taxPct = gain > 0 ? (taxOnGainOnly / gain) * 100 : 0;
+    } else {
+      // Taxable accounts: Tax is on gains only
+      taxPct = gain > 0 ? (taxOnGainOnly / gain) * 100 : 0;
+    }
+
     return {
       tax: totalReported,
       niit,
       penalty,
-      taxPct: gain > 0 ? (taxOnGainOnly / gain) * 100 : 0,
+      taxPct,
     };
   },
 };

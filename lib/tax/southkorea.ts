@@ -1,44 +1,25 @@
 // lib/tax/southkorea.ts
-import type { Brackets, CalcOut, CountryModule, Setup, TaxableParams, TaxParams } from './types';
+import type { Brackets, Setup } from './types';
+import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
 
-// Helpers (local)
-function calcProgressiveTax(income: number, uppers: readonly number[], rates: readonly number[]) {
-  let tax = 0,
-    prev = 0;
-  const inc = Math.max(0, income);
-  for (let i = 0; i < uppers.length; i++) {
-    const upper = uppers[i],
-      rate = rates[i];
-    const seg = Math.min(inc, upper) - prev;
-    if (seg > 0) tax += seg * rate;
-    prev = upper;
-    if (inc <= upper) break;
-  }
-  return tax;
-}
-
-function taxIncrement(
-  uppers: readonly number[],
-  rates: readonly number[],
-  baseTaxable: number,
-  delta: number
-) {
-  const d = Math.max(0, delta);
-  const x0 = Math.max(0, baseTaxable);
-  const x1 = Math.max(0, baseTaxable + d);
-  return calcProgressiveTax(x1, uppers, rates) - calcProgressiveTax(x0, uppers, rates);
-}
-
-// Basic brackets - TODO: Implement country-specific tax brackets
-function getBrackets(status: string): any {
-  return {
+// South Korea tax brackets (from data.json: No capital gains tax until 2028; 6-45% progressive if over KRW 2.5M threshold starting 2028)
+function getBrackets(status: string): Brackets {
+  return createCountryBrackets({
     ordinary: {
-      uppers: [50000, 100000, 200000, Number.POSITIVE_INFINITY],
-      rates: [0.1, 0.2, 0.3, 0.4]
+      uppers: [14000000, 50000000, 88000000, 150000000, 300000000, 500000000, 1000000000, Number.POSITIVE_INFINITY],
+      rates: [0.06, 0.15, 0.24, 0.35, 0.38, 0.40, 0.42, 0.45], // Progressive rates for staking/mining as income in KRW
     },
-    stdDed: 10000,
-    niitThresh: 200000
-  };
+    lt: {
+      uppers: [2500000, 14000000, 50000000, 88000000, 150000000, 300000000, 500000000, 1000000000, Number.POSITIVE_INFINITY],
+      rates: [0, 0.06, 0.15, 0.24, 0.35, 0.38, 0.40, 0.42, 0.45], // No tax until 2028, then progressive if over KRW 2.5M
+    },
+    stdDed: 0, // No standard deduction mentioned
+    niitThresh: 0, // No NIIT in South Korea
+    exemptThreshold: 2500000, // KRW 2.5M threshold
+    postponedUntil: '2028-01-01', // Capital gains tax postponed until 2028
+    irpBenefits: true, // Individual Retirement Pension (IRP) benefits
+    isaBenefits: true, // Individual Savings Account (ISA) benefits
+  });
 }
 
 const statuses = ['single'];
@@ -67,46 +48,13 @@ const setups: Setup[] = [
   }
 ];
 
-function computeTaxable(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
-
-  // Basic implementation - TODO: Implement country-specific logic
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // Basic NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
-
-function computeDeferredFull(p: TaxableParams): { readonly tax: number; readonly niit: number } {
-  const { agiExcl, taxableAmount, brackets } = p;
-  const { ordinary, stdDed, niitThresh } = brackets;
-
-  // For deferred accounts, everything is taxed as ordinary income
-  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
-  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
-  
-  // NIIT calculation
-  const totalIncome = agiExcl + taxableAmount;
-  let niit = 0;
-  if (totalIncome > niitThresh) {
-    niit = Math.min(taxableAmount, totalIncome - niitThresh) * 0.038;
-  }
-
-  return { tax, niit };
-}
+// Use shared computation functions
+const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
 
 export const southkorea: any = {
   key: 'southkorea',
   name: 'South Korea',
-  currency: 'KRW', // TODO: Add proper currency mapping
+  currency: 'KRW', // South Korean Won
   statuses,
   cryptoNote: 'No capital gains tax until 2028 (postponed); gains taxed as other income at 6-45% if over KRW 2.5m threshold starting 2028 (brackets: 6% KRW 14m-50m, 15% 50m-88m, 24% 88m-150m, 35% 150m-300m, 38% 300m-500m, 40% 500m-1b, 45% >1b). Staking/mining taxed as income at progressive rates 6-45%.',
   setups,

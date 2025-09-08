@@ -1,3 +1,4 @@
+import { Project } from "@/types/index";
 import type { Vault } from "./types/vault";
 
 export type VaultInfo = {
@@ -265,23 +266,20 @@ export const mockup_vaults: Vault[] = [
   },
 ];
 
-export interface Project {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-}
+
 
 export const projects: Project[] = [
   {
-    id: "symmio",
+    id: 1,
+    projectId: "symmio",
     name: "Symmio Index",
     description:
       "Building full-stack onchain juridiction, enabling index providers to launch liquidity in minutes.",
     icon: "aragon",
   },
   {
-    id: "TBD",
+    id: 2,
+    projectId: "TBD",
     name: "TBD Index",
     description:
       "TBD Index is a leading onchain index provider, enabling index providers to launch liquidity in minutes.",

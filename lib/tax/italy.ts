@@ -1,5 +1,5 @@
 // Italy tax calculations
-import type { Brackets, CalcOut, CountryModule, TaxableParams } from './types';
+import type { CalcOut, TaxableParams } from './types';
 
 // Italy tax brackets for ordinary income
 // 23% €0-€28,000, 25% €28,001-€50,000, 35% €50,001-€75,000, 43% >€75,000
@@ -64,7 +64,7 @@ function computeTaxable(params: TaxableParams): CalcOut {
     tax,
     niit: 0, // Italy doesn't have equivalent to US NIIT
     penalty: 0,
-    taxPct: taxableAmount > 0 ? tax / taxableAmount : 0,
+    taxPct: taxableAmount > 0 ? (tax / taxableAmount) * 100 : 0,
   };
 }
 
@@ -109,23 +109,74 @@ export const italy: any = {
   getBrackets,
   computeTaxable,
   computeDeferredFull: computeTaxable,
-  computeSetupTax: (_setup, params) => {
-    const taxableParams = {
-      country: 'italy' as const,
-      status: params.status,
-      agiExcl: params.agiExcl,
-      taxableAmount: params.gain,
-      isLong: params.isLong,
-      brackets: params.brackets,
-      isCrypto: params.isCrypto,
-      years: params.years,
-    };
-    const result = computeTaxable(taxableParams);
+  computeSetupTax: (setup: any, params: any) => {
+    const { initial, gain, years, currentAge, additionalPenalty } = params;
+    const withdrawn = initial + gain;
+
+    let tax = 0;
+    let niit = 0;
+    let penalty = 0;
+
+    if (setup.type === 'deferred') {
+      // Pension Fund - tax on entire withdrawal at reduced rate (23%)
+      tax = withdrawn * 0.23;
+
+      // Early withdrawal penalty
+      if (currentAge + years < setup.thresholdAge) {
+        penalty = withdrawn * setup.penaltyRate;
+      }
+    } else if (setup.type === 'taxfree') {
+      // PIR - tax-free if held for 5 years, otherwise standard capital gains tax
+      if (years < 5) {
+        tax = gain * 0.26; // Standard capital gains tax
+        penalty = gain * setup.penaltyRate; // Repayment of benefits
+      } else {
+        tax = 0; // Tax-free
+      }
+    } else {
+      // Taxable accounts - standard capital gains tax
+      const taxableParams = {
+        country: 'italy' as const,
+        status: params.status,
+        agiExcl: params.agiExcl,
+        taxableAmount: gain,
+        isLong: params.isLong,
+        brackets: params.brackets,
+        isCrypto: params.isCrypto,
+        years: params.years,
+      };
+      const result = computeTaxable(taxableParams);
+      tax = result.tax;
+      niit = result.niit;
+    }
+
+    // Add any additional penalty
+    penalty += withdrawn * additionalPenalty;
+
+    const totalTax = tax + niit + penalty;
+
+    // Calculate tax percentage correctly based on account type
+    let taxPct = 0;
+    if (setup.type === 'deferred') {
+      // Pension Fund: Tax is on entire withdrawal, so percentage should be against withdrawal
+      taxPct = withdrawn > 0 ? (totalTax / withdrawn) * 100 : 0;
+    } else if (setup.type === 'taxfree') {
+      // PIR: Tax-free if held for 5+ years, otherwise tax on gains
+      if (years >= 5) {
+        taxPct = 0; // Tax-free
+      } else {
+        taxPct = gain > 0 ? (totalTax / gain) * 100 : 0;
+      }
+    } else {
+      // Taxable accounts: Tax is on gains only, so percentage should be against gains
+      taxPct = gain > 0 ? (totalTax / gain) * 100 : 0;
+    }
+
     return {
-      tax: result.tax,
-      niit: result.niit,
-      penalty: 0,
-      taxPct: params.gain > 0 ? (result.tax / params.gain) * 100 : 0,
+      tax: totalTax,
+      niit,
+      penalty,
+      taxPct,
     };
   },
 };

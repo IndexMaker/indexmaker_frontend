@@ -1,41 +1,40 @@
 "use client";
 
-import { Search } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import {
+    fetchAllIndices,
+    fetchDepositTransactionData,
+    getIndexMakerInfo,
+} from "@/api/indices";
+import { ColumnVisibilityPopover } from "@/components/elements/column-visibility-popover";
+import { VaultSupply } from "@/components/elements/vault-supplyposition";
 import { VaultTable } from "@/components/elements/vault-table";
 import Deposit from "@/components/icons/deposit";
-import Borrow from "@/components/icons/borrow";
-import { CustomButton } from "@/components/ui/custom-button";
-import { ColumnVisibilityPopover } from "@/components/elements/column-visibility-popover";
-import { useEffect, useMemo, useState } from "react";
-import { useLanguage } from "@/contexts/language-context";
-import Link from "next/link";
-import { HowEarnWorks } from "./how-earn-works";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/redux/store";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useWallet } from "../../../contexts/wallet-context";
-import { IndexListEntry } from "@/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CustomButton } from "@/components/ui/custom-button";
+import { Input } from "@/components/ui/input";
 import {
-  setIndices,
-  setTotalManaged,
-  setTotalVolume,
-} from "@/redux/indexSlice";
-import {
-  fetchAllIndices,
-  fetchDepositTransactionData,
-  getIndexMakerInfo,
-} from "@/api/indices";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { VaultSupply } from "@/components/elements/vault-supplyposition";
+import { useLanguage } from "@/contexts/language-context";
 import { SupplyPosition } from "@/lib/data";
+import { cn } from "@/lib/utils";
+import {
+    setIndices,
+    setTotalManaged,
+    setTotalVolume,
+} from "@/redux/indexSlice";
+import { RootState } from "@/redux/store";
 import { clearSelectedVault } from "@/redux/vaultSlice";
+import { IndexListEntry } from "@/types/index";
+import { Search } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useWallet } from "../../../contexts/wallet-context";
+import { HowEarnWorks } from "./how-earn-works";
 
 type ColumnType = {
   id: string;

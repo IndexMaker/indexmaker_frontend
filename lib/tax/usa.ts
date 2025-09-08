@@ -60,8 +60,8 @@ function getBrackets(status: string): any {
   return {
     ordinary: {
       uppers: isSingle
-        ? [11925, 48475, 103350, 197300, 250525, 626350, Number.POSITIVE_INFINITY]
-        : [23850, 96950, 206700, 394600, 501050, 751600, Number.POSITIVE_INFINITY],
+        ? [11925, 48535, 103350, 197300, 250525, 626350, Number.POSITIVE_INFINITY]
+        : [23850, 97070, 206700, 394600, 501050, 751600, Number.POSITIVE_INFINITY],
       rates: [0.1, 0.12, 0.22, 0.24, 0.32, 0.35, 0.37],
     },
     lt: {
@@ -77,7 +77,7 @@ const setups: Setup[] = [
   {
     name: 'Traditional IRA',
     type: 'deferred',
-    fees: 'Deductible contributions (income limits: $77,000-$87,000 single, $123,000-$143,000 married), tax-deferred growth, taxed withdrawals (EET).',
+    fees: 'Deductible contributions (income limits: USD 77,000-87,000 single, USD 123,000-143,000 married), tax-deferred growth, taxed withdrawals (EET).',
     penaltyRate: 0.1,
     thresholdAge: 59.5,
   },

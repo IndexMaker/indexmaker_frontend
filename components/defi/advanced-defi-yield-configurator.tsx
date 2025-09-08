@@ -3,17 +3,11 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertTriangle, Shield, TrendingUp, Zap } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { CurrencyFormatter } from '@/lib/tax/utils/currency-formatter';
 
 interface CryptoInvestmentOption {
   name: string;
@@ -74,7 +68,7 @@ const COUNTRY_DEFI_CONFIGS: Record<string, CountryDeFiConfig> = {
     availableProtocols: ['Coinbase', 'Kraken', 'Aave', 'Compound', 'Uniswap'],
     taxImplications:
       'Crypto gains taxed as capital gains (0-20%) or ordinary income (up to 37%). Complex reporting requirements for DeFi activities.',
-    preferredStrategies: ['Bitcoin/Ethereum Hold', 'Crypto Index ETF'],
+    preferredStrategies: ['Tokenized ITP DeFi Yield', 'Crypto Index ETF'],
     riskAdjustments: { regulatory: 1.0, liquidity: 1.0, currency: 1.0 },
   },
   canada: {
@@ -84,7 +78,7 @@ const COUNTRY_DEFI_CONFIGS: Record<string, CountryDeFiConfig> = {
     availableProtocols: ['Coinbase', 'Kraken', 'Bitbuy', 'Aave', 'Compound'],
     taxImplications:
       'Crypto treated as commodity. 50% of capital gains taxable. Business income taxed at marginal rates (up to 53.5%).',
-    preferredStrategies: ['Bitcoin/Ethereum Hold', 'Stablecoin Yield'],
+    preferredStrategies: ['Tokenized ITP DeFi Yield', 'Stablecoin Yield'],
     riskAdjustments: { regulatory: 0.9, liquidity: 1.0, currency: 1.1 },
   },
   uk: {
@@ -94,7 +88,7 @@ const COUNTRY_DEFI_CONFIGS: Record<string, CountryDeFiConfig> = {
     availableProtocols: ['Coinbase', 'Kraken', 'Binance', 'Aave'],
     taxImplications:
       'Capital gains tax (10-20%) on disposals. Income tax (20-45%) on staking/lending rewards. £6,000 CGT allowance.',
-    preferredStrategies: ['Bitcoin/Ethereum Hold', 'Stablecoin Yield'],
+    preferredStrategies: ['Tokenized ITP DeFi Yield', 'Stablecoin Yield'],
     riskAdjustments: { regulatory: 1.1, liquidity: 1.0, currency: 1.2 },
   },
   germany: {
@@ -104,7 +98,7 @@ const COUNTRY_DEFI_CONFIGS: Record<string, CountryDeFiConfig> = {
     availableProtocols: ['Coinbase', 'Kraken', 'Bitpanda', 'Aave'],
     taxImplications:
       'Tax-free after 1-year holding period. Otherwise taxed as private sale (up to 42%). Staking extends holding period to 10 years.',
-    preferredStrategies: ['Bitcoin/Ethereum Hold'],
+    preferredStrategies: ['Tokenized ITP DeFi Yield'],
     riskAdjustments: { regulatory: 1.3, liquidity: 1.1, currency: 1.1 },
   },
   france: {
@@ -114,7 +108,7 @@ const COUNTRY_DEFI_CONFIGS: Record<string, CountryDeFiConfig> = {
     availableProtocols: ['Coinbase', 'Kraken', 'Binance'],
     taxImplications:
       'Flat tax rate of 30% on crypto gains. Professional traders taxed at progressive rates (up to 45%). Complex DeFi reporting.',
-    preferredStrategies: ['Bitcoin/Ethereum Hold', 'Crypto Index ETF'],
+    preferredStrategies: ['Tokenized ITP DeFi Yield', 'Crypto Index ETF'],
     riskAdjustments: { regulatory: 1.2, liquidity: 1.1, currency: 1.1 },
   },
   australia: {
@@ -124,7 +118,7 @@ const COUNTRY_DEFI_CONFIGS: Record<string, CountryDeFiConfig> = {
     availableProtocols: ['Coinbase', 'Kraken', 'Swyftx', 'Aave', 'Compound'],
     taxImplications:
       'Capital gains tax (0-45%) with 50% discount after 12 months. DeFi yields taxed as assessable income.',
-    preferredStrategies: ['Bitcoin/Ethereum Hold', 'Stablecoin Yield'],
+    preferredStrategies: ['Tokenized ITP DeFi Yield', 'Stablecoin Yield'],
     riskAdjustments: { regulatory: 0.9, liquidity: 1.0, currency: 1.2 },
   },
   india: {
@@ -134,25 +128,36 @@ const COUNTRY_DEFI_CONFIGS: Record<string, CountryDeFiConfig> = {
     availableProtocols: ['WazirX', 'CoinDCX', 'Binance'],
     taxImplications:
       'Flat 30% tax on crypto gains with no deductions. 1% TDS on all transactions. No set-off of losses allowed.',
-    preferredStrategies: ['Bitcoin/Ethereum Hold'],
+    preferredStrategies: ['Tokenized ITP DeFi Yield'],
     riskAdjustments: { regulatory: 1.5, liquidity: 1.3, currency: 1.2 },
+  },
+  egypt: {
+    country: 'Egypt',
+    currency: 'EGP',
+    regulatoryEnvironment: 'Hostile',
+    availableProtocols: ['Binance'], // Limited options due to crypto ban
+    taxImplications:
+      'Cryptocurrency is banned; no legal tax rate applies. Trading crypto is prohibited by law.',
+    preferredStrategies: [], // No strategies available due to ban
+    riskAdjustments: { regulatory: 2.0, liquidity: 2.0, currency: 1.3 }, // Very high risk due to ban
   },
 };
 
 // Crypto investment options for tax comparison analysis (January 2025)
 const CRYPTO_INVESTMENT_OPTIONS: CryptoInvestmentOption[] = [
   {
-    name: 'Bitcoin/Ethereum Hold',
-    baseYield: 0.0, // Pure capital appreciation, no yield
+    name: 'Tokenized ITP DeFi Yield',
+    baseYield: 8.5, // Expected yield from tokenized Index Token Protocol in DeFi
     riskLevel: 'Medium',
-    description: 'Buy and hold major cryptocurrencies for long-term capital gains',
-    taxTreatment: 'Capital Gains',
-    platforms: ['Coinbase', 'Kraken', 'Binance'],
-    liquidityRisk: false,
+    description: 'Tokenized Index Token Protocol yielding in DeFi protocols for enhanced returns',
+    taxTreatment: 'Mixed',
+    platforms: ['Aave', 'Compound', 'Morpho'],
+    liquidityRisk: true,
     regulatoryRisk: false,
-    complexity: 'Beginner',
-    minimumInvestment: 100,
-    compounding: false,
+    complexity: 'Intermediate',
+    minimumInvestment: 500,
+    lockupPeriod: '7-14 days',
+    compounding: true,
     gasEfficient: true,
   },
   {
@@ -230,11 +235,21 @@ const CRYPTO_INVESTMENT_OPTIONS: CryptoInvestmentOption[] = [
 ];
 
 // Client-side only number formatter to prevent hydration mismatch
-function formatNumber(num: number): string {
+function formatNumber(num: number, countryKey: string = 'usa'): string {
   if (typeof window === 'undefined') {
     return num.toString(); // Server-side fallback
   }
-  return num.toLocaleString(); // Client-side formatting
+
+  try {
+    // Use the proper currency formatter to ensure Latin numerals are used
+    return CurrencyFormatter.formatNumber(num, countryKey, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  } catch {
+    // Fallback to basic formatting with en-US locale to ensure Latin numerals
+    return num.toLocaleString('en-US');
+  }
 }
 
 function AdvancedDefiYieldConfiguratorInner({
@@ -245,11 +260,6 @@ function AdvancedDefiYieldConfiguratorInner({
   const [enabled] = useState(initialConfig?.enabled ?? false);
   const [selectedStrategy, setSelectedStrategy] = useState<CryptoInvestmentOption | null>(null);
   const [baseYield, setBaseYield] = useState(initialConfig?.baseYield ?? 4.8); // Updated default to current market rate
-  const [volatility, setVolatility] = useState(initialConfig?.volatility ?? 12.0); // Reduced volatility for current market
-  const [riskAdjustment, setRiskAdjustment] = useState(initialConfig?.riskAdjustment ?? 3.0); // More conservative default
-  const [compoundingFrequency, setCompoundingFrequency] = useState<
-    'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annually'
-  >(initialConfig?.compoundingFrequency ?? 'daily');
 
   // Get country-specific configuration
   const countryConfig = COUNTRY_DEFI_CONFIGS[country] || COUNTRY_DEFI_CONFIGS.usa;
@@ -261,14 +271,6 @@ function AdvancedDefiYieldConfiguratorInner({
     )
   );
 
-  // Advanced parameters
-  const [customParameters, setCustomParameters] = useState<Record<string, number>>({
-    slippageTolerance: 0.5,
-    gasPrice: 20,
-    rebalanceThreshold: 2.0,
-    maxDrawdown: 10.0,
-  });
-
   const handleConfigChange = useCallback(() => {
     const config: {
       enabled: boolean;
@@ -277,34 +279,20 @@ function AdvancedDefiYieldConfiguratorInner({
       compoundingFrequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annually';
       riskAdjustment: number;
       strategy?: CryptoInvestmentOption;
-      customParameters?: Record<string, number>;
     } = {
       enabled,
       baseYield,
-      volatility,
-      compoundingFrequency,
-      riskAdjustment,
+      volatility: 12.0, // Default volatility
+      compoundingFrequency: 'daily', // Default compounding
+      riskAdjustment: 3.0, // Default risk adjustment
     };
 
     if (selectedStrategy) {
       config.strategy = selectedStrategy;
     }
 
-    if (Object.keys(customParameters).length > 0) {
-      config.customParameters = customParameters;
-    }
-
     onConfigChange(config);
-  }, [
-    enabled,
-    baseYield,
-    volatility,
-    compoundingFrequency,
-    riskAdjustment,
-    selectedStrategy,
-    customParameters,
-    onConfigChange,
-  ]);
+  }, [enabled, baseYield, selectedStrategy, onConfigChange]);
 
   // Advanced settings state
   // Advanced settings state - currently unused
@@ -323,36 +311,6 @@ function AdvancedDefiYieldConfiguratorInner({
         countryConfig.riskAdjustments.currency;
 
       setBaseYield(Math.round(countryAdjustedYield * 10) / 10); // Round to 1 decimal
-
-      // Set volatility based on risk level and country factors
-      const baseVolatility =
-        strategy.riskLevel === 'Low'
-          ? 8
-          : strategy.riskLevel === 'Medium'
-            ? 15
-            : strategy.riskLevel === 'High'
-              ? 25
-              : 40;
-
-      const countryAdjustedVolatility = baseVolatility * countryConfig.riskAdjustments.regulatory;
-      setVolatility(Math.round(countryAdjustedVolatility * 10) / 10);
-
-      // Set risk adjustment with country factors
-      const baseRiskAdjustment =
-        strategy.riskLevel === 'Low'
-          ? 2
-          : strategy.riskLevel === 'Medium'
-            ? 5
-            : strategy.riskLevel === 'High'
-              ? 10
-              : 20;
-
-      const countryAdjustedRisk =
-        (baseRiskAdjustment *
-          (countryConfig.riskAdjustments.regulatory + countryConfig.riskAdjustments.liquidity)) /
-        2;
-
-      setRiskAdjustment(Math.round(countryAdjustedRisk * 10) / 10);
       handleConfigChange();
     }
   };
@@ -401,10 +359,9 @@ function AdvancedDefiYieldConfiguratorInner({
       </CardHeader>
       <CardContent className="space-y-6">
         <Tabs defaultValue="strategies" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="strategies">Crypto Options</TabsTrigger>
             <TabsTrigger value="parameters">Tax Parameters</TabsTrigger>
-            <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
 
           <TabsContent value="strategies" className="space-y-4">
@@ -477,7 +434,7 @@ function AdvancedDefiYieldConfiguratorInner({
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="font-medium">Min Investment:</span>
-                          <span>${formatNumber(strategy.minimumInvestment)}</span>
+                          <span>${formatNumber(strategy.minimumInvestment, country)}</span>
                         </div>
                         {strategy.lockupPeriod && (
                           <div className="flex items-center gap-1">
@@ -515,114 +472,35 @@ function AdvancedDefiYieldConfiguratorInner({
           </TabsContent>
 
           <TabsContent value="parameters" className="space-y-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Expected Crypto Yield: {baseYield.toFixed(1)}%</Label>
-                <p className="text-xs text-gray-600">
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Expected Crypto Yield: {baseYield.toFixed(1)}%</Label>
+                <p className="text-sm text-gray-600">
                   Annual yield expected from crypto investment (before taxes)
                 </p>
-                <Slider
-                  value={[baseYield]}
-                  onValueChange={(value) => {
-                    setBaseYield(value[0] ?? 0);
-                    handleConfigChange();
-                  }}
-                  max={30}
-                  min={0}
-                  step={0.1}
-                  className="w-full"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Price Volatility: {volatility.toFixed(1)}%</Label>
-                <p className="text-xs text-gray-600">
-                  Expected annual price volatility of crypto investment
-                </p>
-                <Slider
-                  value={[volatility]}
-                  onValueChange={(value) => {
-                    setVolatility(value[0] ?? 0);
-                    handleConfigChange();
-                  }}
-                  max={80}
-                  min={0}
-                  step={0.5}
-                  className="w-full"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Tax Drag Adjustment: {riskAdjustment.toFixed(1)}%</Label>
-                <p className="text-xs text-gray-600">
-                  Additional yield needed to compensate for tax disadvantages vs retirement accounts
-                </p>
-                <Slider
-                  value={[riskAdjustment]}
-                  onValueChange={(value) => {
-                    setRiskAdjustment(value[0] ?? 0);
-                    handleConfigChange();
-                  }}
-                  max={30}
-                  min={0}
-                  step={0.1}
-                  className="w-full"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Compounding Frequency</Label>
-                <Select
-                  value={compoundingFrequency}
-                  onValueChange={(value: string) => {
-                    setCompoundingFrequency(
-                      value as 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annually'
-                    );
-                    handleConfigChange();
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                    <SelectItem value="annually">Annually</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="advanced" className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Advanced Parameters</h3>
-
-              {Object.entries(customParameters).map(([key, value]) => (
-                <div key={key} className="space-y-2">
-                  <Label className="capitalize">
-                    {key.replace(/([A-Z])/g, ' $1').toLowerCase()}: {value.toFixed(1)}%
-                  </Label>
+                <div className="px-2 py-2">
                   <Slider
-                    value={[value]}
-                    onValueChange={(newValue) => {
-                      setCustomParameters((prev) => ({
-                        ...prev,
-                        [key]: newValue[0] ?? 0,
-                      }));
+                    value={[baseYield]}
+                    onValueChange={(value) => {
+                      setBaseYield(value[0] ?? 0);
                       handleConfigChange();
                     }}
-                    max={key === 'gasPrice' ? 100 : 50}
+                    max={30}
                     min={0}
                     step={0.1}
-                    className="w-full"
+                    className="w-full crypto-yield-slider"
                   />
                 </div>
-              ))}
+                <div className="flex justify-between text-xs text-gray-500 px-2">
+                  <span>0%</span>
+                  <span>15%</span>
+                  <span>30%</span>
+                </div>
+              </div>
             </div>
           </TabsContent>
+
+
         </Tabs>
       </CardContent>
     </Card>
