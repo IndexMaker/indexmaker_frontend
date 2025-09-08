@@ -41,6 +41,7 @@ export type Brackets = {
   readonly capGainRateBasic?: number;
   readonly capGainRateHigher?: number;
   readonly medicareLevyRate?: number;
+  readonly capitalGainsFlatRate?: number;
 };
 
 export type TaxableParams = {

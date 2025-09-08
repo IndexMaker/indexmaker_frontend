@@ -195,7 +195,7 @@ export const CURRENCY_MAPPING: Record<string, CurrencyInfo> = {
   // Asia-Pacific
   japan: {
     code: 'JPY',
-    symbol: '¥',
+    symbol: 'JPY',
     name: 'Japanese Yen',
     decimals: 0,
     locale: 'ja-JP',
@@ -352,7 +352,7 @@ export const CURRENCY_MAPPING: Record<string, CurrencyInfo> = {
     symbol: '£',
     name: 'Egyptian Pound',
     decimals: 2,
-    locale: 'ar-EG',
+    locale: 'en-EG', // Use English locale for Egypt to display Latin numerals instead of Arabic numerals
     position: 'before'
   },
   southafrica: {

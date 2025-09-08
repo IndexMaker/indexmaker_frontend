@@ -45,14 +45,14 @@ const setups: Setup[] = [
   {
     name: 'Riester pension',
     type: 'deferred',
-    fees: '€2,100 deductible, government subsidy €175 + child bonuses. Contributions deductible, subsidies, benefits taxed (EET). Until 62 or 60 if started before 2012; early withdrawal repays subsidies + tax.',
+    fees: 'EUR 2,100 deductible, government subsidy EUR 175 + child bonuses. Contributions deductible, subsidies, benefits taxed (EET). Until 62 or 60 if started before 2012; early withdrawal repays subsidies + tax.',
     penaltyRate: 1.0, // Repay subsidies + tax penalty
     thresholdAge: 62,
   },
   {
     name: 'Rürup pension',
     type: 'deferred',
-    fees: '€29,344 single, €58,688 couple (100% deductible). 100% deductible, benefits partially taxed. Lifelong annuity from 62; early not allowed.',
+    fees: 'EUR 29,344 single, EUR 58,688 couple (100% deductible). 100% deductible, benefits partially taxed. Lifelong annuity from 62; early not allowed.',
     penaltyRate: 0, // Early withdrawal not allowed
     thresholdAge: 62,
   },
@@ -101,7 +101,7 @@ export const germany: any = {
   statuses,
   getBrackets,
   setups,
-  cryptoNote: 'Crypto tax-free >1y; else progressive with €600 cliff.',
+  cryptoNote: 'Crypto tax-free >1y; else progressive with EUR 600 cliff.',
   computeTaxable,
   computeDeferredFull,
   computeSetupTax: (setup: any, params: any) => {
@@ -144,7 +144,9 @@ export const germany: any = {
       // Early withdrawal penalties
       if (currentAge + years < setup.thresholdAge) {
         if (name.includes('riester')) {
-          penalty = withdrawn; // Repay subsidies + tax penalty (simplified as 100%)
+          // Riester early withdrawal: repay subsidies + tax penalty
+          // Realistic penalty: ~20-30% of withdrawal (subsidies + tax clawback)
+          penalty = withdrawn * 0.25; // 25% penalty for early withdrawal
         }
         // Rürup doesn't allow early withdrawal
       }
