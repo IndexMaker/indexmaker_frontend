@@ -30,6 +30,7 @@ import { RootState } from "@/redux/store";
 import ETH from "../../public/logos/ethereum.png";
 import { clearSelectedVault } from "@/redux/vaultSlice";
 import { useQuoteContext } from "@/contexts/quote-context";
+import { Menu, X } from "lucide-react";
 interface HeaderProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
@@ -92,14 +93,14 @@ export function Header({
 
   useEffect(() => {
     // Update the URL without reloading the page
-    const url = new URL(window.location.href);
-    if (selectedNetwork) {
-      const network = networks.find((n) => n.chainId === selectedNetwork);
-      if (network) {
-        url.searchParams.set("network", network.id);
-        router.replace(url.toString(), { scroll: false });
-      }
-    }
+    // const url = new URL(window.location.href);
+    // if (selectedNetwork) {
+    //   const network = networks.find((n) => n.chainId === selectedNetwork);
+    //   if (network) {
+    //     url.searchParams.set("network", network.id);
+    //     router.replace(url.toString(), { scroll: false });
+    //   }
+    // }
   }, [selectedNetwork, router]);
 
   // Generate breadcrumb items
@@ -182,18 +183,27 @@ export function Header({
     <>
       <div className="flex flex-col gap-0">
         <header className="flex h-[55px] md:h-[50px] pt-0 shrink-0 items-center border-b border-transparent bg-background px-[11px] lg:px-[40px]">
-          {!showHowEarnWorks ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
+          {!showHowEarnWorks && (
+            <div
+              className="lg:hidden inline-flex items-center rounded-full
+               bg-background hover:bg-background text-primary border-0"
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-controls="app-sidebar"
+              aria-expanded={sidebarOpen}
             >
-              <Navigation className="h-6 w-6 text-primary" />
-              <span className="sr-only">Toggle menu</span>
-            </Button>
-          ) : (
-            <></>
+              {sidebarOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+
+              {!sidebarOpen && (
+                <span className="relative -ml-2 -mt-2 h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-600"></span>
+                  <span className="absolute -t-2 inline-flex h-2.5 w-2.5 rounded-full bg-secondary" />
+                </span>
+              )}
+            </div>
           )}
 
           {shouldShowBreadcrumb && (

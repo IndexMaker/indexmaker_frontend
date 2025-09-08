@@ -4,6 +4,7 @@ import indexReducer from "./indexSlice";
 import networkReducer from './networkSlice';
 import vaultReducer from "./vaultSlice";
 import walletReducer from "./walletSlice";
+import assetReducer from "./assetSlice";
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     vault: vaultReducer,
     index: indexReducer,
     calculator: calculatorReducer,
+    assets: assetReducer
   },
 });
 

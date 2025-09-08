@@ -123,7 +123,7 @@ export const translations: Translations = {
       iUnderstand: "I understand",
       undoMaxSupply: "Undo max supply",
       ecosystem: "Ecosystem",
-      taxCalculator: "Tax Calculator",
+      taxCalculator: "Tax Optimizer",
       submit: "Submit",
       save: "Save",
       loading: "Loading...",
@@ -131,7 +131,7 @@ export const translations: Translations = {
       success: "Success",
       sell: "Sell",
       // Mint Invoices
-      invoices: "Invoice"
+      invoices: "Invoices"
     },
     table: {
       name: "Index Name",

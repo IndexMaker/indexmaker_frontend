@@ -325,7 +325,7 @@ function AdvancedDefiYieldConfiguratorInner({
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full bg-foreground">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="w-5 h-5" />
@@ -337,8 +337,8 @@ function AdvancedDefiYieldConfiguratorInner({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Tabs defaultValue="strategies" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="strategies" className="w-full bg-foreground">
+          <TabsList className="grid w-full grid-cols-2 bg-background">
             <TabsTrigger value="strategies">Crypto Options</TabsTrigger>
             <TabsTrigger value="parameters">Tax Parameters</TabsTrigger>
           </TabsList>
@@ -347,13 +347,13 @@ function AdvancedDefiYieldConfiguratorInner({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-base font-semibold">Select Crypto Investment Option</Label>
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs text-secondary">
                   {countryConfig.country} • {countryConfig.regulatoryEnvironment}
                 </Badge>
               </div>
 
               {/* Country-specific tax information */}
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="p-3 bg-blue-50 rounded-lg border border-accent">
                 <div className="flex items-center gap-2 mb-2">
                   <Shield className="w-4 h-4 text-blue-600" />
                   <span className="text-sm font-medium text-blue-800">
@@ -372,7 +372,7 @@ function AdvancedDefiYieldConfiguratorInner({
                 {availableStrategies.map((strategy) => (
                   <Card
                     key={strategy.name}
-                    className={`cursor-pointer transition-all hover:shadow-md ${
+                    className={`bg-foreground cursor-pointer transition-all hover:shadow-md ${
                       selectedStrategy?.name === strategy.name ? 'ring-2 ring-blue-500' : ''
                     }`}
                     onClick={() => handleStrategySelect(strategy.name)}
@@ -387,10 +387,10 @@ function AdvancedDefiYieldConfiguratorInner({
                               {strategy.riskLevel}
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-600">{strategy.description}</p>
+                          <p className="text-sm text-secondary">{strategy.description}</p>
                           <div className="flex flex-wrap gap-1">
                             {strategy.platforms.map((platform) => (
-                              <Badge key={platform} variant="outline" className="text-xs">
+                              <Badge key={platform} variant="outline" className="text-xs text-secondary">
                                 {platform}
                               </Badge>
                             ))}
@@ -400,14 +400,14 @@ function AdvancedDefiYieldConfiguratorInner({
                           <div className="text-2xl font-bold text-green-600">
                             {strategy.baseYield.toFixed(1)}%
                           </div>
-                          <div className="text-xs text-gray-500">APY</div>
+                          <div className="text-xs text-secondary">APY</div>
                         </div>
                       </div>
 
                       <div className="mt-3 grid grid-cols-2 gap-4 text-xs">
                         <div className="flex items-center gap-1">
                           <span className="font-medium">Complexity:</span>
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs text-secondary">
                             {strategy.complexity}
                           </Badge>
                         </div>
@@ -454,7 +454,7 @@ function AdvancedDefiYieldConfiguratorInner({
             <div className="space-y-6">
               <div className="space-y-3">
                 <Label className="text-base font-semibold">Expected Crypto Yield: {baseYield.toFixed(1)}%</Label>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-secondary">
                   Annual yield expected from crypto investment (before taxes)
                 </p>
                 <div className="px-2 py-2">
@@ -470,7 +470,7 @@ function AdvancedDefiYieldConfiguratorInner({
                     className="w-full crypto-yield-slider"
                   />
                 </div>
-                <div className="flex justify-between text-xs text-gray-500 px-2">
+                <div className="flex justify-between text-xs text-secondary px-2">
                   <span>0%</span>
                   <span>15%</span>
                   <span>30%</span>
@@ -497,7 +497,7 @@ export default function AdvancedDefiYieldConfigurator(props: AdvancedDefiYieldCo
   if (!isClient) {
     // Server-side fallback
     return (
-      <Card className="w-full">
+      <Card className="w-full bg-foregrouind">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
@@ -507,9 +507,9 @@ export default function AdvancedDefiYieldConfigurator(props: AdvancedDefiYieldCo
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+            <div className="h-4 bg-secondary rounded w-3/4"></div>
+            <div className="h-4 bg-secondary rounded w-1/2"></div>
+            <div className="h-4 bg-secondary rounded w-5/6"></div>
           </div>
         </CardContent>
       </Card>

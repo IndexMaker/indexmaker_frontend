@@ -52,7 +52,7 @@ export function DefiConfigurator() {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] bg-foreground overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Crypto Investment Tax Comparison</DialogTitle>
           <DialogDescription>

@@ -22,7 +22,7 @@ export interface IndexListEntry {
   totalSupply: number;
   totalSupplyUSD: number;
   ytdReturn: number;
-  collateral: {name: string, logo: string}[]; // URLs to token logos
+  collateral: { name: string; logo: string }[]; // URLs to token logos
   managementFee: number;
   assetClass?: string;
   category?: string;
@@ -40,3 +40,82 @@ export interface IndexListEntry {
     tenYearReturn: number;
   };
 }
+
+export interface Asset {
+  id: string;
+  symbol: string;
+  name: string;
+  total_supply: number;
+  circulating_supply: number;
+  price_usd: number;
+  market_cap: number;
+  expected_inventory: number;
+  thumb: string;
+  created_at: string;
+  last_updated?: string;
+}
+
+export type InventoryResponse = {
+  positions: Record<
+    string,
+    {
+      actual_balance: string | number;
+      inventory_position?: { symbol?: string };
+    }
+  >;
+};
+export interface Lot {
+  lot_id: string;
+  symbol: string;
+  price: number;
+  assigned_quantity: number;
+  assigned_fee: number;
+  assigned_timestamp: string;
+  original_quantity: number;
+  remaining_quantity: number;
+  original_fee: number;
+  created_timestamp: string;
+}
+
+export interface Position {
+  asset_symbol: string;
+  quantity: number;
+  average_price: number;
+  total_value: number;
+  unrealized_pnl: number;
+}
+
+export interface MintInvoice {
+  id: string;
+  chain_id: string;
+  address: string;
+  client_order_id: string;
+  payment_id: string;
+  symbol: string;
+  amount_paid: number;
+  amount_remaining: number;
+  exchange_fee: number;
+  management_fee: number;
+  assets_value: number;
+  filled_quantity: number;
+  fill_rate: number;
+  status: "pending" | "completed" | "failed";
+  timestamp: string;
+  updated_at: string;
+  lots: Lot[];
+  position: Position[];
+}
+
+export type TxBundle = {
+  hash: string;
+  status: "success" | "failed" | "pending";
+  blockNumber?: number;
+  timestamp?: number; // seconds
+  from: string;
+  to?: string;
+  valueEth: number;
+  gasPriceGwei?: number;
+  effectiveGasPriceGwei?: number;
+  gasUsed?: number;
+  feeEth?: number;
+};

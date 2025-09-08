@@ -48,7 +48,7 @@ export function CalculationHistory() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-8 text-foreground">
             <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>No calculations yet</p>
             <p className="text-sm">Start by calculating your tax impact above</p>
@@ -88,21 +88,21 @@ export function CalculationHistory() {
                 <div className="flex items-center gap-2 mb-2">
                   <Badge variant="outline">{calculation.country.toUpperCase()}</Badge>
                   <Badge variant="outline">{calculation.result.investmentType.toUpperCase()}</Badge>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-foreground">
                     {formatDate(calculation.date)}
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Amount: </span>
+                    <span className="text-foreground">Amount: </span>
                     <span className="font-medium">{formatCurrency(calculation.input.amount)}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Tax: </span>
-                    <span className="font-medium text-red-600">{formatCurrency(calculation.result.totalTax)}</span>
+                    <span className="text-foreground">Tax: </span>
+                    <span className="font-medium text-red-600/50">{formatCurrency(calculation.result.totalTax)}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Rate: </span>
+                    <span className="text-foreground">Rate: </span>
                     <span className="font-medium">{calculation.result.effectiveRate.toFixed(1)}%</span>
                   </div>
                 </div>
@@ -111,7 +111,7 @@ export function CalculationHistory() {
                 variant="ghost"
                 size="sm"
                 onClick={() => handleDelete(calculation.id)}
-                className="text-red-500 hover:text-red-700"
+                className="text-red-500/50 hover:text-red-700/50"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
