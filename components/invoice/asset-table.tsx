@@ -97,7 +97,12 @@ export function AssetTable({ assets }: AssetTableProps) {
                     <TableCell className="pl-[20px] text-card pr-18">
                       <div className="flex items-center gap-2">
                         <div className="w-[17px] h-[17px] rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium">
-                          <Image width={17} height={17} src={asset.thumb} alt={asset.symbol} />
+                          <Image
+                            width={17}
+                            height={17}
+                            src={asset.thumb}
+                            alt={asset.symbol}
+                          />
                         </div>
                         <div>
                           <div className="font-semibold text-primary">
@@ -146,7 +151,7 @@ export function AssetTable({ assets }: AssetTableProps) {
 
       <div className="flex justify-center items-center mt-4 text-primary text-sx">
         <Button
-          className="text-[11px] text-muted bg-background p-0 h-4"
+          className="text-[11px] text-muted bg-background  hover:bg-accent p-0 h-4"
           disabled={currentPage === 1}
           onClick={() => setCurrentPage(currentPage - 1)}
         >
@@ -156,7 +161,7 @@ export function AssetTable({ assets }: AssetTableProps) {
           Page {currentPage} of {totalPages}
         </span>
         <Button
-          className="text-[11px] text-muted bg-background p-0 h-4"
+          className="text-[11px] text-muted bg-background hover:bg-accent p-0 h-4"
           disabled={currentPage === totalPages}
           onClick={() => setCurrentPage(currentPage + 1)}
         >
