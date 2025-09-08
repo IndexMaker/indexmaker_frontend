@@ -7,6 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertTriangle, Shield, TrendingUp, Zap } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { CurrencyFormatter } from '@/lib/tax/utils/currency-formatter';
 
 interface CryptoInvestmentOption {
   name: string;
@@ -130,6 +131,16 @@ const COUNTRY_DEFI_CONFIGS: Record<string, CountryDeFiConfig> = {
     preferredStrategies: ['Tokenized ITP DeFi Yield'],
     riskAdjustments: { regulatory: 1.5, liquidity: 1.3, currency: 1.2 },
   },
+  egypt: {
+    country: 'Egypt',
+    currency: 'EGP',
+    regulatoryEnvironment: 'Hostile',
+    availableProtocols: ['Binance'], // Limited options due to crypto ban
+    taxImplications:
+      'Cryptocurrency is banned; no legal tax rate applies. Trading crypto is prohibited by law.',
+    preferredStrategies: [], // No strategies available due to ban
+    riskAdjustments: { regulatory: 2.0, liquidity: 2.0, currency: 1.3 }, // Very high risk due to ban
+  },
 };
 
 // Crypto investment options for tax comparison analysis (January 2025)
@@ -224,11 +235,21 @@ const CRYPTO_INVESTMENT_OPTIONS: CryptoInvestmentOption[] = [
 ];
 
 // Client-side only number formatter to prevent hydration mismatch
-function formatNumber(num: number): string {
+function formatNumber(num: number, countryKey: string = 'usa'): string {
   if (typeof window === 'undefined') {
     return num.toString(); // Server-side fallback
   }
-  return num.toLocaleString(); // Client-side formatting
+
+  try {
+    // Use the proper currency formatter to ensure Latin numerals are used
+    return CurrencyFormatter.formatNumber(num, countryKey, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  } catch {
+    // Fallback to basic formatting with en-US locale to ensure Latin numerals
+    return num.toLocaleString('en-US');
+  }
 }
 
 function AdvancedDefiYieldConfiguratorInner({
@@ -413,7 +434,7 @@ function AdvancedDefiYieldConfiguratorInner({
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="font-medium">Min Investment:</span>
-                          <span>${formatNumber(strategy.minimumInvestment)}</span>
+                          <span>${formatNumber(strategy.minimumInvestment, country)}</span>
                         </div>
                         {strategy.lockupPeriod && (
                           <div className="flex items-center gap-1">

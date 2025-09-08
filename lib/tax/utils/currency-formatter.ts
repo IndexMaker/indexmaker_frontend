@@ -24,8 +24,8 @@ export class CurrencyFormatter {
   ): string {
     const currencyInfo = getCurrencyInfo(countryKey);
     const {
-      showSymbol = true,
-      showCode = false,
+      showSymbol = false, // Changed default to false for professional appearance
+      showCode = true,    // Changed default to true to show currency codes (USD, EUR, etc.)
       minimumFractionDigits = currencyInfo.decimals,
       maximumFractionDigits = currencyInfo.decimals,
       useGrouping = true
@@ -143,11 +143,44 @@ export class CurrencyFormatter {
   }
 
   /**
+   * Format amount specifically for tax displays using ISO currency codes
+   * Returns format: "{CURRENCY_CODE} {AMOUNT}" (e.g., "JPY 100,638", "USD 50,000")
+   * Uses consistent en-US number formatting for all countries to ensure Latin numerals
+   */
+  static formatTaxAmount(amount: number, countryKey: string): string {
+    const currencyInfo = getCurrencyInfo(countryKey);
+
+    try {
+      // Always use en-US locale for consistent Latin numeral formatting
+      const formatter = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: currencyInfo.decimals,
+        maximumFractionDigits: currencyInfo.decimals,
+        useGrouping: true
+      });
+
+      const formattedNumber = formatter.format(amount);
+
+      // Return in consistent format: "{CURRENCY_CODE} {AMOUNT}"
+      return `${currencyInfo.code} ${formattedNumber}`;
+
+    } catch (error) {
+      // Fallback to basic formatting with en-US locale
+      console.warn(`Tax amount formatting failed for ${countryKey}:`, error);
+      const formattedNumber = amount.toLocaleString('en-US', {
+        minimumFractionDigits: currencyInfo.decimals,
+        maximumFractionDigits: currencyInfo.decimals,
+        useGrouping: true
+      });
+      return `${currencyInfo.code} ${formattedNumber}`;
+    }
+  }
+
+  /**
    * Format tax rate as percentage
    */
   static formatPercentage(rate: number, countryKey: string, decimals: number = 1): string {
     const currencyInfo = getCurrencyInfo(countryKey);
-    
+
     try {
       const formatter = new Intl.NumberFormat(currencyInfo.locale, {
         style: 'percent',
@@ -163,11 +196,11 @@ export class CurrencyFormatter {
   }
 
   /**
-   * Format large numbers with appropriate suffixes (K, M, B)
+   * Format large numbers with appropriate suffixes (K, M, B) using currency codes
    */
   static formatCompact(amount: number, countryKey: string): string {
     const currencyInfo = getCurrencyInfo(countryKey);
-    
+
     try {
       const formatter = new Intl.NumberFormat(currencyInfo.locale, {
         notation: 'compact',
@@ -177,18 +210,25 @@ export class CurrencyFormatter {
         maximumFractionDigits: 1
       });
 
-      return formatter.format(amount);
+      let formatted = formatter.format(amount);
+
+      // Ensure we use currency codes instead of symbols for consistency
+      if (formatted.includes(currencyInfo.symbol) && !formatted.includes(currencyInfo.code)) {
+        formatted = formatted.replace(currencyInfo.symbol, currencyInfo.code);
+      }
+
+      return formatted;
     } catch (error) {
-      // Fallback with manual compact formatting
+      // Fallback with manual compact formatting using currency codes for consistency
       const absAmount = Math.abs(amount);
       const sign = amount < 0 ? '-' : '';
-      
+
       if (absAmount >= 1e9) {
-        return `${sign}${currencyInfo.symbol}${(absAmount / 1e9).toFixed(1)}B`;
+        return `${sign}${currencyInfo.code} ${(absAmount / 1e9).toFixed(1)}B`;
       } else if (absAmount >= 1e6) {
-        return `${sign}${currencyInfo.symbol}${(absAmount / 1e6).toFixed(1)}M`;
+        return `${sign}${currencyInfo.code} ${(absAmount / 1e6).toFixed(1)}M`;
       } else if (absAmount >= 1e3) {
-        return `${sign}${currencyInfo.symbol}${(absAmount / 1e3).toFixed(1)}K`;
+        return `${sign}${currencyInfo.code} ${(absAmount / 1e3).toFixed(1)}K`;
       } else {
         return this.formatCurrency(amount, countryKey);
       }

@@ -1,15 +1,14 @@
 // Calculator utility functions
 
 import type { TaxBracket, InvestmentInput, DefiConfig } from "./types";
+import { CurrencyFormatter } from "../tax/utils/currency-formatter";
 
 /**
- * Format currency amount
+ * Format currency amount using the centralized currency formatter
+ * @deprecated Use CurrencyFormatter.formatCurrency() directly for better country-specific formatting
  */
-export function formatCurrency(amount: number, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-  }).format(amount);
+export function formatCurrency(amount: number, countryKey = "usa"): string {
+  return CurrencyFormatter.formatCurrency(amount, countryKey, { showCode: true });
 }
 
 /**

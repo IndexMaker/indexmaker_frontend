@@ -1,5 +1,5 @@
 // India tax calculations
-import type { Brackets, CalcOut, CountryModule, TaxableParams } from './types';
+import type { CalcOut, TaxableParams } from './types';
 
 // India tax brackets for regular income (slab rates)
 // 0% ₹0-3 lakh, 5% 3-6 lakh, 10% 6-9 lakh, 15% 9-12 lakh, 20% 12-15 lakh, 30% >15 lakh
@@ -82,7 +82,7 @@ function computeTaxable(params: TaxableParams): CalcOut {
     tax,
     niit: 0, // India doesn't have equivalent to US NIIT
     penalty,
-    taxPct: taxableAmount > 0 ? tax / taxableAmount : 0,
+    taxPct: taxableAmount > 0 ? (tax / taxableAmount) * 100 : 0,
   };
 }
 
@@ -159,22 +159,96 @@ export const india: any = {
   computeTaxable,
   computeDeferredFull: computeTaxable,
   computeSetupTax: (setup: any, params: any) => {
-    const taxableParams = {
-      country: 'india' as const,
-      status: params.status,
-      agiExcl: params.agiExcl,
-      taxableAmount: params.gain,
-      isLong: params.isLong,
-      brackets: params.brackets,
-      isCrypto: params.isCrypto,
-      years: params.years,
-    };
-    const result = computeTaxable(taxableParams);
+    const { initial, gain, years, currentAge, additionalPenalty } = params;
+    const withdrawn = initial + gain;
+
+    let tax = 0;
+    let niit = 0;
+    let penalty = 0;
+
+    if (setup.type === 'deferred') {
+      if (setup.name.includes('NPS')) {
+        // NPS - 40% of corpus taxed if withdrawn before 10 years
+        if (years < 10) {
+          tax = withdrawn * 0.4;
+        } else {
+          // After 10 years, only 60% can be withdrawn (40% must be used for annuity)
+          // Tax on the withdrawable portion at ordinary income rates
+          const withdrawablePortion = withdrawn * 0.6;
+          const taxableParams = {
+            country: 'india' as const,
+            status: params.status,
+            agiExcl: params.agiExcl,
+            taxableAmount: withdrawablePortion,
+            isLong: false, // Taxed as ordinary income
+            brackets: params.brackets,
+            isCrypto: false,
+            years: years,
+          };
+          const result = computeTaxable(taxableParams);
+          tax = result.tax;
+        }
+      } else if (setup.name.includes('ELSS')) {
+        // ELSS - LTCG tax on withdrawal after 3-year lock-in
+        if (years < 3) {
+          // No withdrawal allowed within 3 years
+          tax = 0;
+          penalty = withdrawn; // Effectively blocks withdrawal
+        } else {
+          // LTCG tax on gains (12.5% over ₹1.25 lakh exemption)
+          const exemption = 125000; // ₹1.25 lakh
+          const taxableGains = Math.max(0, gain - exemption);
+          tax = taxableGains * 0.125; // 12.5% LTCG
+        }
+      }
+    } else if (setup.type === 'taxfree') {
+      // PPF - fully tax-free (EEE status)
+      tax = 0;
+    } else {
+      // Taxable accounts - standard capital gains tax
+      const taxableParams = {
+        country: 'india' as const,
+        status: params.status,
+        agiExcl: params.agiExcl,
+        taxableAmount: gain,
+        isLong: params.isLong,
+        brackets: params.brackets,
+        isCrypto: params.isCrypto,
+        years: params.years,
+      };
+      const result = computeTaxable(taxableParams);
+      tax = result.tax;
+      niit = result.niit;
+    }
+
+    // Add any additional penalty
+    penalty += withdrawn * additionalPenalty;
+
+    const totalTax = tax + niit + penalty;
+
+    // Calculate tax percentage correctly based on account type
+    let taxPct = 0;
+    if (setup.type === 'deferred') {
+      if (setup.name.includes('ELSS') && years < 3) {
+        // ELSS with early withdrawal - effectively 100% penalty
+        taxPct = 100;
+      } else {
+        // Other deferred accounts: Tax is on entire withdrawal, so percentage should be against withdrawal
+        taxPct = withdrawn > 0 ? (totalTax / withdrawn) * 100 : 0;
+      }
+    } else if (setup.type === 'taxfree') {
+      // PPF: Tax-free
+      taxPct = 0;
+    } else {
+      // Taxable accounts: Tax is on gains only, so percentage should be against gains
+      taxPct = gain > 0 ? (totalTax / gain) * 100 : 0;
+    }
+
     return {
-      tax: result.tax,
-      niit: result.niit,
-      penalty: 0,
-      taxPct: params.gain > 0 ? (result.tax / params.gain) * 100 : 0,
+      tax: totalTax,
+      niit,
+      penalty,
+      taxPct,
     };
   },
 };

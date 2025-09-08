@@ -73,7 +73,6 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
   let tax = 0;
   let niit = 0;
   let penalty = 0;
-  let taxOnGainOnly = 0;
 
   if (setup.type === 'taxable') {
     // Taxable account: only pay tax on gains
@@ -90,7 +89,6 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
     });
     tax = result.tax;
     niit = result.niit;
-    taxOnGainOnly = tax;
   } else if (setup.type === 'deferred') {
     // RRSP: tax on full withdrawal
     const result = computeDeferredFull({
@@ -121,7 +119,19 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
   penalty += withdrawn * additionalPenalty;
 
   const totalTax = tax + niit + penalty;
-  const taxPct = withdrawn > 0 ? (totalTax / withdrawn) * 100 : 0;
+
+  // Calculate tax percentage correctly based on account type
+  let taxPct = 0;
+  if (setup.type === 'deferred') {
+    // RRSP: Tax is on entire withdrawal, so percentage should be against withdrawal
+    taxPct = withdrawn > 0 ? (totalTax / withdrawn) * 100 : 0;
+  } else if (setup.type === 'taxfree') {
+    // TFSA: No tax, so 0%
+    taxPct = 0;
+  } else {
+    // Taxable accounts: Tax is on gains only, so percentage should be against gains
+    taxPct = gain > 0 ? (totalTax / gain) * 100 : 0;
+  }
 
   return {
     tax: totalTax,

@@ -1,9 +1,9 @@
 // lib/tax/austria.ts
-import type { Brackets, Setup } from './types';
-import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
+import type { Brackets, Setup, TaxableParams, CountryModule } from './types';
+import { createCountryBrackets, taxIncrement } from './utils/tax-calculations';
 
 // Austria tax brackets (from data.json: 0%, 20%, 30%, 40%, 48%, 50%, 55% + flat 27.5% on capital income)
-function getBrackets(status: string): Brackets {
+function getBrackets(): Brackets {
   return createCountryBrackets({
     ordinary: {
       uppers: [12816, 20818, 34513, 66612, 99266, 1000000, Number.POSITIVE_INFINITY],
@@ -38,13 +38,43 @@ const setups: Setup[] = [
   }
 ];
 
-// Use shared computation functions
-const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
+/**
+ * Custom Austrian tax computation that properly handles crypto vs regular investments
+ */
+function computeTaxable(params: TaxableParams) {
+  const { taxableAmount, brackets } = params;
+  const capitalGainsFlatRate = brackets.capitalGainsFlatRate ?? 0.275; // Default to 27.5% if undefined
 
-export const austria: any = {
+  // Austria applies flat 27.5% rate to all capital gains (crypto and regular investments)
+  const tax = taxableAmount * capitalGainsFlatRate;
+
+  return {
+    tax,
+    niit: 0 // No NIIT in Austria
+  };
+}
+
+/**
+ * For deferred accounts, everything is taxed as ordinary income using progressive rates
+ */
+function computeDeferredFull(params: TaxableParams) {
+  const { agiExcl, taxableAmount, brackets } = params;
+  const { ordinary, stdDed } = brackets;
+
+  // Calculate ordinary income tax using progressive brackets
+  const ordinaryTaxable = Math.max(0, agiExcl - stdDed);
+  const tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
+
+  return {
+    tax,
+    niit: 0 // No NIIT in Austria
+  };
+}
+
+export const austria: CountryModule = {
   key: 'austria',
   name: 'Austria',
-  currency: 'EUR', // TODO: Add proper currency mapping
+  currency: 'EUR',
   statuses,
   cryptoNote: 'Flat 27.5% on capital income from cryptocurrencies; no distinction for holding periods. Mining/staking taxed at progressive rates up to 55% (brackets: 0% €0-€12,816, 20% €12,817-€20,818, 30% €20,819-€34,513, 40% €34,514-€66,612, 48% €66,613-€99,266, 50% €99,267-€1m, 55% >€1m).',
   setups,
