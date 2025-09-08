@@ -42,62 +42,64 @@ import { getCurrencyInfo } from '@/lib/tax/utils/currency-mapping';
 
 // Comprehensive country colors for world map - each country gets a distinct color
 const countryColors: Record<string, string> = {
-  // Currently implemented countries
-  usa: '#1e40af',      // Blue
-  canada: '#dc2626',   // Red
-  uk: '#7c3aed',       // Purple
-  australia: '#059669', // Green
-  germany: '#ea580c',  // Orange
-  france: '#0891b2',   // Cyan
-  japan: '#be185d',    // Pink
-  india: '#65a30d',    // Lime
-  italy: '#c2410c',    // Orange-red
-  brazil: '#0d9488',   // Teal
+  // Countries with positive delta - varying shades of green based on delta value
+  usa: '#22c55e',          // Delta 17 - Green-500
+  germany: '#15803d',      // Delta 45 - Green-700
+  uk: '#16a34a',           // Delta 25 - Green-600
+  france: '#22c55e',       // Delta 15 - Green-500
+  canada: '#4ade80',       // Delta 6.5 - Green-400
+  brazil: '#4ade80',       // Delta 5 - Green-400
+  southkorea: '#15803d',   // Delta 45 - Green-700
+  australia: '#16a34a',    // Delta 22.5 - Green-600
+  spain: '#22c55e',        // Delta 19 - Green-500
+  turkey: '#15803d',       // Delta 40 - Green-700
+  switzerland: '#15803d',  // Delta 40 - Green-700
+  belgium: '#166534',      // Delta 50 - Green-800
+  sweden: '#16a34a',       // Delta 22 - Green-600
+  ireland: '#22c55e',      // Delta 19 - Green-500
+  argentina: '#22c55e',    // Delta 20 - Green-500
+  singapore: '#16a34a',    // Delta 22 - Green-600
+  austria: '#16a34a',      // Delta 27.5 - Green-600
+  israel: '#16a34a',       // Delta 25 - Green-600
+  thailand: '#15803d',     // Delta 35 - Green-700
+  philippines: '#22c55e',  // Delta 17 - Green-500
+  norway: '#15803d',       // Delta 30 - Green-700
+  vietnam: '#22c55e',      // Delta 15 - Green-500
+  malaysia: '#15803d',     // Delta 30 - Green-700
+  hongkong: '#22c55e',     // Delta 17 - Green-500
+  colombia: '#16a34a',     // Delta 24 - Green-600
+  southafrica: '#16a34a',  // Delta 27 - Green-600
+  pakistan: '#15803d',     // Delta 30 - Green-700
+  czechrepublic: '#16a34a', // Delta 23 - Green-600
+  finland: '#4ade80',      // Delta 10 - Green-400
+  portugal: '#166534',     // Delta 53 - Green-800
+  greece: '#15803d',       // Delta 29 - Green-700
 
-  // Additional countries from data.json - distinct colors
-  china: '#ef4444',        // Red-500
-  russia: '#8b5cf6',       // Violet-500
-  southkorea: '#10b981',   // Emerald-500
-  spain: '#f59e0b',        // Amber-500
-  mexico: '#06b6d4',       // Cyan-500
-  indonesia: '#ec4899',    // Pink-500
-  turkey: '#84cc16',       // Lime-500
-  netherlands: '#f97316',  // Orange-500
-  saudiarabia: '#3b82f6',  // Blue-500
-  switzerland: '#6366f1',  // Indigo-500
-  poland: '#14b8a6',       // Teal-500
-  taiwan: '#f43f5e',       // Rose-500
-  belgium: '#a855f7',      // Purple-500
-  sweden: '#22c55e',       // Green-500
-  ireland: '#eab308',      // Yellow-500
-  argentina: '#0ea5e9',    // Sky-500
-  uae: '#d946ef',          // Fuchsia-500
-  singapore: '#65a30d',    // Lime-600
-  austria: '#dc2626',      // Red-600
-  israel: '#7c3aed',       // Violet-600
-  thailand: '#059669',     // Emerald-600
-  philippines: '#ea580c',  // Orange-600
-  norway: '#0891b2',       // Cyan-600
-  vietnam: '#be185d',      // Pink-600
-  malaysia: '#c2410c',     // Orange-red-600
-  bangladesh: '#0d9488',   // Teal-600
-  iran: '#1e40af',         // Blue-600
-  denmark: '#7c2d12',      // Orange-800
-  hongkong: '#991b1b',     // Red-800
-  colombia: '#581c87',     // Purple-800
-  southafrica: '#064e3b',  // Emerald-800
-  romania: '#92400e',      // Amber-800
-  pakistan: '#155e75',     // Cyan-800
-  chile: '#be123c',        // Rose-800
-  czechrepublic: '#6b21a8', // Purple-800
-  egypt: '#166534',        // Green-800
-  finland: '#a16207',      // Amber-700
-  portugal: '#0c4a6e',     // Sky-800
-  kazakhstan: '#be185d',   // Pink-700
-  peru: '#b91c1c',         // Red-700
-  iraq: '#7e22ce',         // Purple-700
-  greece: '#047857',       // Emerald-700
-  algeria: '#c2410c',      // Orange-700
+  // Countries with delta = 0 - Dark green
+  japan: '#166534',        // Delta 0 - Green-800
+  india: '#166534',        // Delta 0 - Green-800
+  italy: '#166534',        // Delta 0 - Green-800
+  russia: '#166534',       // Delta 0 - Green-800
+  mexico: '#166534',       // Delta 0 - Green-800
+  indonesia: '#166534',    // Delta 0 - Green-800
+  saudiarabia: '#166534',  // Delta 0 - Green-800
+  poland: '#166534',       // Delta 0 - Green-800
+  taiwan: '#166534',       // Delta 0 - Green-800
+  uae: '#166534',          // Delta 0 - Green-800
+  iran: '#166534',         // Delta 0 - Green-800
+  denmark: '#166534',      // Delta 0 - Green-800
+  romania: '#166534',      // Delta 0 - Green-800
+  chile: '#166534',        // Delta 0 - Green-800
+  kazakhstan: '#166534',   // Delta 0 - Green-800
+  peru: '#166534',         // Delta 0 - Green-800
+
+  // Countries not in delta data - Grey
+  china: '#6b7280',        // Grey-500
+  netherlands: '#6b7280',  // Grey-500
+  bangladesh: '#6b7280',   // Grey-500
+  egypt: '#6b7280',        // Grey-500
+  iraq: '#6b7280',         // Grey-500
+  algeria: '#6b7280',      // Grey-500
 };
 
 // Map country codes to our internal country keys (ISO country codes)
