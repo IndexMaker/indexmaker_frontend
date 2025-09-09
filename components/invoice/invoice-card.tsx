@@ -105,7 +105,7 @@ export function InvoiceCard({ invoice }: InvoiceCardProps) {
         {/* Timestamp */}
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Clock className="h-3 w-3" />
-          {new Date(invoice.created_at).toLocaleDateString("en-US", {
+          {new Date(invoice.timestamp).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
             hour: "2-digit",

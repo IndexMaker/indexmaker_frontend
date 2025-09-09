@@ -225,7 +225,7 @@ export function InvoiceTable({ invoices }: InvoiceTableProps) {
 
       <div className="flex justify-center items-center mt-4 text-primary text-sx">
         <Button
-          className="text-[11px] text-muted bg-background p-0 h-4"
+          className="text-[11px] text-muted bg-background hover:bg-accent p-0 h-4"
           disabled={currentPage === 1}
           onClick={() => setCurrentPage(currentPage - 1)}
         >
@@ -235,7 +235,7 @@ export function InvoiceTable({ invoices }: InvoiceTableProps) {
           Page {currentPage} of {totalPages}
         </span>
         <Button
-          className="text-[11px] text-muted bg-background p-0 h-4"
+          className="text-[11px] text-muted bg-background hover:bg-accent p-0 h-4"
           disabled={currentPage === totalPages}
           onClick={() => setCurrentPage(currentPage + 1)}
         >

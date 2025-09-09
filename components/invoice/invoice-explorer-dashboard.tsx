@@ -14,7 +14,23 @@ import { fetchAssets, fetchInventory, fetchMintInvoices } from "@/api/invoice";
 import { useDispatch, useSelector } from "react-redux";
 import { setAssets } from "@/redux/assetSlice";
 import { RootState } from "@/redux/store";
+const now = new Date();
 
+// Default “from”: Jan 1, 2025 @ 00:00:00 UTC
+const DEFAULT_FROM = new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0));
+
+// Default “to”: today @ 00:00:00 UTC
+const DEFAULT_TO = new Date(
+  Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    0,
+    0,
+    0,
+    0
+  )
+);
 export function InvoiceExplorerDashboard() {
   const [invoices, setInvoices] = useState<MintInvoice[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(true);
@@ -22,33 +38,15 @@ export function InvoiceExplorerDashboard() {
   const [activeTab, setActiveTab] = useState("invoices");
   const dispatch = useDispatch();
   const { assets } = useSelector((state: RootState) => state.assets);
-  const now = new Date();
 
-  // First day of current month at midnight UTC
-  const firstDayOfMonth = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0)
-  );
-
-  // Today at midnight UTC
-  const todayMidnight = new Date(
-    Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate(),
-      0,
-      0,
-      0,
-      0
-    )
-  );
   const [filters, setFilters] = useState<SearchFilters>({
     query: "",
     status: "all",
     symbol: "all",
     minAmount: "",
     maxAmount: "",
-    dateFrom: firstDayOfMonth,
-    dateTo: todayMidnight,
+    dateFrom: undefined,
+    dateTo: undefined,
     fillRateMin: "",
     fillRateMax: "",
   });
@@ -87,7 +85,8 @@ export function InvoiceExplorerDashboard() {
   useEffect(() => {
     let cancelled = false;
     // guard: both dates must exist
-    if (!filters.dateFrom || !filters.dateTo) return;
+    const from = filters.dateFrom ?? DEFAULT_FROM;
+    const to = filters.dateTo ?? DEFAULT_TO;
 
     setLoadingInvoices(true);
 
@@ -95,8 +94,8 @@ export function InvoiceExplorerDashboard() {
     const t = setTimeout(async () => {
       try {
         const invoicesData = await fetchMintInvoices(
-          filters.dateFrom!,
-          filters.dateTo!
+          from,
+          to
         );
 
         // mock augmentation you already had:
