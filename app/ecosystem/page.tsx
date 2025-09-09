@@ -1,5 +1,5 @@
 "use client";
-import { fetchProjects } from "@/api/projects";
+import { fetchProjects } from "@/server/projects";
 import Dashboard from "@/components/views/Dashboard/dashboard";
 import { ProjectCard } from "@/components/views/ecosystem/ecosystem";
 import { useLanguage } from "@/contexts/language-context";
@@ -31,7 +31,7 @@ const EcosystemClient = () => {
 
   return (
     <Dashboard>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 pt-6">
         <div className="flex gap-5 flex-col">
           <h1 className="text-[38px] font-normal text-primary h-[44px] items-center flex">
             {t("common.ecosystem")}

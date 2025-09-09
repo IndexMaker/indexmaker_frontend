@@ -7,7 +7,7 @@ import {
     fetchHistoricalData,
     fetchUserTransactionData,
     fetchVaultAssets,
-} from "@/api/indices";
+} from "@/server/indices";
 import { PerformanceChart } from "@/components/elements/performance-chart";
 import { TimePeriodSelector } from "@/components/elements/time-period";
 import { TransactionTypeSelector } from "@/components/elements/transaction-types";
@@ -105,7 +105,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
   const documents = getIndexData(index?.ticker || "SY100")?.documents || [];
   const isMobile = useMediaQuery({ maxWidth: 1540 });
   const isSmallWindow = useMediaQuery({ maxWidth: 1024 });
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("5y");
   const [historicalLoading, setHistoricalLoading] = useState<boolean>(false);
   const [indexAssetLoading, setAssetLoading] = useState<boolean>(false);
   const [depositTransactionLoading, setDepositTransactionLoading] =

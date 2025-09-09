@@ -66,9 +66,9 @@ export function ResultsDisplay() {
           </div>
         </div>
 
-        <div className="mt-6 p-4 bg-muted rounded-lg">
+        <div className="mt-6 p-4 bg-foreground rounded-lg">
           <h4 className="font-semibold mb-2">Summary</h4>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-secondary">
             Based on your {results.investmentType} investment in {countryInfo.name},
             you would pay {formatCurrency(results.totalTax)} in taxes,
             resulting in a net return of {formatCurrency(results.netReturn)}

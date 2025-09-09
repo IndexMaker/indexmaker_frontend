@@ -52,7 +52,7 @@ export default function IndexBalance({
                   % Since Entry
                 </th>
                 <th className="text-left py-3 px-4 font-medium text-secondary text-[13px]">
-                  Index Balance
+                  ITP Balance
                 </th>
                 <th className="text-right py-3 px-4"></th>
               </tr>

@@ -15,7 +15,7 @@ import USDC from "../../public/logos/usd-coin.png";
 import CustomTooltip from "./custom-tooltip";
 import { toast } from "sonner";
 import { useQuoteContext } from "@/contexts/quote-context";
-import { sendMintInvoiceToBackend } from "@/api/indices";
+import { sendMintInvoiceToBackend } from "@/server/indices";
 
 interface TransactionItem {
   token: string;
@@ -274,7 +274,7 @@ export function TransactionConfirmModal({
                     </div>
 
                     <div className="flex justify-between items-center text-[12px]">
-                      <span className="text-secondary">Net Supply APY</span>
+                      <span className="text-secondary">Year to Date</span>
                       <div className="flex items-center gap-1">
                         <span className="font-medium">{transaction.apy}</span>
                         <Sparkles className="w-4 h-4 text-blue-400" />

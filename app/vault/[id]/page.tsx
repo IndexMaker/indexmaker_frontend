@@ -1,5 +1,5 @@
 "use client";
-import { fetchAllIndices } from "@/api/indices";
+import { fetchAllIndices } from "@/server/indices";
 import { VaultDetailPage } from "@/components/views/vault/vault-detail";
 import { log } from "@/lib/utils/logger";
 import { setIndices } from "@/redux/indexSlice";

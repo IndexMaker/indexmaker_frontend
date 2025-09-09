@@ -19,12 +19,12 @@ export const networks: Network[] = [
     chainId: "0x2105",
     icon: 'base',
   },
-  {
-    id: "mainnet",
-    name: "Ethereum",
-    chainId: "0x1",
-    icon: 'ethereum',
-  },
+  // {
+  //   id: "mainnet",
+  //   name: "Ethereum",
+  //   chainId: "0x1",
+  //   icon: 'ethereum',
+  // },
 ];
 
 type Network = {

@@ -11,9 +11,9 @@ import { RootState } from "@/redux/store";
 import { removeSelectedVault, updateVaultAmount } from "@/redux/vaultSlice";
 import { IndexListEntry } from "@/types/index";
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@radix-ui/react-popover";
 import { Copy, X } from "lucide-react";
 import Image from "next/image";
@@ -630,7 +630,7 @@ export function SupplyPanel({
             <div className="bottom-[50px] absolute w-full p-2 border-t border-accent">
               <div className="p-0 flex flex-col">
                 <span className="text-yellow-500 text-[11px] text-right">
-                  ⚠️Withdraw and Rebalances are pause until DAO is formed.
+                  ⚠️Withdraw and Invest are pause until DAO is formed.
                 </span>
                 <div className="w-full text-[13px] text-secondary text-right">
                   Estimated Fill Time : ~15 Minutes

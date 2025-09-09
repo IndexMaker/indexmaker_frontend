@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/language-context";
 import { useWallet } from "@/contexts/wallet-context";
-import { Calculator, TrendingUp, X, Users } from "lucide-react";
+import { Calculator, TrendingUp, X, Users, FileScanIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePathname } from "next/navigation";
 import EcosystemSvg from "../icons/ecosystem";
@@ -163,8 +163,17 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
               {t("common.curators")}
             </NavItem>
             <NavItem
-              href="/calculator"
-              active={isRouteActive("/calculator")}
+              href="/invoices"
+              active={isRouteActive("/invoices")}
+              className="text-[13px] text-secondary py-[6px] px-[10px] h-[32px]"
+              icon={FileScanIcon}
+              collapsed={collapsed}
+            >
+              {t("common.invoices")}
+            </NavItem>
+            <NavItem
+              href="/tax-optimizer"
+              active={isRouteActive("/tax-optimizer")}
               className="text-[13px] text-secondary py-[6px] px-[10px] h-[32px]"
               icon={Calculator}
               collapsed={collapsed}
