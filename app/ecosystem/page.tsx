@@ -1,5 +1,5 @@
 "use client";
-import { fetchProjects } from "@/api/projects";
+import { fetchProjects } from "@/server/projects";
 import Dashboard from "@/components/views/Dashboard/dashboard";
 import { ProjectCard } from "@/components/views/ecosystem/ecosystem";
 import { useLanguage } from "@/contexts/language-context";

@@ -7,7 +7,7 @@ import {
     fetchHistoricalData,
     fetchUserTransactionData,
     fetchVaultAssets,
-} from "@/api/indices";
+} from "@/server/indices";
 import { PerformanceChart } from "@/components/elements/performance-chart";
 import { TimePeriodSelector } from "@/components/elements/time-period";
 import { TransactionTypeSelector } from "@/components/elements/transaction-types";

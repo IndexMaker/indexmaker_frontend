@@ -7,7 +7,7 @@ import { useCallback, useState } from "react";
 import axios from "axios";
 import { Spinner } from "@/components/elements/spinner";
 import { cn } from "@/lib/utils";
-import { downloadDailyPriceData, downloadRebalanceData } from "@/api/indices";
+import { downloadDailyPriceData, downloadRebalanceData } from "@/server/indices";
 
 interface VaultLiteratureProps {
   literature: VaultDocument[];

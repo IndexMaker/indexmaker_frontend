@@ -1,6 +1,6 @@
 import { Asset, CollateralSide, InventoryResponse, Lot, MintInvoice, Position } from "@/types";
 
-const API_BASE_URL = "https://issuer-network-1.indexmaker.global/api/v1";
+const API_BASE_URL = "/api/issuer";
 const API_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API;
 const toUTCStartOfDay = (d: Date) =>
   new Date(
