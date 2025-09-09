@@ -1,4 +1,4 @@
-import { Asset, InventoryResponse, Lot, MintInvoice, Position } from "@/types";
+import { Asset, CollateralSide, InventoryResponse, Lot, MintInvoice, Position } from "@/types";
 
 const API_BASE_URL = "https://issuer-network-1.indexmaker.global/api/v1";
 const API_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API;
@@ -84,22 +84,26 @@ const mockInvoices: MintInvoice[] = [
         created_timestamp: "2025-08-15T09:15:00Z",
       },
     ],
-    position: [
-      {
-        asset_symbol: "BTC",
-        quantity: 0.1,
-        average_price: 45000,
-        total_value: 4500,
-        unrealized_pnl: 150,
+    position: {
+      chain_id: 1,
+      address: "",
+      side_dr: {
+        unconfirmed_balance: "",
+        ready_balance: "",
+        preauth_balance: "",
+        spent_balance: "",
+        open_lots: [],
+        closed_lots: [],
       },
-      {
-        asset_symbol: "ETH",
-        quantity: 1.5,
-        average_price: 2800,
-        total_value: 4200,
-        unrealized_pnl: -50,
+      side_cr: {
+        unconfirmed_balance: "",
+        ready_balance: "",
+        preauth_balance: "",
+        spent_balance: "",
+        open_lots: [],
+        closed_lots: [],
       },
-    ],
+    },
   },
 ];
 
@@ -211,7 +215,6 @@ export function deserializeMintInvoice(raw: any): MintInvoice {
     toStr(inv.timestamp ?? raw.timestamp ?? raw.timestamp) ||
     new Date().toISOString();
 
-  console.log(createdAt);
   const updatedAt = toStr(inv.timestamp ?? raw.timestamp) || createdAt;
 
   // lots can be at inv.lots or root.lots
@@ -227,17 +230,55 @@ export function deserializeMintInvoice(raw: any): MintInvoice {
     ...l, // keep the rest (price, quantity, etc) if present
   }));
 
-  // position could be an object or an array; normalize to array
+  // ---- POSITION: normalize to a single Position (matches your types) ----
   const posRaw = inv.position ?? raw.position;
-  const posArr: any[] = Array.isArray(posRaw) ? posRaw : posRaw ? [posRaw] : [];
-  const position: Position[] = posArr.map((p: any) => ({
-    chain_id: toStr(p.chain_id ?? raw.chain_id ?? inv.chain_id),
-    address: toStr(p.address ?? raw.address ?? inv.address),
-    symbol: toStr(p.symbol ?? raw.symbol ?? inv.symbol),
-    timestamp: toStr(p.timestamp),
-    total_amount: toNum(p.total_amount),
-    ...p,
-  }));
+  const posObj = Array.isArray(posRaw) ? posRaw[0] : posRaw;
+
+  // Helpers for DR/CR sides (convert numeric strings -> numbers, coerce arrays)
+  const normalizeSpend = (s: any) => ({
+    ...s,
+    preauth_amount: toNum(s?.preauth_amount),
+    spent_amount: toNum(s?.spent_amount),
+  });
+
+  const normalizeLot = (l: any) => ({
+    ...l,
+    unconfirmed_amount: toNum(l?.unconfirmed_amount),
+    ready_amount: toNum(l?.ready_amount),
+    preauth_amount: toNum(l?.preauth_amount),
+    spent_amount: toNum(l?.spent_amount),
+    spends: Array.isArray(l?.spends) ? l.spends.map(normalizeSpend) : [],
+  });
+
+  const normalizeSide = (side: any = {}): CollateralSide => ({
+    unconfirmed_balance: toNum(side?.unconfirmed_balance),
+    ready_balance: toNum(side?.ready_balance),
+    preauth_balance: toNum(side?.preauth_balance),
+    spent_balance: toNum(side?.spent_balance),
+    open_lots: Array.isArray(side?.open_lots)
+      ? side.open_lots.map(normalizeLot)
+      : [],
+    closed_lots: Array.isArray(side?.closed_lots)
+      ? side.closed_lots.map(normalizeLot)
+      : [],
+  });
+
+  const position: Position = posObj
+    ? {
+        chain_id: (posObj.chain_id ??
+          raw.chain_id ??
+          inv.chain_id) as Position["chain_id"], // number | string is OK
+        address: toStr(posObj.address ?? raw.address ?? inv.address),
+        side_cr: normalizeSide(posObj.side_cr ?? posObj.cr),
+        side_dr: normalizeSide(posObj.side_dr ?? posObj.dr),
+      }
+    : {
+        chain_id: (raw.chain_id ?? inv.chain_id) as Position["chain_id"],
+        address: toStr(raw.address ?? inv.address),
+        side_cr: normalizeSide(),
+        side_dr: normalizeSide(),
+      };
+  // ---- END POSITION ----
 
   const chainId = toStr(raw.chain_id ?? inv.chain_id);
   const address = toStr(raw.address ?? inv.address);
@@ -262,6 +303,6 @@ export function deserializeMintInvoice(raw: any): MintInvoice {
     timestamp: createdAt,
     updated_at: updatedAt,
     lots,
-    position,
+    position, // <-- now a single Position (not an array)
   };
 }

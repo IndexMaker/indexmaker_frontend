@@ -77,13 +77,37 @@ export interface Lot {
   created_timestamp: string;
 }
 
-export interface Position {
-  asset_symbol: string;
-  quantity: number;
-  average_price: number;
-  total_value: number;
-  unrealized_pnl: number;
-}
+export type CollateralSide = {
+  unconfirmed_balance: number | string;
+  ready_balance: number | string;
+  preauth_balance: number | string;
+  spent_balance: number | string;
+  open_lots: CollateralLot[];
+  closed_lots: CollateralLot[];
+};
+
+export type CollateralLot = {
+  payment_id: string;
+  created_timestamp: number; // seconds or ms; we'll normalize
+  unconfirmed_amount: number | string;
+  ready_amount: number | string;
+  preauth_amount: number | string;
+  spent_amount: number | string;
+  spends: Array<{
+    timestamp: number; // seconds or ms
+    payment_id: string;
+    client_order_id: string;
+    preauth_amount: number | string;
+    spent_amount: number | string;
+  }>;
+};
+
+export type Position = {
+  chain_id: number | string;
+  address: string;
+  side_dr: CollateralSide; // debits
+  side_cr: CollateralSide; // credits
+};
 
 export interface MintInvoice {
   id: string;
@@ -103,7 +127,7 @@ export interface MintInvoice {
   timestamp: string;
   updated_at: string;
   lots: Lot[];
-  position: Position[];
+  position: Position;
 }
 
 export type TxBundle = {

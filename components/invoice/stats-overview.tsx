@@ -15,10 +15,7 @@ export function StatsOverview({ invoices, assets }: StatsOverviewProps) {
   const totalInvoices = invoices.length
   const completedInvoices = invoices.filter((inv) => inv.status === "completed").length
   const totalValue = invoices.reduce((sum, inv) => sum + inv.assets_value * 1, 0)
-  const totalPnL = invoices.reduce(
-    (sum, inv) => sum + inv.position.reduce((posSum, pos) => posSum + pos.unrealized_pnl, 0),
-    0,
-  )
+
   const averageFillRate = invoices.reduce((sum, inv) => sum + inv.fill_rate, 0) / invoices.length || 0
   const totalMarketCap = assets.reduce((sum, asset) => sum + asset.market_cap, 0)
 
