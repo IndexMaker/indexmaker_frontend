@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
 import { ArrowLeft, Activity, DollarSign, TrendingUp } from "lucide-react";
 import { Asset } from "@/types";
-import { fetchAssets } from "@/api/invoice";
+import { fetchAssets } from "@/server/invoice";
 import { RootState } from "@/redux/store";
 import { useSelector } from "react-redux";
 

@@ -51,7 +51,7 @@ export function TransactionConfirmModal({
     "idle"
   );
   const [fixStatus, setFixStatus] = useState<"idle" | "done" | "error">("idle");
-
+  const [approvalBlock, setApprovalBlock] = useState<bigint | null>(null);
   const [bundleApproved, setBundleApproved] = useState<
     "idle" | "success" | "failed"
   >("idle");
@@ -103,7 +103,13 @@ export function TransactionConfirmModal({
 
       if (allowance < amount) {
         const tx = await usdc.approve(OTC_INDEX_ADDRESS, amount);
-        await tx.wait();
+        const receipt = await tx.wait();
+        setApprovalBlock(BigInt(receipt.blockNumber));
+      } else {
+        // Optional fallback: if no new approval tx was sent, you won't have a block number.
+        // If you must ALWAYS use the approval tx's block, omit this and ask user to re-approve.
+        const latest = await provider.getBlockNumber();
+        setApprovalBlock(BigInt(latest));
       }
 
       setApprovalStatus("done");
@@ -124,16 +130,38 @@ export function TransactionConfirmModal({
       const signer = await provider.getSigner();
       const otcIndex = new Contract(OTC_INDEX_ADDRESS, otcIndexAbi.abi, signer);
 
+      const network = await provider.getNetwork();
+      const chainId = network.chainId; // bigint in ethers v6
+      const userAddr = ethers.getAddress(
+        wallet?.accounts[0]?.address || ethers.ZeroAddress
+      );
+
       const amount = parseUnits(
         transactions
           ?.reduce((sum, t) => sum + Number(t.amount), 0)
           .toString() || "0",
         USDC_DECIMALS
       );
-      const seqNum = Math.floor(Math.random() * 100000);
+
+      if (approvalBlock == null) {
+        toast.error(
+          "Missing approval block number — please approve again to continue."
+        );
+        setDepositStatus("error");
+        setIsProcessing(false);
+        return;
+      }
+
+      const addrBN = BigInt(userAddr);
+      const seqNumNewOrderSingle =
+        ((chainId & ((1n << 32n) - 1n)) << (64n + 160n)) | // 4B chain
+        ((approvalBlock & ((1n << 64n) - 1n)) << 160n) | // 8B approval block
+        (addrBN & ((1n << 160n) - 1n));
+
+      console.log(seqNumNewOrderSingle);
       const tx = await otcIndex.deposit(
         amount,
-        seqNum,
+        seqNumNewOrderSingle,
         process.env.NEXT_PUBLIC_ADMIN_ADDRESS,
         ethers.ZeroAddress
       );
