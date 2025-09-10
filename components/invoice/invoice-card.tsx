@@ -15,7 +15,7 @@ interface InvoiceCardProps {
 export function InvoiceCard({ invoice }: InvoiceCardProps) {
   const fillPercentage = Math.round(invoice.fill_rate * 100)
   const totalValue = invoice.assets_value
-  const profitLoss = invoice.position.reduce((sum, pos) => sum + pos.unrealized_pnl, 0)
+  // const profitLoss = invoice.position.reduce((sum, pos) => sum + pos.unrealized_pnl, 0)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -86,10 +86,10 @@ export function InvoiceCard({ invoice }: InvoiceCardProps) {
               <TrendingUp className="h-3 w-3 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">P&L</span>
             </div>
-            <p className={`text-sm font-semibold ${profitLoss >= 0 ? "text-chart-1" : "text-destructive"}`}>
+            {/* <p className={`text-sm font-semibold ${profitLoss >= 0 ? "text-chart-1" : "text-destructive"}`}>
               {profitLoss >= 0 ? "+" : ""}
               {formatCurrency(profitLoss)}
-            </p>
+            </p> */}
           </div>
         </div>
 

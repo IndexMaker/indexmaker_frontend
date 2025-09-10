@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/language-context";
 import { useState } from "react";
 import { toast } from "sonner";
-import { subscribeEmail } from "@/api/indices";
+import { subscribeEmail } from "@/server/indices";
 import { useDebounce } from "use-debounce";
 import { useMediaQuery } from "react-responsive";
 export function SubscribeModal({

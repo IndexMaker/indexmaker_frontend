@@ -91,7 +91,7 @@ export function VaultSupply({ supplyPositions, myPositions = false }: VaultSuppl
                       "text-secondary text-[13px] pl-[20px] pr-[72px]"
                     )}
                   >
-                    {column.id === 'user' && myPositions ? "Index" : t("table." + column.id)}
+                    {column.id === 'user' && myPositions ? "ITP" : t("table." + column.id)}
                   </TableHead>
                 ))}
               </TableRow>

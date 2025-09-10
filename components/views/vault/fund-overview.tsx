@@ -32,7 +32,7 @@ export default function FundOverview({
       {/* Content */}
       <CardContent className="p-4 pt-0 overflow-y-auto flex-1">
         {/* Top Sector & Country */}
-        <div className="grid grid-cols-1 gap-4">
+        {/* <div className="grid grid-cols-1 gap-4">
           <div className="my-1">
             <div className="flex gap-2 items-center">
               <div className="font-semibold my-1">Top Sector</div>
@@ -49,7 +49,7 @@ export default function FundOverview({
             </div>
           </div>
 
-          {/* <div>
+          <div>
             <div className="font-medium mb-1">Top Country</div>
             <div className="text-[12px] text-muted-foreground mb-2">AS OF {asOfDate}</div>
             <div className="flex items-center gap-2">
@@ -61,10 +61,10 @@ export default function FundOverview({
                 <div className="font-medium text-[13px]">{topCountry.weight}</div>
               </div>
             </div>
-          </div> */}
-        </div>
+          </div>
+        </div> */}
 
-        <div className="border-t-[#E5E5E5] border-t-1">
+        <div className="border-t-[#E5E5E5] border-t-0">
           <div className="font-semibold my-1">Objective</div>
           <p className="text-[13px] leading-relaxed">{objective}</p>
         </div>

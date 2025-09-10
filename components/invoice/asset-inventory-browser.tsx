@@ -25,7 +25,7 @@ import { AssetCard } from "./asset-card";
 import { AssetTable } from "./asset-table";
 import { AssetChart } from "./asset-chart";
 import { Asset } from "@/types";
-import { fetchAssets, fetchInventory } from "@/api/invoice";
+import { fetchAssets, fetchInventory } from "@/server/invoice";
 
 type SortOption = "market_cap" | "price" | "volume" | "name";
 type ViewMode = "grid" | "table" | "chart";

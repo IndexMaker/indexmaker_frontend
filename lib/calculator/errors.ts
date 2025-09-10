@@ -13,9 +13,9 @@ export abstract class CalculatorError extends Error {
     this.name = this.constructor.name;
     this.timestamp = new Date();
     
-    if (cause) {
-      this.cause = cause;
-    }
+    // if (cause) {
+    //   this.cause = cause;
+    // }
 
     // Maintain proper stack trace in V8
     if (Error.captureStackTrace) {
