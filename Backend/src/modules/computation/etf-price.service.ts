@@ -7,12 +7,12 @@ import {
   coinSymbols,
   dailyPrices,
   historicalPrices,
+  indexEvents,
   rebalances,
-  syncState,
   tempRebalances,
+  tempTop20Rebalances,
 } from '../../db/schema';
 import {
-  ConsoleLogWriter,
   and,
   asc,
   between,
@@ -26,8 +26,10 @@ import {
 import { ethers } from 'ethers';
 import * as path from 'path';
 import {
+  Asset,
   FundRating,
   IndexListEntry,
+  MarketRow,
   VaultAsset,
 } from 'src/common/types/index.types';
 import { calculateLETV, formatTimestamp } from 'src/common/utils/utils';
@@ -314,8 +316,8 @@ export class EtfPriceService {
       .from(blockchainEvents)
       .where(and(...conditions));
 
-    const USDValueOfUSDC =
-      await this.coinGeckoService.getUSDCUSDPrice('usd-coin');
+    const USDValueOfUSDC = 1;
+    // await this.coinGeckoService.getUSDCUSDPrice('usd-coin');
 
     const _totalSupply = await this.otcCustody.getCustodyBalances(
       indexData.custodyId,
@@ -427,8 +429,8 @@ export class EtfPriceService {
       },
     ];
 
-    const USDValueOfUSDC =
-      await this.coinGeckoService.getUSDCUSDPrice('usd-coin');
+    const USDValueOfUSDC = 1;
+    // await this.coinGeckoService.getUSDCUSDPrice('usd-coin');
 
     // 1. Sync Mint + Transfer events from blockchain
     // await this.indexRegistryService.syncBlockchainEvents({
@@ -497,54 +499,83 @@ export class EtfPriceService {
   }
 
   async getIndexTransactions(indexId: number) {
-    const indexData = await this.getIndexDataFromFile(indexId);
-    if (!indexData?.address) throw new Error(`Index ${indexId} not found`);
+    const rows = await this.dbService
+      .getDb()
+      .select({
+        tx_hash: indexEvents.txHash,
+        log_index: indexEvents.logIndex,
+        timestamp: indexEvents.timestamp,
+        nav: indexEvents.nav,
+        weights: indexEvents.weights,
+        created_at: indexEvents.createdAt,
+      })
+      .from(indexEvents)
+      .where(eq(indexEvents.indexId, indexId))
+      .orderBy(desc(indexEvents.timestamp));
 
-    const iface = new ethers.Interface([
-      'event CuratorUpdate(uint256 timestamp, bytes weights, uint256 nav)',
-    ]);
+    const uniqueByTimestamp = new Map<number, (typeof rows)[0]>();
+    for (const row of rows) {
+      if (!uniqueByTimestamp.has(row.timestamp)) {
+        uniqueByTimestamp.set(row.timestamp, row);
+      }
+      // because rows are sorted DESC by logIndex for same timestamp,
+      // the first one you see is the highest-logIndex for that timestamp
+    }
 
-    const START_BLOCK = 0;
-    const logs = await this.provider.getLogs({
-      address: indexData.address,
-      fromBlock: START_BLOCK,
-      toBlock: 'latest',
-      topics: [ethers.id('CuratorUpdate(uint256,bytes,uint256)')],
-    });
+    return Array.from(uniqueByTimestamp.values()).map((row) => ({
+      id: `chain-${row.tx_hash}-${row.log_index}`,
+      timestamp: formatTimestamp(row.timestamp),
+      formattedTimestamp: row.timestamp,
+      user: 'System',
+      hash: row.tx_hash,
+      currency: 'USDC',
+      type: 'Rebalance',
+      letv: 0,
+      weights: row.weights,
+      prices: null,
+      coins: null,
+      nav: row.nav,
+    }));
+  }
 
-    const txMap = new Map<number, any>(); // timestamp => transaction
+  async indexRebalanceTransactionsFetchAndStore() {
+    const raw = await fs.readFile(this.INDEX_LIST_PATH, 'utf8');
+    const list: Array<any> = JSON.parse(raw);
+    list.map(async (_index) => {
+      const indexData = _index;
+      if (!indexData) return;
+      const iface = new ethers.Interface([
+        'event CuratorUpdate(uint256 timestamp, bytes weights, uint256 nav)',
+      ]);
+      const logs = await this.provider.getLogs({
+        address: indexData.address,
+        fromBlock: 0,
+        toBlock: 'latest',
+        topics: [ethers.id('CuratorUpdate(uint256,bytes,uint256)')],
+      });
 
-    logs.forEach((log, i) => {
-      try {
+      const entries = logs.map((log, idx) => {
         const parsed = iface.parseLog(log);
         if (!parsed) return null;
-        const blockTimestamp = Number(parsed.args.timestamp);
-        const tx = {
-          id: `chain-${log.transactionHash}-${i}`,
-          timestamp: formatTimestamp(blockTimestamp),
-          formattedTimestamp: blockTimestamp,
-          user: 'System',
-          hash: log.transactionHash,
-          currency: 'USDC',
-          type: 'Rebalance',
-          letv: 0,
+        return {
+          indexId: Number(_index.indexId),
+          txHash: log.transactionHash,
+          logIndex: Math.round(Math.random() * 1000),
+          timestamp: Number(parsed.args.timestamp),
+          nav: parsed.args.nav.toString(),
           weights: parsed.args.weights,
-          prices: null,
-          coins: null,
         };
+      });
 
-        // This will overwrite any previous tx with the same timestamp
-        txMap.set(blockTimestamp, tx);
-      } catch (e) {
-        // skip invalid logs
+      // Upsert logic: insert if not exists
+      for (const entry of entries) {
+        await this.dbService
+          .getDb()
+          .insert(indexEvents)
+          .values(entry)
+          .onConflictDoNothing({ target: indexEvents.txHash });
       }
     });
-
-    const formattedTransactions = Array.from(txMap.values()).sort(
-      (a, b) => b.formattedTimestamp - a.formattedTimestamp,
-    );
-
-    return formattedTransactions;
   }
 
   async getHistoricalData(indexId: number): Promise<HistoricalEntry[]> {
@@ -823,6 +854,7 @@ export class EtfPriceService {
           await this.indexRegistryService.replaceBitgetWeightsWithBTC(
             rebalance.weights,
           );
+
         // Create synthetic coins from adjusted weights
         effectiveCoins = {};
         for (const [pair, weight] of adjustedWeights) {
@@ -903,6 +935,159 @@ export class EtfPriceService {
           lastKnownPrice,
           currentQuantities,
         );
+      }
+    }
+
+    return historicalData.sort((a, b) => a.date.getTime() - b.date.getTime());
+  }
+
+  async getHistoricalDataFromTop20Rebalances(
+    indexId: number,
+    name: string,
+  ): Promise<HistoricalEntry[]> {
+    const rebalanceData = await this.dbService.getDb().execute(
+      sql`
+        SELECT timestamp, weights, prices, coins
+        FROM (
+          SELECT *,
+                 ROW_NUMBER() OVER (PARTITION BY timestamp ORDER BY created_at DESC) as rn
+          FROM ${tempTop20Rebalances}
+          WHERE ${tempTop20Rebalances.indexId} = ${indexId.toString()}
+        ) sub
+        WHERE rn = 1
+        ORDER BY timestamp ASC;
+      `,
+    );
+
+    const rebalanceEvents = rebalanceData.rows;
+    if (rebalanceEvents.length === 0) return [];
+
+    const historicalData: HistoricalEntry[] = [];
+    let currentQuantities: Record<string, number> = {};
+    let lastKnownPrice = 10000; // initial
+
+    const allCoinIds = new Set<string>();
+    for (const event of rebalanceEvents) {
+      const coins =
+        typeof event.coins === 'string' ? JSON.parse(event.coins) : event.coins;
+      Object.keys(coins).forEach((id) => allCoinIds.add(id));
+    }
+
+    const symbolMappings = await this.dbService
+      .getDb()
+      .select({ coinId: coinSymbols.coinId, symbol: coinSymbols.symbol })
+      .from(coinSymbols)
+      .where(inArray(coinSymbols.coinId, Array.from(allCoinIds)));
+
+    // Handle any unmapped IDs via Coingecko
+    const existingCoinIds = new Set(symbolMappings.map((row) => row.coinId));
+    const missingCoinIds = Array.from(allCoinIds).filter(
+      (id) => !existingCoinIds.has(id),
+    );
+
+    if (missingCoinIds.length > 0) {
+      for (const coinId of missingCoinIds) {
+        const _symbol =
+          await this.coinGeckoService.getSymbolFromCoinGecko(coinId);
+        if (_symbol) {
+          symbolMappings.push({ coinId, symbol: _symbol });
+        }
+      }
+    }
+
+    const findTradingPair = (
+      prices: Record<string, number>,
+      symbol: string,
+    ): string | null => {
+      const upperSymbol = symbol.toUpperCase();
+      const possiblePairs = [
+        `bi.${upperSymbol}USDC`,
+        `bi.${upperSymbol}USDT`,
+        `bg.${upperSymbol}USDC`,
+        `bg.${upperSymbol}USDT`,
+      ];
+      return possiblePairs.find((pair) => prices[pair] !== undefined) || null;
+    };
+
+    for (let i = 0; i < rebalanceEvents.length; i++) {
+      const rebalance = {
+        timestamp: Number(rebalanceEvents[i].timestamp),
+        weights: JSON.parse(rebalanceEvents[i].weights) as [string, number][],
+        prices:
+          typeof rebalanceEvents[i].prices === 'string'
+            ? JSON.parse(rebalanceEvents[i].prices)
+            : rebalanceEvents[i].prices,
+        coins:
+          typeof rebalanceEvents[i].coins === 'string'
+            ? JSON.parse(rebalanceEvents[i].coins)
+            : rebalanceEvents[i].coins,
+      };
+
+      const nextRebalance = rebalanceEvents[i + 1];
+      const endTimestamp = nextRebalance
+        ? Number(nextRebalance.timestamp)
+        : Math.floor(Date.now() / 1000 - 86400);
+
+      // Build price map by coinId
+      const tokenPrices: Record<string, number> = {};
+      symbolMappings.forEach((row) => {
+        const pair = findTradingPair(rebalance.prices, row.symbol);
+        if (pair) {
+          tokenPrices[row.coinId] = rebalance.prices[pair];
+        }
+      });
+
+      currentQuantities = this.calculateTokenQuantitiesFromTempRebalance(
+        rebalance.coins,
+        tokenPrices,
+        lastKnownPrice,
+      );
+
+      const startDate = this.normalizeToNextUtcMidnight(
+        new Date(rebalance.timestamp * 1000),
+      );
+      startDate.setUTCHours(0, 0, 0, 0);
+
+      const endDate = this.isUtcMidnight(new Date(endTimestamp * 1000))
+        ? this.normalizeToNextUtcMidnight(new Date(endTimestamp * 1000))
+        : new Date(endTimestamp * 1000);
+
+      const coingeckoIdMap = symbolMappings.reduce(
+        (acc, row) => {
+          acc[row.symbol] = row.coinId;
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+
+      const dailyTokenPrices =
+        await this.getHistoricalPricesForPeriodWithCoinId(
+          coingeckoIdMap,
+          startDate.getTime() / 1000,
+          endDate.getTime() / 1000,
+        );
+
+      for (
+        let d = new Date(startDate);
+        d < endDate;
+        d.setUTCDate(d.getUTCDate() + 1)
+      ) {
+        const date = new Date(d);
+        const ts = Math.floor(date.getTime() / 1000);
+        const price = this.calculateIndexPrice(
+          currentQuantities,
+          dailyTokenPrices,
+          ts,
+        );
+        if (price === null) continue;
+        lastKnownPrice = Number(price.toFixed(2));
+        historicalData.push({
+          name: name,
+          date: new Date(ts * 1000),
+          price: lastKnownPrice,
+          value: lastKnownPrice,
+          quantities: currentQuantities,
+        });
       }
     }
 
@@ -1637,7 +1822,7 @@ export class EtfPriceService {
         weights: rebalances.weights,
         prices: rebalances.prices,
       })
-      .from(rebalances)
+      .from(tempRebalances)
       .where(eq(rebalances.indexId, indexId.toString()))
       .orderBy(desc(rebalances.timestamp)); // Newest first to match original logic
 
@@ -2002,110 +2187,121 @@ export class EtfPriceService {
       },
     };
     // Assuming the index count is available via a contract function
-    for (let indexId = 21; indexId <= 27; indexId++) {
-      if (indexId === 26) continue;
-      // Fetch index data
-      const indexData = await this.getIndexDataFromFile(indexId);
-      // const weights = await this.indexRegistry.curatorWeights(
-      //   indexId,
-      //   lastWeightUpdateTimestamp,
-      // );
-      // const tokenLists = this.indexRegistryService.decodeWeights(weights);
-      // console.log(indexData?.indexId)
-      // const custodyArtifact = require(
-      //   path.resolve(
-      //     __dirname,
-      //     '../../../../artifacts/contracts/OTCCustody/OTCCustody.sol/OTCCustody.json',
-      //   ),
-      // );
-      // const otcCustody = new ethers.Contract(
-      //   process.env.OTC_CUSTODY_ADDRESS!,
-      //   custodyArtifact.abi,
-      //   this.signer,
-      // );
-      // if (indexData && indexData.indexId && indexData.indexId === 27) {
-      //   try {
-      //     const custodyId = await otcCustody.getConnectorCustodyId(indexData?.address);
-      //     console.log("Custody ID:", custodyId);
-      //   } catch (error) {
-      //     console.error("Error fetching custody ID:", error);
-      //     throw error;
-      //   }
+    const raw = await fs.readFile(this.INDEX_LIST_PATH, 'utf8');
+    const list: Array<any> = JSON.parse(raw);
+    await Promise.all(
+      list.map(async (_index) => {
+        const indexId = Number(_index.indexId);
+        // Fetch index data
+        const indexData = await this.getIndexDataFromFile(indexId);
+        // const weights = await this.indexRegistry.curatorWeights(
+        //   indexId,
+        //   lastWeightUpdateTimestamp,
+        // );
+        // const tokenLists = this.indexRegistryService.decodeWeights(weights);
+        // console.log(indexData?.indexId)
+        // const custodyArtifact = require(
+        //   path.resolve(
+        //     __dirname,
+        //     '../../../../artifacts/contracts/OTCCustody/OTCCustody.sol/OTCCustody.json',
+        //   ),
+        // );
+        // const otcCustody = new ethers.Contract(
+        //   process.env.OTC_CUSTODY_ADDRESS!,
+        //   custodyArtifact.abi,
+        //   this.signer,
+        // );
+        // if (indexData && indexData.indexId && indexData.indexId === 27) {
+        //   try {
+        //     const custodyId = await otcCustody.getConnectorCustodyId(indexData?.address);
+        //     console.log("Custody ID:", custodyId);
+        //   } catch (error) {
+        //     console.error("Error fetching custody ID:", error);
+        //     throw error;
+        //   }
 
-      // }
-      // continue
-      const result = await this.dbService
-        .getDb()
-        .select()
-        .from(tempRebalances)
-        .where(eq(tempRebalances.indexId, indexId.toString()))
-        .orderBy(desc(tempRebalances.timestamp))
-        .limit(1);
+        // }
+        // continue
+        const result = await this.dbService
+          .getDb()
+          .select()
+          .from(tempRebalances)
+          .where(eq(tempRebalances.indexId, indexId.toString()))
+          .orderBy(desc(tempRebalances.timestamp))
+          .limit(1);
 
-      const tokenLists = JSON.parse(result[0].weights);
-      const tokenSymbols = tokenLists.map(([token, weight]) => token);
-      // Fetch collateral (logos) from token symbols (weights) related to the index
-      const logos = await this.getLogosForSymbols(tokenSymbols);
+        const tokenLists = JSON.parse(result[0].weights);
+        const tokenSymbols = tokenLists.map(([token, weight]) => token);
+        // Fetch collateral (logos) from token symbols (weights) related to the index
+        const logos = await this.getLogosForSymbols(tokenSymbols);
 
-      // Fetch Total Supply for the ERC20 contract (assuming you have a way to get ERC20 contract address for the index)
-      const USDValueOfUSDC =
-        await this.coinGeckoService.getUSDCUSDPrice('usd-coin');
-      const totalSupply =
-        indexData && indexData?.indexId === 21
-          ? await this.getTotalSupplyForIndex(indexData?.name || '')
-          : 0;
+        // Fetch Total Supply for the ERC20 contract (assuming you have a way to get ERC20 contract address for the index)
+        const USDValueOfUSDC = 1;
+        // await this.coinGeckoService.getUSDCUSDPrice('usd-coin');
+        const totalSupply =
+          indexData && indexData?.indexId === 21
+            ? await this.getTotalSupplyForIndex(indexData?.name || '')
+            : 0;
 
-      const totalSupplyUSD = USDValueOfUSDC * Number(totalSupply);
+        const totalSupplyUSD = USDValueOfUSDC * Number(totalSupply);
 
-      // Calculate YTD return (you might need to fetch historical prices for this)
-      let ytdReturn = await this.calculateYtdReturn(indexId);
+        // Calculate YTD return (you might need to fetch historical prices for this)
+        let ytdReturn = await this.calculateYtdReturn(indexId);
 
-      // Add calculations for other periods (similar to calculateYtdReturn)
-      const oneYearReturn = await this.calculatePeriodReturn(indexId, 365);
-      const threeYearReturn = await this.calculatePeriodReturn(
-        indexId,
-        365 * 3,
-      );
-      const fiveYearReturn = await this.calculatePeriodReturn(indexId, 365 * 5);
-      const tenYearReturn = await this.calculatePeriodReturn(indexId, 365 * 10);
+        // Add calculations for other periods (similar to calculateYtdReturn)
+        const oneYearReturn = await this.calculatePeriodReturn(indexId, 365);
+        const threeYearReturn = await this.calculatePeriodReturn(
+          indexId,
+          365 * 3,
+        );
+        const fiveYearReturn = await this.calculatePeriodReturn(
+          indexId,
+          365 * 5,
+        );
+        const tenYearReturn = await this.calculatePeriodReturn(
+          indexId,
+          365 * 10,
+        );
 
-      const ratings = await this.calculateRatings(indexId);
+        const ratings = await this.calculateRatings(indexId);
 
-      ytdReturn = Math.floor(ytdReturn * 100) / 100;
-      const inceptionDate = await this.getInceptionDateForIndex(indexId);
+        ytdReturn = Math.floor(ytdReturn * 100) / 100;
+        const inceptionDate = await this.getInceptionDateForIndex(indexId);
 
-      // Get category and assetClass from the predefined metadata
-      const { category, assetClass } = indexMetadata[
-        indexData?.symbol || ''
-      ] || {
-        category: 'General Cryptocurrencies',
-        assetClass: 'Cryptocurrencies',
-      };
+        // Get category and assetClass from the predefined metadata
+        const { category, assetClass } = indexMetadata[
+          indexData?.symbol || ''
+        ] || {
+          category: 'General Cryptocurrencies',
+          assetClass: 'Cryptocurrencies',
+        };
 
-      indexList.push({
-        indexId,
-        name: indexData?.name || '',
-        address: indexData?.address || '',
-        ticker: indexData?.symbol || '',
-        curator: process.env.OTC_CUSTODY_ADDRESS!,
-        totalSupply: Number(totalSupply),
-        totalSupplyUSD,
-        ytdReturn,
-        collateral: logos,
-        managementFee: Number(ethers.parseUnits('2', 18)) / 1e18, // Assuming fee is in the smallest unit
-        assetClass,
-        category,
-        inceptionDate: inceptionDate ? inceptionDate : 'N/A',
-        performance: {
+        indexList.push({
+          indexId,
+          name: indexData?.name || '',
+          address: indexData?.address || '',
+          ticker: indexData?.symbol || '',
+          curator: process.env.OTC_CUSTODY_ADDRESS!,
+          totalSupply: Number(totalSupply),
+          totalSupplyUSD,
           ytdReturn,
-          oneYearReturn,
-          threeYearReturn,
-          fiveYearReturn,
-          tenYearReturn,
-        },
-        ratings,
-      });
-    }
+          collateral: logos,
+          managementFee: Number(ethers.parseUnits('2', 18)) / 1e18, // Assuming fee is in the smallest unit
+          assetClass,
+          category,
+          inceptionDate: inceptionDate ? inceptionDate : 'N/A',
+          performance: {
+            ytdReturn,
+            oneYearReturn,
+            threeYearReturn,
+            fiveYearReturn,
+            tenYearReturn,
+          },
+          ratings,
+        });
+      }),
+    );
+
     indexList.sort((a, b) => a.indexId - b.indexId);
     return indexList;
   }
@@ -2258,18 +2454,57 @@ export class EtfPriceService {
     });
   }
 
+  // async getTotalSupplyForIndex(name: string): Promise<string> {
+  //   const rawData = await fs.readFile(this.INDEX_LIST_PATH, 'utf8');
+  //   this.indexes = JSON.parse(rawData);
+  //   const index = this.indexes.find((index) => index.name === name);
+  //   if (!index || !index.address) return '0';
+
+  //   const totalSupply = await this.otcCustody.getCustodyBalances(
+  //     index.custodyId,
+  //     process.env.USDC_ADDRESS_IN_BASE,
+  //   );
+
+  //   return Number(ethers.formatUnits(totalSupply, 6)).toFixed(2); // Use actual decimals
+  // }
+
   async getTotalSupplyForIndex(name: string): Promise<string> {
+    // 1. Load index metadata
     const rawData = await fs.readFile(this.INDEX_LIST_PATH, 'utf8');
     this.indexes = JSON.parse(rawData);
-    const index = this.indexes.find((index) => index.name === name);
+    const index = this.indexes.find((idx) => idx.name === name);
     if (!index || !index.address) return '0';
 
-    const totalSupply = await this.otcCustody.getCustodyBalances(
-      index.custodyId,
-      process.env.USDC_ADDRESS_IN_BASE,
-    );
+    // 2. Query blockchain_events to sum deposits minus withdrawals
+    //    Adjust the numeric field you sum (amount vs. quantity) based on how you record events.
+    const [{ total }] = await this.dbService
+      .getDb()
+      .select({
+        total: sql<number>`
+          COALESCE(
+            SUM(
+              CASE
+                WHEN ${blockchainEvents.eventType} = 'deposit' THEN ${blockchainEvents.amount}
+                WHEN ${blockchainEvents.eventType} = 'withdraw' THEN -${blockchainEvents.amount}
+                ELSE 0
+              END
+            ),
+            0
+          )
+        `,
+      })
+      .from(blockchainEvents)
+      .where(
+        and(
+          eq(blockchainEvents.contractAddress, index.address.toLowerCase()),
+          eq(blockchainEvents.network, 'base'), // or whatever network you want
+        ),
+      );
 
-    return Number(ethers.formatUnits(totalSupply, 6)).toFixed(2); // Use actual decimals
+    // 3. Format according to your token’s decimals (here 6 for USDC)
+    //    `total` comes back as a JS number (from a SQL NUMERIC), so we can
+    //    directly format it. If your library returns string you may need `Number(total)`.
+    return (Number(total) / 1000000).toFixed(2);
   }
 
   async calculateYtdReturn(indexId: number): Promise<number> {
@@ -2342,7 +2577,6 @@ export class EtfPriceService {
       console.log(`No rebalance found for index ${indexId}`);
       return []; // Return empty array if no rebalance found
     }
-
     // 2. Get latest daily prices with quantities
     const latestDailyPrice = await this.dbService
       .getDb()
@@ -2352,7 +2586,6 @@ export class EtfPriceService {
       });
 
     const weights = JSON.parse(rebalance.weights) as [string, number][];
-
     // First, safely parse or normalize the coins data
     let coins: Array<[string, number]>;
     if (typeof rebalance.coins === 'string') {
@@ -2391,20 +2624,23 @@ export class EtfPriceService {
         if (!coinData) return null;
 
         const sector = await this.coinGeckoService.getOrCreateCategory(coinId);
-        const symbol = coinData.symbol?.toLowerCase?.();
+        const symbol = coinData.symbol?.toLowerCase();
         if (!symbol) return null;
-
-        const listingEntry = weights.find(([pair]) =>
-          pair.toLowerCase().includes(symbol),
-        );
-        const listing = listingEntry?.[0].split('.')[0] || symbol;
+        const listingEntry = weights.find(([pair]) => {
+          const parts = pair.split('.');
+          // parts[0] is the exchange code, parts[1] is the symbol
+          return (
+            parts[1]?.toLowerCase() === symbol + 'usdc' ||
+            parts[1]?.toLowerCase() === symbol + 'usdt'
+          );
+        });
+        const listing = listingEntry
+          ? listingEntry[0].split('.')[0] // e.g. 'bi' or 'bg'
+          : symbol;
 
         return {
           id: idx + 1,
-          ticker: coinData.symbol
-            .replace(/USDT$/, '')
-            .replace(/USDC$/, '')
-            .toUpperCase(),
+          ticker: coinData.symbol.toUpperCase(),
           pair: listingEntry?.[0].split('.')[1] || symbol,
           listing,
           assetname: coinData?.name || coinData.symbol,
@@ -2425,6 +2661,134 @@ export class EtfPriceService {
     return sortAssets;
   }
 
+  safeParseJSON<T>(v: unknown): T | null {
+    if (v == null) return null;
+    if (typeof v === 'string') {
+      try {
+        return JSON.parse(v) as T;
+      } catch {
+        return null;
+      }
+    }
+    return v as T;
+  }
+
+  toLowerId(id: string) {
+    return id?.toLowerCase();
+  }
+
+  chunk<T>(arr: T[], size: number): T[][] {
+    const out: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+    return out;
+  }
+
+  async fetchAllAssets(): Promise<Asset[]> {
+    const db = this.dbService.getDb();
+
+    // 1) Find all indexIds that have at least one rebalance
+    const distinct = await db
+      .selectDistinct({ indexId: tempRebalances.indexId })
+      .from(tempRebalances);
+
+    // 2) For each index, pull the latest rebalance and the latest dailyPrices
+    const perIndex = await Promise.all(
+      distinct.map(async ({ indexId }: { indexId: string }) => {
+        const rebalance = await db.query.tempRebalances.findFirst({
+          where: eq(tempRebalances.indexId, indexId.toString()),
+          orderBy: desc(tempRebalances.timestamp),
+        });
+        if (!rebalance) return null;
+
+        const daily = await db.query.dailyPrices.findFirst({
+          where: eq(dailyPrices.indexId, indexId.toString()),
+          orderBy: desc(dailyPrices.date),
+        });
+
+        // coins: Array<[coingeckoId, weight]>
+        let coins: Array<[string, number]> = [];
+        if (typeof rebalance.coins === 'string') {
+          const parsed = this.safeParseJSON<Array<[string, number]>>(
+            rebalance.coins,
+          );
+          if (parsed) coins = parsed;
+        } else if (Array.isArray(rebalance.coins)) {
+          coins = rebalance.coins as Array<[string, number]>;
+        } else if (rebalance.coins && typeof rebalance.coins === 'object') {
+          coins = Object.entries(rebalance.coins as Record<string, number>);
+        }
+
+        // quantities keyed by coingeckoId
+        const quantities =
+          (daily?.quantities
+            ? this.safeParseJSON<Record<string, number>>(daily.quantities)
+            : null) ?? {};
+
+        return { coins, quantities };
+      }),
+    );
+
+    const valid = perIndex.filter(Boolean) as Array<{
+      coins: Array<[string, number]>;
+      quantities: Record<string, number>;
+    }>;
+
+    if (!valid.length) return [];
+
+    // 3) Collect all unique coin ids from latest rebalances
+    const allCoinIds = new Set<string>();
+    for (const { coins } of valid) {
+      for (const [coinId] of coins) allCoinIds.add(this.toLowerId(coinId));
+    }
+    const ids = Array.from(allCoinIds);
+
+    // 4) Fetch market rows once (chunked to be safe with URL limits)
+    const chunks = this.chunk(ids, 150);
+    let marketRows: MarketRow[] = [];
+    for (const c of chunks) {
+      const { marketData } = await this.fetchMarketData(c);
+      if (marketData?.length) marketRows = marketRows.concat(marketData);
+    }
+    const byId = new Map(marketRows.map((r) => [this.toLowerId(r.id), r]));
+
+    // 5) Aggregate expected_inventory across indexes, but only for coins in their latest rebalance
+    const expectedById = new Map<string, number>();
+    for (const { coins, quantities } of valid) {
+      for (const [coinId] of coins) {
+        const key = this.toLowerId(coinId);
+        const qty = Number(quantities[coinId] ?? 0);
+        expectedById.set(
+          key,
+          (expectedById.get(key) ?? 0) + (Number.isFinite(qty) ? qty : 0),
+        );
+      }
+    }
+
+    // 6) Build the combined Asset[] (deduped by id), sorted by market cap
+    const combined: Asset[] = ids
+      .map((id) => {
+        const row = byId.get(id);
+        if (!row) return null;
+
+        return {
+          id: row.id,
+          symbol: (row.symbol ?? id).toUpperCase(),
+          name: row.name ?? row.id,
+          total_supply: Number(row.total_supply ?? 0),
+          circulating_supply: Number(row.circulating_supply ?? 0),
+          price_usd: Number(row.current_price ?? 0),
+          market_cap: Number(row.market_cap ?? 0),
+          expected_inventory: Number(expectedById.get(id) ?? 0),
+          thumb: row.image ?? '',
+        } as Asset;
+      })
+      .filter((a): a is Asset => !!a)
+      .filter((a) => a.market_cap > 0)
+      .sort((a, b) => b.market_cap - a.market_cap);
+
+    return combined;
+  }
+  
   async fetchSubIndustryDiversification(
     indexId: number,
   ): Promise<{ name: string; percentage: string }[]> {
