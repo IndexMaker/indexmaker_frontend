@@ -4,7 +4,7 @@ import {
     fetchAllIndices,
     fetchCurrentRebalanceById,
     fetchRebalancesById,
-} from "@/api/indices";
+} from "@/server/indices";
 import { RebalanceTable } from "@/components/elements/index-rebalances-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

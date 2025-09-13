@@ -16,6 +16,7 @@ import CustomTooltip from "./custom-tooltip";
 import { toast } from "sonner";
 import { useQuoteContext } from "@/contexts/quote-context";
 import { sendMintInvoiceToBackend } from "@/server/indices";
+import onboard from "@/lib/blocknative/web3-onboard";
 
 interface TransactionItem {
   token: string;
@@ -37,6 +38,25 @@ interface TransactionConfirmModalProps {
   onClose: () => void;
   transactions: TransactionItem[] | null;
 }
+type OnboardWallet = {
+  label: string;
+  accounts: { address: string }[];
+  provider: any; // EIP-1193
+  chains?: { id: string }[];
+};
+export const getActiveWalletProvider = () => {
+  const connected = onboard.state.get().wallets as OnboardWallet[];
+  if (!connected || connected.length === 0) return null;
+  // If you allow multiple wallets at once, pick the one you want (first here)
+  return connected[0].provider;
+};
+
+export const getActiveWalletAccount = () => {
+  const connected = onboard.state.get().wallets as OnboardWallet[];
+  if (!connected || connected.length === 0) return null;
+  const acc = connected[0].accounts?.[0]?.address;
+  return acc ?? null;
+};
 
 export function TransactionConfirmModal({
   isOpen,
@@ -77,37 +97,39 @@ export function TransactionConfirmModal({
   };
 
   const handleApproval = async () => {
-    if (!wallet) {
-      await connectWallet();
-      return;
-    }
     try {
       setIsProcessing(true);
       setApprovalStatus("idle");
 
-      const provider = new BrowserProvider((window as any).ethereum);
+      // ✅ use the provider from the connected wallet (Onboard), not window.ethereum
+      const eip1193 = getActiveWalletProvider();
+      const fromAddress = getActiveWalletAccount();
+
+      if (!eip1193 || !fromAddress) {
+        // Fall back to your existing connect flow if nothing is connected
+        await connectWallet();
+        return;
+      }
+
+      const provider = new BrowserProvider(eip1193);
       const signer = await provider.getSigner();
       const usdc = new Contract(USDC_ADDRESS, erc20Abi.abi, signer);
 
-      const amount = parseUnits(
-        transactions
-          ?.reduce((sum, t) => sum + Number(t.amount), 0)
-          .toString() || "0",
-        USDC_DECIMALS
-      );
+      const total = (
+        transactions?.reduce((sum, t) => sum + Number(t.amount), 0) ?? 0
+      ).toString();
+      const amount = parseUnits(total, USDC_DECIMALS);
 
-      const allowance = await usdc.allowance(
-        wallet.accounts[0].address,
-        OTC_INDEX_ADDRESS
-      );
+      const allowance = await usdc.allowance(fromAddress, OTC_INDEX_ADDRESS);
 
       if (allowance < amount) {
         const tx = await usdc.approve(OTC_INDEX_ADDRESS, amount);
         const receipt = await tx.wait();
-        setApprovalBlock(BigInt(receipt.blockNumber));
+        if (receipt?.blockNumber != null) {
+          setApprovalBlock(BigInt(receipt.blockNumber));
+        }
       } else {
-        // Optional fallback: if no new approval tx was sent, you won't have a block number.
-        // If you must ALWAYS use the approval tx's block, omit this and ask user to re-approve.
+        // Optional fallback: use the latest block if no approval tx was sent
         const latest = await provider.getBlockNumber();
         setApprovalBlock(BigInt(latest));
       }
@@ -126,15 +148,21 @@ export function TransactionConfirmModal({
       setIsProcessing(true);
       setDepositStatus("idle");
 
-      const provider = new BrowserProvider((window as any).ethereum);
+      const eip1193 = getActiveWalletProvider();
+      const userAddr = getActiveWalletAccount();
+
+      if (!eip1193 || !userAddr) {
+        // no connected wallet — trigger your connect flow
+        await connectWallet?.();
+        return;
+      }
+
+      const provider = new BrowserProvider(eip1193);
       const signer = await provider.getSigner();
       const otcIndex = new Contract(OTC_INDEX_ADDRESS, otcIndexAbi.abi, signer);
 
       const network = await provider.getNetwork();
       const chainId = network.chainId; // bigint in ethers v6
-      const userAddr = ethers.getAddress(
-        wallet?.accounts[0]?.address || ethers.ZeroAddress
-      );
 
       const amount = parseUnits(
         transactions
@@ -158,7 +186,6 @@ export function TransactionConfirmModal({
         ((approvalBlock & ((1n << 64n) - 1n)) << 160n) | // 8B approval block
         (addrBN & ((1n << 160n) - 1n));
 
-      console.log(seqNumNewOrderSingle);
       const tx = await otcIndex.deposit(
         amount,
         seqNumNewOrderSingle,

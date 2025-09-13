@@ -9,6 +9,7 @@ import {
   dailyPrices,
   listingsTable,
   rebalances,
+  subscriptions,
   tempCompositions,
   tempRebalances,
 } from '../../db/schema';
@@ -95,6 +96,7 @@ export class EtfMainService {
       custodyArtifact.abi,
       this.signer,
     );
+    this.dbService = new DbService();
   }
 
   async rebalanceSY100(rebalanceTimestamp: number): Promise<void> {
@@ -150,12 +152,11 @@ export class EtfMainService {
 
     // 3) compute new weights & price
     const { weights, price } = await this.computeSY100Weights(
-      /* indexId */ 0, // you can still pass indexId if your compute uses it
+      /* indexId */ 21, // you can still pass indexId if your compute uses it
       rebalanceTimestamp,
     );
     // weights: Array<[tokenAddress: string, amount: number]>
     // price: number (e.g. NAV in USD)
-
     // 4) ABI-encode the weights array into a single `bytes` blob
     const encodedWeights = this.indexRegistryService.encodeWeights(weights);
 
@@ -163,15 +164,15 @@ export class EtfMainService {
     const priceScaled = BigInt(Math.floor(price * 1e6));
 
     // 6) push on-chain via your helper
-    await this.updateWeights(
-      indexAddress,
-      rebalanceTimestamp,
-      encodedWeights,
-      priceScaled,
-    );
-    this.logger.log(
-      `🔄 Rebalanced ${symbol}: pushed ${weights.length} tokens at price ${priceScaled.toString()}`,
-    );
+    // await this.updateWeights(
+    //   indexAddress,
+    //   rebalanceTimestamp,
+    //   encodedWeights,
+    //   priceScaled,
+    // );
+    // this.logger.log(
+    //   `🔄 Rebalanced ${symbol}: pushed ${weights.length} tokens at price ${priceScaled.toString()}`,
+    // );
   }
 
   // private async computeSY100Weights(
@@ -407,6 +408,7 @@ export class EtfMainService {
   ): Promise<{ weights: [string, number][]; price: number }> {
     const db = this.dbService.getDb();
     const chunkSize = 250;
+
     let eligibleTokens: {
       symbol: string;
       coin: string;
@@ -414,11 +416,10 @@ export class EtfMainService {
       historical_price: number;
     }[] = [];
 
-    // Convert rebalanceTimestamp to Date
     const rebalanceDate = new Date(rebalanceTimestamp * 1000);
 
-    // 1. Prefetch all listings data and Bitget pairs
-    const [allListings] = await Promise.all([
+    // 1) Prefetch: listingsTable + Binance whitelist (binance_listings)
+    const [allListings, binanceWhitelistRows] = await Promise.all([
       db
         .select({
           token: listingsTable.token,
@@ -429,56 +430,59 @@ export class EtfMainService {
           delistingDate: listingsTable.delistingDate,
         })
         .from(listingsTable),
+      db.select({ pair: binanceListings.pair }).from(binanceListings),
+      // if you store only valid rows, no need to filter; otherwise keep the action filter:
+      // .where(eq(binanceListings.action, 'listing'))
     ]);
 
-    // Create lookup maps for listings
+    // Build maps/sets
     const listingsMap = new Map<string, (typeof allListings)[0]>();
-    for (const listing of allListings) {
-      listingsMap.set(listing.token.toUpperCase(), listing);
-    }
+    for (const l of allListings) listingsMap.set(l.token.toUpperCase(), l);
 
-    // Helper function to check if a token is listed on an exchange at rebalance time
-    const isListed = (token: string, exchange: 'binance' | 'bitget') => {
-      const listingData = listingsMap.get(token.toUpperCase());
-      if (!listingData) return false;
+    // Authoritative Binance SPOT pairs (uppercase)
+    const binanceWhitelist = new Set(
+      binanceWhitelistRows.map((r) => r.pair.toUpperCase()),
+    );
 
-      // Check delisting first (for the given exchange)
-      if (listingData.delistingDate?.[exchange]) {
-        const delistingDate = new Date(listingData.delistingDate[exchange]);
-        if (delistingDate <= rebalanceDate) return false;
-      } else if (listingData.delistingAnnouncementDate?.[exchange]) {
-        const delistingAnnouncementDate = new Date(
-          listingData.delistingAnnouncementDate[exchange],
-        );
-        if (delistingAnnouncementDate <= rebalanceDate) return false;
+    // Generic date-aware listing check using listingsTable (used for Bitget and for Binance date gate)
+    const isListedViaListingsTable = (
+      token: string,
+      exchange: 'binance' | 'bitget',
+    ) => {
+      const data = listingsMap.get(token.toUpperCase());
+      if (!data) return false;
+
+      // Delisting first
+      if (data.delistingDate?.[exchange]) {
+        if (new Date(data.delistingDate[exchange]) <= rebalanceDate)
+          return false;
+      } else if (data.delistingAnnouncementDate?.[exchange]) {
+        if (new Date(data.delistingAnnouncementDate[exchange]) <= rebalanceDate)
+          return false;
       }
 
-      // Check listing (for the given exchange)
-      if (listingData.listingDate?.[exchange]) {
-        const listingDate = new Date(listingData.listingDate[exchange]);
-        return listingDate <= rebalanceDate;
-      } else if (listingData.listingAnnouncementDate?.[exchange]) {
-        const listingAnnouncementDate = new Date(
-          listingData.listingAnnouncementDate[exchange],
+      // Listing checks
+      if (data.listingDate?.[exchange]) {
+        return new Date(data.listingDate[exchange]) <= rebalanceDate;
+      } else if (data.listingAnnouncementDate?.[exchange]) {
+        return (
+          new Date(data.listingAnnouncementDate[exchange]) <= rebalanceDate
         );
-        return listingAnnouncementDate <= rebalanceDate;
       }
-
       return false;
     };
 
-    // 2. Process coins by market cap rank until we get 100
+    // 2) Walk market-cap pages until we collect 100
     let page = 1;
     const includedSymbols = new Set<string>();
-
-    const MINIMUM_MARKET_CAP = 100000; // $100k for example
+    const MINIMUM_MARKET_CAP = 1_000_000; // 1M
     let continueProcessing = true;
+
     while (eligibleTokens.length < 100 && continueProcessing) {
       const marketCapChunk = await this.coinGeckoService.getMarketCapsByRank(
         page,
         chunkSize,
       );
-
       if (marketCapChunk.length === 0) break;
 
       for (const coin of marketCapChunk) {
@@ -488,33 +492,41 @@ export class EtfMainService {
           break;
         }
         if (!coin.market_cap_rank) continue;
+
         const symbolUpper = coin.symbol.toUpperCase();
         if (includedSymbols.has(symbolUpper)) continue;
 
-        // Try to find the best available pair
         let selectedPair: string | null = null;
 
-        if (isListed(`${symbolUpper}USDC`, 'binance')) {
-          selectedPair = `bi.${symbolUpper}USDC`; // Assume Binance has USDC pair
-        }
-
-        // Check Binance USDT (fallback if USDC not available)
-        if (!selectedPair && isListed(`${symbolUpper}USDT`, 'binance')) {
+        // ---------- BINANCE: must pass BOTH date gate (listingsTable) AND whitelist (binance_listings) ----------
+        if (
+          isListedViaListingsTable(`${symbolUpper}USDC`, 'binance') &&
+          binanceWhitelist.has(`${symbolUpper}USDC`)
+        ) {
+          selectedPair = `bi.${symbolUpper}USDC`;
+        } else if (
+          isListedViaListingsTable(`${symbolUpper}USDT`, 'binance') &&
+          binanceWhitelist.has(`${symbolUpper}USDT`)
+        ) {
           selectedPair = `bi.${symbolUpper}USDT`;
         }
 
-        // Check Bitget USDC (if Binance not available)
-        if (!selectedPair && isListed(`${symbolUpper}USDC`, 'bitget')) {
+        // ---------- BITGET fallback: date logic only ----------
+        if (
+          !selectedPair &&
+          isListedViaListingsTable(`${symbolUpper}USDC`, 'bitget')
+        ) {
           selectedPair = `bg.${symbolUpper}USDC`;
-        }
-
-        // Check Bitget USDT (fallback if USDC not available)
-        if (!selectedPair && isListed(`${symbolUpper}USDT`, 'bitget')) {
+        } else if (
+          !selectedPair &&
+          isListedViaListingsTable(`${symbolUpper}USDT`, 'bitget')
+        ) {
           selectedPair = `bg.${symbolUpper}USDT`;
         }
 
         if (!selectedPair) continue;
-        // Check blacklist
+
+        // Blacklist
         const categories = await this.coinGeckoService.getCategories(coin.id);
         const isBlacklisted =
           categories.some((c) => this.blacklistedCategories.includes(c)) ||
@@ -526,14 +538,13 @@ export class EtfMainService {
           continue;
         }
 
-        // Get historical price
+        // Price
         const h_price =
           await this.coinGeckoService.getOrFetchTokenPriceAtTimestamp(
             coin.id,
             coin.symbol,
             rebalanceTimestamp,
           );
-
         if (!h_price) continue;
 
         await this.coinGeckoService.storeDailyPricesForToken(
@@ -548,7 +559,6 @@ export class EtfMainService {
           exchangePair: selectedPair,
           historical_price: h_price,
         });
-
         includedSymbols.add(symbolUpper);
       }
 
@@ -559,41 +569,35 @@ export class EtfMainService {
       throw new Error('No eligible tokens found for the given rebalance date.');
     }
 
-    // 3. Normalize weights
+    // 3) Normalize weights
     const numTokens = eligibleTokens.length;
     const baseWeight = Math.floor(10000 / numTokens);
     const remainder = 10000 - baseWeight * numTokens;
 
     const weightsForContract: [string, number][] = eligibleTokens.map(
-      (token, index) => [
-        token.exchangePair,
-        index < remainder ? baseWeight + 1 : baseWeight,
-      ],
+      (t, i) => [t.exchangePair, i < remainder ? baseWeight + 1 : baseWeight],
     );
 
     const etfPrice = weightsForContract.reduce((sum, [pair, weight]) => {
-      const token = eligibleTokens.find((t) => t.exchangePair === pair);
-      return sum + token!.historical_price * (weight / 10000);
+      const t = eligibleTokens.find((x) => x.exchangePair === pair)!;
+      return sum + t.historical_price * (weight / 10000);
     }, 0);
 
-    // 4. Save to database
-    await this.dbService.getDb().transaction(async (tx) => {
+    // 4) Save
+    await db.transaction(async (tx) => {
       await tx
         .insert(tempRebalances)
         .values({
           indexId: indexId.toString(),
           weights: JSON.stringify(weightsForContract),
           prices: Object.fromEntries(
-            eligibleTokens.map((token) => [
-              token.exchangePair,
-              token.historical_price,
-            ]),
+            eligibleTokens.map((t) => [t.exchangePair, t.historical_price]),
           ),
           timestamp: rebalanceTimestamp,
           coins: Object.fromEntries(
-            eligibleTokens.map((token, index) => [
-              token.coin,
-              index < remainder ? baseWeight + 1 : baseWeight,
+            eligibleTokens.map((t, i) => [
+              t.coin,
+              i < remainder ? baseWeight + 1 : baseWeight,
             ]),
           ),
         })
@@ -602,21 +606,18 @@ export class EtfMainService {
           set: {
             weights: JSON.stringify(weightsForContract),
             prices: Object.fromEntries(
-              eligibleTokens.map((token) => [
-                token.exchangePair,
-                token.historical_price,
-              ]),
+              eligibleTokens.map((t) => [t.exchangePair, t.historical_price]),
             ),
             coins: Object.fromEntries(
-              eligibleTokens.map((token, index) => [
-                token.coin,
-                index < remainder ? baseWeight + 1 : baseWeight,
+              eligibleTokens.map((t, i) => [
+                t.coin,
+                i < remainder ? baseWeight + 1 : baseWeight,
               ]),
             ),
           },
         });
     });
-    console.log(weightsForContract);
+
     return { weights: weightsForContract, price: etfPrice };
   }
 
@@ -697,15 +698,15 @@ export class EtfMainService {
     const priceScaled = BigInt(Math.floor(etfPrice * 1e6));
 
     // 6) push on‐chain
-    await this.updateWeights(
-      indexAddress,
-      rebalanceTimestamp,
-      encodedWeights,
-      priceScaled,
-    );
-    this.logger.log(
-      `🔄 ${symbol} rebalanced: ${weights.length} tokens @ index price ${priceScaled}`,
-    );
+    // await this.updateWeights(
+    //   indexAddress,
+    //   rebalanceTimestamp,
+    //   encodedWeights,
+    //   priceScaled,
+    // );
+    // this.logger.log(
+    //   `🔄 ${symbol} rebalanced: ${weights.length} tokens @ index price ${priceScaled}`,
+    // );
   }
 
   // async simulateRebalances(
@@ -812,12 +813,13 @@ export class EtfMainService {
       | 'decentralized-finance-defi',
     indexId: number,
   ) {
+    const db = this.dbService.getDb();
+
     // Get all relevant data
-    const [allListings, allTokens] = await Promise.all([
-      this.dbService
-        .getDb()
+    const [allListings, allTokens, binanceWhitelistRows] = await Promise.all([
+      db
         .select({
-          token: listingsTable.token, // This is the trading pair (e.g., BTCUSDC)
+          token: listingsTable.token, // trading pair, e.g., BTCUSDC
           tokenName: listingsTable.tokenName,
           listingAnnouncementDate: listingsTable.listingAnnouncementDate,
           listingDate: listingsTable.listingDate,
@@ -826,7 +828,15 @@ export class EtfMainService {
         })
         .from(listingsTable),
       this.coinGeckoService.getPortfolioTokens(etfType),
+      // 🔒 Authoritative Binance spot whitelist
+      db.select({ pair: binanceListings.pair }).from(binanceListings),
+      // if your table has mixed actions, uncomment:
+      // .where(eq(binanceListings.action, 'listing'))
     ]);
+
+    const binanceWhitelist = new Set(
+      binanceWhitelistRows.map((r) => r.pair.toUpperCase()),
+    );
 
     // Create a map of token symbols to their events
     const tokenEvents = new Map<
@@ -837,10 +847,25 @@ export class EtfMainService {
     for (const token of allTokens) {
       const symbolUpper = token.symbol.toUpperCase();
 
-      // First try to find USDC pair, then USDT
+      // Prefer USDC, then USDT — but ONLY if the pair is in the Binance whitelist
+      const candidatePairs = [`${symbolUpper}USDC`, `${symbolUpper}USDT`];
+      const chosenPair =
+        candidatePairs.find((p) => binanceWhitelist.has(p)) ?? null;
+
+      if (!chosenPair) {
+        // Not a valid Binance spot pair -> skip this token entirely for Binance-based events
+        continue;
+      }
+
+      // Find this pair in listingsTable (some rows may exist for non-listed pairs; whitelist filters those out)
       const listingInfo =
-        allListings.find((l) => l.token === `${symbolUpper}USDC`) ||
-        allListings.find((l) => l.token === `${symbolUpper}USDT`);
+        allListings.find((l) => l.token === chosenPair) ||
+        // (very rare) if the other stable also passes whitelist, allow fallback:
+        allListings.find(
+          (l) =>
+            l.token === candidatePairs[1] &&
+            binanceWhitelist.has(candidatePairs[1]),
+        );
 
       if (!listingInfo) continue;
 
@@ -883,11 +908,8 @@ export class EtfMainService {
             listingInfo.delistingAnnouncementDate as Record<string, string>
           ).binance,
         );
-      }
-
-      // If no delisting date exists, the token is still active
-      if (!events.delistingDate) {
-        events.delistingDate = undefined; // Explicitly mark as undefined (still active)
+        // If you want to *exclude* at announcement time, keep as-is.
+        // If you only want actual delist effective time, prefer delistingDate above.
       }
 
       if (events.listingDate || events.delistingDate) {
@@ -917,8 +939,7 @@ export class EtfMainService {
 
     // Collect all relevant event dates
     const eventDates: Date[] = [];
-
-    for (const [_, events] of tokenEvents) {
+    for (const [, events] of tokenEvents) {
       if (
         events.listingDate &&
         events.listingDate >= startDate &&
@@ -944,6 +965,7 @@ export class EtfMainService {
       normalizeToUTCMidnight(startDate), // initial rebalance
       ...uniqueSortedDates,
     ];
+
     // Process each rebalance date in sequence
     for (const rebalanceDate of rebalanceDates) {
       console.log(
@@ -1992,7 +2014,7 @@ export class EtfMainService {
     }
 
     // Validate updated weights from Blockchain
-    
+
     // const custodyArtifact = require(
     //   path.resolve(
     //     __dirname,
@@ -2068,5 +2090,18 @@ export class EtfMainService {
       `🎉 Completed processing ${pending.length} rows for ${symbol}`,
     );
     await sleep(1000);
+  }
+
+  async storeEmail(email: string, _twitter?: string) {
+    const twitter = _twitter ?? ''; // Fallback to empty string
+
+    await this.dbService
+      .getDb()
+      .insert(subscriptions)
+      .values({ email, twitter })
+      .onConflictDoUpdate({
+        target: [subscriptions.email], // 🔑 conflict on the unique "email" column
+        set: { twitter }, // 🔄 update twitter if conflict
+      });
   }
 }

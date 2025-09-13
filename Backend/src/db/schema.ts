@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   pgTable,
   serial,
@@ -215,27 +216,83 @@ export const announcementsTable = pgTable('announcements', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
-export const blockchainEvents = pgTable('blockchain_events', {
-  id: serial('id').primaryKey(),
-  txHash: text('tx_hash').notNull(),
-  blockNumber: integer('block_number').notNull(),
-  logIndex: integer('log_index').notNull(),
-  eventType: text('event_type').notNull(),        // e.g. 'deposit', 'withdraw'
-  contractAddress: text('contract_address').notNull(),
-  network: text('network').notNull(),             // e.g. 'base', 'mainnet'
-  userAddress: text('user_address'),
-  amount: numeric('amount'),
-  quantity: numeric('quantity').default('0'),
-  timestamp: timestamp('timestamp', { withTimezone: true }), // optional
-}, (table) => ({
-  uniqueTxHash: unique().on(table.txHash),
-}));
+export const blockchainEvents = pgTable(
+  'blockchain_events',
+  {
+    id: serial('id').primaryKey(),
+    txHash: text('tx_hash').notNull(),
+    blockNumber: integer('block_number').notNull(),
+    logIndex: integer('log_index').notNull(),
+    eventType: text('event_type').notNull(), // e.g. 'deposit', 'withdraw'
+    contractAddress: text('contract_address').notNull(),
+    network: text('network').notNull(), // e.g. 'base', 'mainnet'
+    userAddress: text('user_address'),
+    amount: numeric('amount'),
+    quantity: numeric('quantity').default('0'),
+    timestamp: timestamp('timestamp', { withTimezone: true }), // optional
+  },
+  (table) => ({
+    uniqueTxHash: unique().on(table.txHash),
+  }),
+);
 
-export const syncState = pgTable('sync_state', {
+export const syncState = pgTable(
+  'sync_state',
+  {
+    id: serial('id').primaryKey(),
+    contractAddress: text('contract_address').notNull(),
+    network: text('network').notNull(),
+    lastSyncedBlock: integer('last_synced_block').notNull(),
+  },
+  (table) => ({
+    uniqueSyncKey: unique().on(table.contractAddress, table.network),
+  }),
+);
+
+export const subscriptions = pgTable('subscriptions', {
   id: serial('id').primaryKey(),
-  contractAddress: text('contract_address').notNull(),
-  network: text('network').notNull(),
-  lastSyncedBlock: integer('last_synced_block').notNull(),
-}, (table) => ({
-  uniqueSyncKey: unique().on(table.contractAddress, table.network),
-}));
+  email: text('email').notNull().unique(),
+  twitter: text('twitter').default(''),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const indexEvents = pgTable(
+  'index_events',
+  {
+    id: serial('id').primaryKey(),
+    indexId: integer('index_id').notNull(),
+    txHash: text('tx_hash').notNull(),
+    logIndex: integer('log_index').notNull(),
+    timestamp: integer('timestamp').notNull(),
+    nav: text('nav').notNull(),
+    weights: text('weights').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).default(
+      sql`now()`,
+    ),
+  },
+  (table) => ({
+    // add the composite unique constraint in Drizzle as well
+    uniqueTxLog: unique().on(table.txHash),
+  }),
+);
+
+// testing purpose
+export const tempTop20Rebalances = pgTable( 
+  'temp_top20_rebalances', 
+  {
+    id: serial('id').primaryKey(),
+    indexId: varchar('index_id', { length: 66 }).notNull(),
+    weights: text('weights').notNull(),
+    prices: jsonb('prices').notNull(),
+    timestamp: bigint('timestamp', { mode: 'number' }).notNull(),
+    coins: jsonb('coins').notNull(),
+    deployed: boolean('deployed').default(false),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    uniqueTop20IndexTimestamp: unique().on(
+      table.indexId,
+      table.timestamp,
+    ),
+  }),
+);

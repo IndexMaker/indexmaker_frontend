@@ -264,19 +264,21 @@ export class IndexRegistryService {
 
     for (const [pair, weight] of weights) {
       if (pair.startsWith('bg.')) {
+        // Collect Bitget weights
         bitgetTotalWeight += weight;
       } else {
+        // Keep other pairs as-is
         newWeights.push([pair, weight]);
       }
     }
 
+    // Add Bitget weights to BTCUSDC
     if (bitgetTotalWeight > 0) {
       const btcUSDCIndex = newWeights.findIndex(
         ([pair]) => pair === 'bi.BTCUSDC',
       );
 
       if (btcUSDCIndex !== -1) {
-        // Add bitget weight to existing bi.BTCUSDC
         newWeights[btcUSDCIndex][1] += bitgetTotalWeight;
       } else {
         throw new Error(
@@ -336,23 +338,24 @@ export class IndexRegistryService {
               await new Promise((res) => setTimeout(res, 2000 * (retries + 1)));
               retries++;
             } else {
-              logs = []
+              logs = [];
             }
           }
         }
-        let index = 0
+        let index = 0;
         for (const log of logs) {
           const parsed = iface.parseLog(log);
-          if (!parsed) continue
+          if (!parsed) continue;
           const amount = parsed.args.amount?.toString() ?? '0';
           const user = parsed.args.user ?? parsed.args.from ?? null;
 
-          await this.dbService.getDb()
+          await this.dbService
+            .getDb()
             .insert(blockchainEvents)
             .values({
               txHash: log.transactionHash,
               blockNumber: log.blockNumber,
-              logIndex: index ++,
+              logIndex: index++,
               eventType: def.name.toLowerCase(),
               contractAddress,
               network,
@@ -365,7 +368,8 @@ export class IndexRegistryService {
       }
 
       // Upsert sync state for this contract and network
-      await this.dbService.getDb()
+      await this.dbService
+        .getDb()
         .insert(syncState)
         .values({
           contractAddress,

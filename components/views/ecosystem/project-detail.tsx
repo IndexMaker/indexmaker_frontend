@@ -1,5 +1,5 @@
 "use client";
-import { fetchProjectById } from "@/api/projects";
+import { fetchProjectById } from "@/server/projects";
 import Docs from "@/components/icons/docs";
 import IndexMaker from "@/components/icons/indexmaker";
 import Social from "@/components/icons/social";
