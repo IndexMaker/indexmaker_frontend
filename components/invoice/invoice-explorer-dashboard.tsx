@@ -10,7 +10,7 @@ import { AssetTable } from "./asset-table";
 import { StatsOverview } from "./stats-overview";
 import { AdvancedSearch, type SearchFilters } from "./advanced-search";
 import { Asset, MintInvoice } from "@/types";
-import { fetchAssets, fetchInventory, fetchMintInvoices } from "@/api/invoice";
+import { fetchAssets, fetchInventory, fetchMintInvoices } from "@/server/invoice";
 import { useDispatch, useSelector } from "react-redux";
 import { setAssets } from "@/redux/assetSlice";
 import { RootState } from "@/redux/store";
@@ -93,31 +93,12 @@ export function InvoiceExplorerDashboard() {
     // small debounce so changing both dates triggers one call
     const t = setTimeout(async () => {
       try {
-        const invoicesData = await fetchMintInvoices(
-          from,
-          to
-        );
+        const invoicesData = await fetchMintInvoices(from, to);
 
         // mock augmentation you already had:
         const augmented = invoicesData.map((inv) => ({
           ...inv,
           status: "completed",
-          position: [
-            {
-              asset_symbol: "BTC",
-              quantity: 0.1,
-              average_price: 45000,
-              total_value: 4500,
-              unrealized_pnl: 150,
-            },
-            {
-              asset_symbol: "ETH",
-              quantity: 1.5,
-              average_price: 2800,
-              total_value: 4200,
-              unrealized_pnl: -50,
-            },
-          ],
         }));
 
         if (!cancelled) setInvoices(augmented as MintInvoice[]);

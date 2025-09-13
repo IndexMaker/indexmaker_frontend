@@ -16,11 +16,11 @@ import {
 } from "lucide-react";
 import { InvoiceChart } from "./invoice-chart";
 import { LotsTable } from "./lots-table";
-import { PositionSummary } from "./position-summary";
 import { MintInvoice } from "@/types";
-import { fetchMintInvoiceById } from "@/api/invoice";
+import { fetchMintInvoiceById } from "@/server/invoice";
 import { Separator } from "@radix-ui/react-select";
 import { BASES, fetchTxBundle, short } from "@/lib/txrpc";
+import { CollateralPositionSection } from "./invoice-collateral";
 
 interface InvoiceDetailsViewProps {
   client_order_id: string;
@@ -297,6 +297,14 @@ export function InvoiceDetailsView({
 
       <div className="grid gap-4">
         {/* Main Content */}
+        <CollateralPositionSection
+          position={
+            Array.isArray(invoice.position)
+              ? invoice.position[0]
+              : invoice.position
+          }
+        />
+
         {/* Body rows */}
         <Card className="divide-y bg-foreground p-2 gap-2">
           <Row label="Transaction Hash">

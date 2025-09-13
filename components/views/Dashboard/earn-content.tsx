@@ -1,10 +1,10 @@
 "use client";
 
 import {
-    fetchAllIndices,
-    fetchDepositTransactionData,
-    getIndexMakerInfo,
-} from "@/api/indices";
+  fetchAllIndices,
+  fetchDepositTransactionData,
+  getIndexMakerInfo,
+} from "@/server/indices";
 import { ColumnVisibilityPopover } from "@/components/elements/column-visibility-popover";
 import { VaultSupply } from "@/components/elements/vault-supplyposition";
 import { VaultTable } from "@/components/elements/vault-table";
@@ -14,17 +14,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomButton } from "@/components/ui/custom-button";
 import { Input } from "@/components/ui/input";
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useLanguage } from "@/contexts/language-context";
 import { SupplyPosition } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import {
-    setIndices,
-    setTotalManaged,
-    setTotalVolume,
+  setIndices,
+  setTotalManaged,
+  setTotalVolume,
 } from "@/redux/indexSlice";
 import { RootState } from "@/redux/store";
 import { clearSelectedVault } from "@/redux/vaultSlice";
@@ -128,7 +128,7 @@ export function EarnContent({
 
     !totalManaged && fetchInfo();
 
-    dispatch(clearSelectedVault())
+    dispatch(clearSelectedVault());
   }, []);
 
   useEffect(() => {
@@ -275,25 +275,25 @@ export function EarnContent({
             {t("common.index")}
           </h1>
           <div className="hidden gap-3 md:flex">
-            <Link href={"./analytics"}>
-              <Card className="bg-foreground gap-5 border-none cursor-pointer p-5 flex flex-col h-[98px] min-w-[194px] rounded-[12px]">
-                <CardHeader className="flex flex-row items-center justify-between p-0 w-full">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    <div className="flex items-center gap-2 w-full">
-                      <Deposit className="h-[14px] w-[14px]" />
-                      <div className="text-secondary text-[12px]">
-                        {t("common.totalDeposits")}
-                      </div>
+            {/* <Link href={"./analytics"}> */}
+            <Card className="bg-foreground gap-5 border-none cursor-pointer p-5 flex flex-col h-[98px] min-w-[194px] rounded-[12px]">
+              <CardHeader className="flex flex-row items-center justify-between p-0 w-full">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  <div className="flex items-center gap-2 w-full">
+                    <Deposit className="h-[14px] w-[14px]" />
+                    <div className="text-secondary text-[12px]">
+                      {t("common.totalDeposits")}
                     </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0 h-[20px]">
-                  <div className="font-normal text-secondary text-[15px] pb-2">
-                    ${totalManaged ? totalManaged : 0}
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 h-[20px]">
+                <div className="font-normal text-secondary text-[15px] pb-2">
+                  ${totalManaged ? totalManaged : 0}
+                </div>
+              </CardContent>
+            </Card>
+            {/* </Link> */}
 
             {/* <Link href={"./analytics"}>
               <Card className="bg-foreground gap-5 border-none cursor-pointer p-5 flex flex-col h-[98px] min-w-[194px] rounded-[12px]">

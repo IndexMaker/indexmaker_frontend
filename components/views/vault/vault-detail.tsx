@@ -633,7 +633,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                   <AccordionContent className="pt-4">
                     <VaultLiteratureSection
                       literature={documents}
-                      rebalanceData={indexData?.rawData ?? []}
+                      rebalanceData={indexData?.chartData || []}
                       indexId={index.indexId}
                       indexName={index.name}
                     />

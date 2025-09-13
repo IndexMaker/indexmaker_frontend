@@ -24,7 +24,6 @@ export function VaultLiteratureSection({
 }: VaultLiteratureProps) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isPriceDownloading, setIsPriceDownloading] = useState<boolean>(false);
-
   if (literature.length === 0) {
     return (
       <div className="bg-foreground rounded-lg p-6 border border-[#afafaf1a] text-center">
