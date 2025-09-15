@@ -674,7 +674,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                 </AccordionItem>
 
                 {/* Vault Supply */}
-                <AccordionItem value="Supply">
+                {/* <AccordionItem value="Supply">
                   <AccordionTrigger className="text-left lg:text-[20px] text-[16px] text-primary font-custom">
                     {t("common.supplyPositions")}
                   </AccordionTrigger>
@@ -687,7 +687,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                       <VaultSupply supplyPositions={supplyPositions} />
                     )}
                   </AccordionContent>
-                </AccordionItem>
+                </AccordionItem> */}
 
                 {/* User Activities */}
                 <AccordionItem value="Activities">
@@ -1192,7 +1192,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                   )}
                 </div>
 
-                <div className="pt-16">
+                {/* <div className="pt-16">
                   <h1 className="lg:text-[20px] text-primary flex justify-between lg:items-center flex-row flex-wrap lg:flex-nowrap">
                     <div className="flex items-center gap-3">
                       <div>{t("common.supplyPositions")}</div>
@@ -1205,7 +1205,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                   ) : (
                     <VaultSupply supplyPositions={supplyPositions} />
                   )}
-                </div>
+                </div> */}
 
                 <div className="pt-16">
                   <h1 className="lg:text-[20px] text-primary flex justify-between lg:items-center flex-row flex-wrap lg:flex-nowrap">

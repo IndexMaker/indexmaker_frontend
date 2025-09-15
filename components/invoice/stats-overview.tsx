@@ -14,9 +14,9 @@ interface StatsOverviewProps {
 export function StatsOverview({ invoices, assets }: StatsOverviewProps) {
   const totalInvoices = invoices.length
   const completedInvoices = invoices.filter((inv) => inv.status === "completed").length
-  const totalValue = invoices.reduce((sum, inv) => sum + inv.assets_value * 1, 0)
+  const totalValue = invoices.reduce((sum, inv) => sum + inv.amount_paid * 1, 0)
 
-  const averageFillRate = invoices.reduce((sum, inv) => sum + inv.fill_rate, 0) / invoices.length || 0
+  const averageFillRate = 1 || invoices.reduce((sum, inv) => sum + inv.fill_rate, 0) / invoices.length || 0
   const totalMarketCap = assets.reduce((sum, asset) => sum + asset.market_cap, 0)
 
   const formatCurrency = (amount: number) => {
@@ -51,7 +51,7 @@ export function StatsOverview({ invoices, assets }: StatsOverviewProps) {
     },
     {
       title: "Total Value",
-      value: (totalValue.toFixed(7)) + ' USDC',
+      value: (totalValue.toFixed(2)) + ' USDC',
       subtitle: "Assets under management",
       icon: DollarSign,
       trend: totalValue > 0 ? "up" : "neutral",

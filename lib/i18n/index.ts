@@ -137,7 +137,7 @@ export const translations: Translations = {
       name: "ITP Name",
       token: "Token",
       ticker: "Ticker",
-      totalSupply: "Total Supply",
+      totalSupply: "AUM",
       netAPY: "Net APY",
       supplyAPY: "ITP APY",
       ytdReturn: "YTD Return",
@@ -184,6 +184,11 @@ export const translations: Translations = {
       price: "Price",
       change: "Change",
       volume: "Volume",
+      balance: "Balance",
+      native: "Native",
+      contract: "Conract Address",
+      value: "USD Value",
+      asset: "Assets"
     },
     type: {
       all: "All Transaction Types",

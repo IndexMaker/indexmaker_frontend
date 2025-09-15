@@ -35,6 +35,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useWallet } from "../../../contexts/wallet-context";
 import { HowEarnWorks } from "./how-earn-works";
+import ConnectedWalletBalances from "@/components/elements/connect-wallet-balance";
+import IBKRAlertBanner from "@/components/elements/AnnouncementBanner";
 
 type ColumnType = {
   id: string;
@@ -96,6 +98,8 @@ export function EarnContent({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [indexLists, setIndexLists] = useState<IndexListEntry[]>([]);
   const [selectedIndexId, setSelectedIndexId] = useState<number | null>(null);
+
+  // get all balance of the connected wallet
 
   const storedIndexes = useSelector((state: RootState) => state.index.indices);
   useEffect(() => {
@@ -387,16 +391,29 @@ export function EarnContent({
                       <div className="h-4 bg-muted rounded w-full mx-auto"></div>
                     </div>
                   ) : activeMyearnTab === "position" ? (
-                    supplyPositions.length === 0 ? (
-                      t("common.noEarnPosition")
-                    ) : (
-                      <div className="mt-[-30] m-[-16]">
-                        <VaultSupply
-                          supplyPositions={supplyPositions}
-                          myPositions={true}
-                        />
-                      </div>
-                    )
+                    <div className="mt-0">
+                      <ConnectedWalletBalances
+                        itpBalances={supplyPositions}
+                        tokenAddresses={[
+                          "native", // show native chain balance
+                          "0x833589fCD6eDb6E08f4c7C32D4f71b54bDa02913", // USDC on Base, for example
+                          "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", // DAI on Base (example)
+                        ]}
+                        prices={{
+                          native: 3200, // optional USD price for gas token
+                          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": 1,
+                          "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca": 1,
+                        }}
+                        logos={{
+                          native: "/logos/ethereum.png",
+                          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913":
+                            "/logos/usd-coin.png",
+                          "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca":
+                            "/logos/dai.png",
+                        }}
+                        explorerBaseUrl="https://basescan.org"
+                      />
+                    </div>
                   ) : (
                     t("common.noClaimableRewards")
                   )}
@@ -443,6 +460,8 @@ export function EarnContent({
               </div>
             </div>
           </div>
+
+          <IBKRAlertBanner />
 
           <VaultTable
             isLoading={isLoading}

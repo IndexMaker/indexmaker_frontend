@@ -255,9 +255,9 @@ export function VaultTable({
                                   />
                                   <span>{vault.totalSupply} USDC</span>
                                 </div>
-                                <div className="text-card p-1 ml-2 bg-accent text-xs">
+                                {/* <div className="text-card p-1 ml-2 bg-accent text-xs">
                                   ${vault.totalSupplyUSD.toFixed(2) || "0"}
-                                </div>
+                                </div> */}
                               </div>
                             )}
                             {/* {col.id === "instantApy" && (

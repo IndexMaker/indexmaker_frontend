@@ -274,7 +274,7 @@ export function InvoiceExplorerDashboard() {
             className="flex items-center gap-2 bg-foreground text-secondary"
           >
             <Activity className="h-4 w-4" />
-            Inventory Audit
+            Supply to Expected Inventory
           </TabsTrigger>
         </TabsList>
 
@@ -299,7 +299,7 @@ export function InvoiceExplorerDashboard() {
 
         <TabsContent value="assets" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-[20px] text-primary">Inventory Audit</h2>
+            <h2 className="text-[20px] text-primary">Supply to Expected Inventory</h2>
             <Badge variant="outline" className="text-secondary">
               {filteredAssets.length} assets
             </Badge>
