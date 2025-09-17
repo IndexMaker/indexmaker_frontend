@@ -240,6 +240,7 @@ export function TransactionConfirmModal({
   const [txBlockNumber, setTxBlockNumber] = useState<number | null>(null);
   const [mintedQuantity, setMintedQuantity] = useState<number | null>(null);
   const sentInvoiceRef = useRef(false);
+  const activeOrderIdRef = useRef<string | null>(null);
   const fillUnsubRef = useRef<null | (() => void)>(null);
   const invoiceUnsubRef = useRef<null | (() => void)>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -262,36 +263,36 @@ export function TransactionConfirmModal({
   }, [subscribeOrderFill, subscribeMintInvoice]);
 
   // subscribe effect — deps ALWAYS length 1
-  // useEffect(() => {
-  //   if (!clientOrderId) return;
+  useEffect(() => {
+    if (!clientOrderId) return;
 
-  //   const unsubFill = subscribeOrderFillRef.current(
-  //     String(clientOrderId),
-  //     (pct: number) => {
-  //       setOrderProgressPct(Math.min(Number(pct) || 0, 100));
-  //     }
-  //   );
+    const unsubFill = subscribeOrderFillRef.current(
+      String(clientOrderId),
+      (pct: number) => {
+        setOrderProgressPct(Math.min(Number(pct) || 0, 100));
+      }
+    );
 
-  //   const unsubInvoice = subscribeMintInvoiceRef.current(
-  //     String(clientOrderId),
-  //     (invoice: any) => {
-  //       console.log("[SUB] invoice", invoice);
-  //       setMintInvoice(invoice);
-  //       const q = Number(invoice?.filled_quantity);
-  //       if (!Number.isNaN(q)) setMintedQuantity(q);
-  //       setOrderProgressPct(100);
-  //     }
-  //   );
+    const unsubInvoice = subscribeMintInvoiceRef.current(
+      String(clientOrderId),
+      (invoice: any) => {
+        console.log("[SUB] invoice", invoice);
+        setMintInvoice(invoice);
+        const q = Number(invoice?.filled_quantity);
+        if (!Number.isNaN(q)) setMintedQuantity(q);
+        setOrderProgressPct(100);
+      }
+    );
 
-  //   return () => {
-  //     try {
-  //       unsubFill && unsubFill();
-  //     } catch {}
-  //     try {
-  //       unsubInvoice && unsubInvoice();
-  //     } catch {}
-  //   };
-  // }, [clientOrderId]);
+    return () => {
+      try {
+        unsubFill && unsubFill();
+      } catch {}
+      try {
+        unsubInvoice && unsubInvoice();
+      } catch {}
+    };
+  }, [clientOrderId]);
 
   // Derived totals
   const totalUSDC = useMemo(() => {
@@ -377,20 +378,24 @@ export function TransactionConfirmModal({
       });
 
       const orderId = String(id);
-      console.log("[MODAL] clientOrderId", orderId);
+      activeOrderIdRef.current = orderId;
       setClientOrderId(orderId);
 
-      // (re)subscribe immediately so we don't miss early messages
+      // (re)subscribe immediately (avoid race with fast server events)
       fillUnsubRef.current?.();
       invoiceUnsubRef.current?.();
 
       fillUnsubRef.current = subscribeOrderFill(orderId, (pct: number) => {
+        // ignore stale fills from previous orders
+        if (activeOrderIdRef.current !== orderId) return;
         setOrderProgressPct(Math.min(Number(pct) || 0, 100));
       });
 
       invoiceUnsubRef.current = subscribeMintInvoice(
         orderId,
         (invoice: any) => {
+          console.log(activeOrderIdRef.current !== orderId)
+          if (activeOrderIdRef.current !== orderId) return; // ignore stale invoice
           console.log("[MODAL] invoice", invoice);
           setMintInvoice(invoice);
           const q = Number(invoice?.filled_quantity);
@@ -512,6 +517,7 @@ export function TransactionConfirmModal({
     invoiceUnsubRef.current?.();
     fillUnsubRef.current = null;
     invoiceUnsubRef.current = null;
+    activeOrderIdRef.current = null;
 
     setStep("review");
     setOrderStatus("idle");

@@ -176,21 +176,45 @@ export default function useQuoteSocket(
           console.log("[WS FILL]", data.client_order_id, data.fill_rate);
           const id = data.client_order_id;
           const pct = Math.min(parseFloat(data.fill_rate ?? "0") * 100, 100);
-          if (!Number.isNaN(pct)) {
+          if (Number.isNaN(pct)) return;
+
+          // deliver to exact match
+          if (orderFillCallbacks.current[id]) {
             lastFillRef.current[id] = pct;
-            if (orderFillCallbacks.current[id]) {
-              orderFillCallbacks.current[id](pct);
+            orderFillCallbacks.current[id](pct);
+          } else {
+            // alias to the only active subscriber (common case: 1 order in-flight)
+            const activeIds = Object.keys(orderFillCallbacks.current);
+            if (activeIds.length === 1) {
+              const onlyId = activeIds[0];
+              console.debug("[HOOK] alias fill", id, "->", onlyId);
+              lastFillRef.current[onlyId] = pct;
+              orderFillCallbacks.current[onlyId](pct);
+            } else {
+              // no subscriber (or multiple) — remember by real id
+              lastFillRef.current[id] = pct;
             }
           }
           return;
         }
         if (data.standard_header?.msg_type === "MintInvoice") {
-          console.log("[WS INVOICE]", data.client_order_id, data.payment_id);
           const id = data.client_order_id;
+
+          // deliver to exact match
           if (mintInvoiceCallbacks.current[id]) {
+            console.debug("[HOOK] deliver invoice", id);
             mintInvoiceCallbacks.current[id](data);
           } else {
-            pendingInvoiceRef.current[id] = data;
+            // alias to the only active subscriber (handles id mismatch EKD vs LAS)
+            const activeIds = Object.keys(mintInvoiceCallbacks.current);
+            if (activeIds.length === 1) {
+              const onlyId = activeIds[0];
+              console.debug("[HOOK] alias invoice", id, "->", onlyId);
+              mintInvoiceCallbacks.current[onlyId](data);
+            } else {
+              console.debug("[HOOK] buffer invoice", id);
+              pendingInvoiceRef.current[id] = data; // keep if multiple subs exist
+            }
           }
           return;
         }
@@ -282,6 +306,10 @@ export default function useQuoteSocket(
         signature: [signatureHex], // 64B r||s
       },
     };
+
+    pendingInvoiceRef.current = {}; // clear stale buffered invoices
+    lastFillRef.current = {}; // clear stale last fill cache
+    console.debug("[HOOK] sendNewIndexOrder client_order_id", client_order_id);
 
     sendMessage(message);
     return client_order_id;
@@ -421,10 +449,17 @@ export default function useQuoteSocket(
   };
 
   const subscribeMintInvoice = (id: string, cb: (invoice: any) => void) => {
+    console.debug(
+      "[HOOK] subscribeMintInvoice",
+      id,
+      "pending?",
+      !!pendingInvoiceRef.current[id]
+    );
     mintInvoiceCallbacks.current[id] = cb;
     if (pendingInvoiceRef.current[id]) {
-      cb(pendingInvoiceRef.current[id]); // flush buffer
+      const inv = pendingInvoiceRef.current[id];
       delete pendingInvoiceRef.current[id];
+      cb(inv); // flush buffer
     }
     return () => {
       delete mintInvoiceCallbacks.current[id];
