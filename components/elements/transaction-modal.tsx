@@ -1,43 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Circle, Sparkles, Copy } from "lucide-react";
-import { useWallet } from "@/contexts/wallet-context";
-import { buildNewQuoteRequest } from "@/lib/fix";
-import { BrowserProvider, Contract, ethers, parseUnits } from "ethers";
-import otcIndexAbi from "@/lib/abi/otcIndex.json";
-import erc20Abi from "@/lib/abi/ERC20.json";
+import {
+  CheckCircle2,
+  XCircle,
+  Circle,
+  Sparkles,
+  Copy,
+  Loader2,
+  Link as LinkIcon,
+} from "lucide-react";
 import Image from "next/image";
-import IndexMaker from "../icons/indexmaker";
+import { BrowserProvider, Contract, ethers, parseUnits } from "ethers";
+import erc20Abi from "@/lib/abi/ERC20.json";
+import otcIndexAbi from "@/lib/abi/otcIndex.json";
 import USDC from "../../public/logos/usd-coin.png";
+import IndexMaker from "../icons/indexmaker";
 import CustomTooltip from "./custom-tooltip";
 import { toast } from "sonner";
+import { useWallet } from "@/contexts/wallet-context";
 import { useQuoteContext } from "@/contexts/quote-context";
-import { sendMintInvoiceToBackend } from "@/server/indices";
 import onboard from "@/lib/blocknative/web3-onboard";
+import { sendMintInvoiceToBackend } from "@/server/indices";
 
-interface TransactionItem {
-  token: string;
-  amount: number;
-  value: number;
-  apy: number;
-  collateral: {
-    name: string;
-    logo: string;
-  }[];
-}
-
+// ---------- Config ----------
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const OTC_INDEX_ADDRESS = "0xF3eA34CfAD1ce45Ea39AaEb636a701E892510a10";
 const USDC_DECIMALS = 6;
+const EXPLORER_TX = "https://basescan.org/tx/";
 
-interface TransactionConfirmModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  transactions: TransactionItem[] | null;
-}
 type OnboardWallet = {
   label: string;
   accounts: { address: string }[];
@@ -58,95 +50,357 @@ export const getActiveWalletAccount = () => {
   return acc ?? null;
 };
 
+interface TransactionItem {
+  token: string;
+  amount: number;
+  value: number;
+  apy: number;
+  collateral: {
+    name: string;
+    logo: string;
+  }[];
+}
+
+interface TransactionConfirmModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  transactions: TransactionItem[] | null;
+  index_address: string;
+}
+
+// ---------- Helpers (mint invoice UI, adapted from your sample) ----------
+function formatDateTime(isoString: string) {
+  const date = new Date(isoString);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const padMs = (n: number) => String(n).padStart(3, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+    date.getDate()
+  )} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+    date.getSeconds()
+  )}.${padMs(date.getMilliseconds())}`;
+}
+
+function openMintInvoiceWindow(invoice: any) {
+  const client_order_id = invoice.client_order_id;
+  const chain_id = invoice.chain_id;
+  const address = invoice.address;
+  if (client_order_id) {
+    const invoiceUrl = `/invoices/${chain_id}/${address}/${client_order_id}`;
+    window.open(invoiceUrl, "_blank", "noopener,noreferrer");
+  } else {
+    const w = window.open("about:blank", "_blank");
+    if (!w) {
+      toast.error("Please allow popups to view the invoice.");
+      return;
+    }
+
+    // Simple, styled page with summary + table. (Compact version of your sample.)
+    const rows =
+      (invoice?.lots || [])
+        .map(
+          (lot: any) => `
+        <tr>
+          <td>${lot.symbol}</td>
+          <td style="text-align:right">${(
+            +lot.price * +lot.assigned_quantity
+          ).toFixed(7)}</td>
+          <td style="text-align:right">${(+lot.price).toFixed(7)}</td>
+          <td style="text-align:right">${(+lot.assigned_quantity).toFixed(
+            7
+          )}</td>
+          <td style="text-align:right">${(+lot.assigned_fee).toFixed(7)}</td>
+          <td>${formatDateTime(lot.assigned_timestamp)}</td>
+          <td>${lot.lot_id}</td>
+        </tr>`
+        )
+        .join("") || "";
+
+    const html = `
+  <!doctype html>
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Mint Invoice</title>
+    <style>
+      body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto; padding: 24px; color: #0a0a0a; }
+      h1 { font-size: 22px; margin: 0 0 16px; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; margin-bottom: 16px; }
+      .label { color: #666; }
+      table { width: 100%; border-collapse: collapse; border: 1px solid #eee; }
+      th, td { padding: 8px 10px; border-bottom: 1px solid #f2f2f2; font-size: 13px; }
+      th { text-align: left; background: #fafafa; color: #444; }
+      .box { border: 1px solid #eee; border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+      .muted { color: #666; }
+    </style>
+  </head>
+  <body>
+    <h1>Mint Invoice</h1>
+
+    <div class="box grid">
+      <div><div class="label">Chain ID</div><div>${
+        invoice?.chain_id ?? "-"
+      }</div></div>
+      <div><div class="label">Address</div><div>${
+        invoice?.address ?? "-"
+      }</div></div>
+      <div><div class="label">Client Order ID</div><div>${
+        invoice?.client_order_id ?? "-"
+      }</div></div>
+      <div><div class="label">Payment ID</div><div>${
+        invoice?.payment_id ?? "-"
+      }</div></div>
+      <div><div class="label">Symbol</div><div>${
+        invoice?.symbol ?? "-"
+      }</div></div>
+      <div><div class="label">Filled Quantity</div><div>${(
+        +invoice?.filled_quantity || 0
+      ).toFixed(7)}</div></div>
+    </div>
+
+    <div class="box">
+      <div class="label">Accounting Summary</div>
+      <div class="grid" style="margin-top:8px">
+        <div><div class="label">Paid In</div><div>${(
+          +invoice?.amount_paid || 0
+        ).toFixed(7)} CR</div></div>
+        <div><div class="label">Exchange Fee</div><div>${(
+          +invoice?.exchange_fee || 0
+        ).toFixed(7)} DR</div></div>
+        <div><div class="label">Management Fee</div><div>${(
+          +invoice?.management_fee || 0
+        ).toFixed(7)} DR</div></div>
+        <div><div class="label">Assets Value</div><div>${(
+          +invoice?.assets_value || 0
+        ).toFixed(7)} USDC</div></div>
+        <div><div class="label">Fill Rate</div><div>${Math.min(
+          (+invoice?.fill_rate || 0) * 100,
+          100
+        ).toFixed(2)}%</div></div>
+        <div><div class="label">Amount Remaining</div><div>${(
+          +invoice?.amount_remaining || 0
+        ).toFixed(7)} USDC</div></div>
+      </div>
+    </div>
+
+    <div class="box">
+      <div class="label" style="margin-bottom:8px">Asset Lots</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th style="text-align:right">Value (USDC)</th>
+            <th style="text-align:right">Price</th>
+            <th style="text-align:right">Assigned Qty</th>
+            <th style="text-align:right">Assigned Fee</th>
+            <th>Assigned At</th>
+            <th>Lot ID</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="muted" style="margin-top:8px">Rendered ${new Date().toLocaleString()}</div>
+    </div>
+  </body>
+  </html>`;
+
+    w.document.write(html);
+    w.document.close();
+  }
+}
+
+// ---------- Main Component ----------
 export function TransactionConfirmModal({
   isOpen,
   onClose,
   transactions,
+  index_address,
 }: TransactionConfirmModalProps) {
+  // UI flow: review → confirm → processing
   const [step, setStep] = useState<"review" | "confirm">("review");
+
+  // Step statuses
+  const [orderStatus, setOrderStatus] = useState<"idle" | "done" | "error">(
+    "idle"
+  );
   const [approvalStatus, setApprovalStatus] = useState<
     "idle" | "done" | "error"
   >("idle");
   const [depositStatus, setDepositStatus] = useState<"idle" | "done" | "error">(
     "idle"
   );
-  const [fixStatus, setFixStatus] = useState<"idle" | "done" | "error">("idle");
+
+  // Progress + receipts
+  const [clientOrderId, setClientOrderId] = useState<string | null>(null);
+  const [orderProgressPct, setOrderProgressPct] = useState<number>(0);
+  const [mintInvoice, setMintInvoice] = useState<any | null>(null);
+
   const [approvalBlock, setApprovalBlock] = useState<bigint | null>(null);
-  const [bundleApproved, setBundleApproved] = useState<
-    "idle" | "success" | "failed"
-  >("idle");
-  const [txConfirmed, setTxConfirmed] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
+
+  const [txBlockNumber, setTxBlockNumber] = useState<number | null>(null);
+  const [mintedQuantity, setMintedQuantity] = useState<number | null>(null);
+  const sentInvoiceRef = useRef(false);
+
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const [txHash, setTxHash] = useState<string | null>(null);
-  const [finalizing, setFinalizing] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const { wallet, address, connectWallet } = useWallet();
-  const { requestQuoteAndWait, sendNewIndexOrder } = useQuoteContext();
+  const { wallet, connectWallet } = useWallet();
+  const {
+    requestQuoteAndWait,
+    sendNewIndexOrder,
+    subscribeOrderFill,
+    subscribeMintInvoice,
+  } = useQuoteContext();
 
+  const subscribeOrderFillRef = useRef(subscribeOrderFill);
+  const subscribeMintInvoiceRef = useRef(subscribeMintInvoice);
+
+  // keep refs updated when context functions change
+  useEffect(() => {
+    subscribeOrderFillRef.current = subscribeOrderFill;
+    subscribeMintInvoiceRef.current = subscribeMintInvoice;
+  }, [subscribeOrderFill, subscribeMintInvoice]);
+
+  // subscribe effect — deps ALWAYS length 1
+  useEffect(() => {
+    if (!clientOrderId) return;
+
+    const unsubFill = subscribeOrderFillRef.current(
+      String(clientOrderId),
+      (pct: number) => {
+        setOrderProgressPct(Math.min(Number(pct) || 0, 100));
+      }
+    );
+
+    const unsubInvoice = subscribeMintInvoiceRef.current(
+      String(clientOrderId),
+      (invoice: any) => {
+        console.log("[SUB] invoice", invoice);
+        setMintInvoice(invoice);
+        const q = Number(invoice?.filled_quantity);
+        if (!Number.isNaN(q)) setMintedQuantity(q);
+        setOrderProgressPct(100);
+      }
+    );
+
+    return () => {
+      try {
+        unsubFill && unsubFill();
+      } catch {}
+      try {
+        unsubInvoice && unsubInvoice();
+      } catch {}
+    };
+  }, [clientOrderId]);
+
+  // Derived totals
+  const totalUSDC = useMemo(() => {
+    const n = transactions?.reduce((sum, t) => sum + Number(t.amount), 0) ?? 0;
+    return Number.isFinite(n) ? n : 0;
+  }, [transactions]);
+
+  // Lightweight WS listener for order fills + mint invoice for THIS order only.
+  // (We keep QuoteContext intact; this is scoped to the modal lifecycle.)
+  const wsRef = useRef<WebSocket | null>(null);
+  useEffect(() => {
+    if (!clientOrderId || !isOpen) return;
+
+    const url = process.env.NEXT_PUBLIC_QUOTE_SERVER;
+    if (!url) return;
+
+    wsRef.current = new WebSocket(url);
+    wsRef.current.onopen = () => {
+      // No need to send anything; server broadcasts updates
+    };
+    wsRef.current.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        const type = msg?.standard_header?.msg_type;
+
+        if (
+          type === "IndexOrderFill" &&
+          msg?.client_order_id === clientOrderId
+        ) {
+          const pct = Math.min(parseFloat(msg.fill_rate || "0") * 100, 100);
+          if (!Number.isNaN(pct)) setOrderProgressPct(pct);
+        }
+
+        if (type === "MintInvoice" && msg?.client_order_id === clientOrderId) {
+          setMintInvoice(msg);
+          const q = Number(msg?.filled_quantity);
+          if (!Number.isNaN(q)) setMintedQuantity(q);
+        }
+      } catch {
+        // ignore bad frames
+      }
+    };
+    wsRef.current.onclose = () => {};
+    wsRef.current.onerror = () => {};
+
+    return () => {
+      wsRef.current?.close();
+      wsRef.current = null;
+    };
+  }, [clientOrderId, isOpen]);
+
+  // Flow actions
   const handleConfirm = async () => {
     if (!wallet) {
       await connectWallet();
-      return;
     }
     setStep("confirm");
   };
 
-  const handleRetryBundle = () => {
-    setBundleApproved("idle");
-  };
-
-  const handleApproval = async () => {
+  // STEP 1 — Send Index Order (first)
+  const handleSendOrder = async () => {
     try {
-      setIsProcessing(true);
-      setApprovalStatus("idle");
-
-      // ✅ use the provider from the connected wallet (Onboard), not window.ethereum
-      const eip1193 = getActiveWalletProvider();
-      const fromAddress = getActiveWalletAccount();
-
-      if (!eip1193 || !fromAddress) {
-        // Fall back to your existing connect flow if nothing is connected
+      if (!wallet?.accounts?.[0]?.address) {
         await connectWallet();
-        return;
-      }
-
-      const provider = new BrowserProvider(eip1193);
-      const signer = await provider.getSigner();
-      const usdc = new Contract(USDC_ADDRESS, erc20Abi.abi, signer);
-
-      const total = (
-        transactions?.reduce((sum, t) => sum + Number(t.amount), 0) ?? 0
-      ).toString();
-      const amount = parseUnits(total, USDC_DECIMALS);
-
-      const allowance = await usdc.allowance(fromAddress, OTC_INDEX_ADDRESS);
-
-      if (allowance < amount) {
-        const tx = await usdc.approve(OTC_INDEX_ADDRESS, amount);
-        const receipt = await tx.wait();
-        if (receipt?.blockNumber != null) {
-          setApprovalBlock(BigInt(receipt.blockNumber));
+        if (!wallet?.accounts?.[0]?.address) {
+          toast.error("Wallet connection required.");
+          return;
         }
-      } else {
-        // Optional fallback: use the latest block if no approval tx was sent
-        const latest = await provider.getBlockNumber();
-        setApprovalBlock(BigInt(latest));
       }
 
-      setApprovalStatus("done");
+      setIsProcessing(true);
+      setOrderStatus("idle");
+
+      const address = wallet.accounts[0].address;
+      const symbol = "SY100"; // funding symbol (user is supplying USDC)
+      const side: "1" | "2" = "1"; // buy/mint
+
+      // Use quote to pre-calc quantity for UX (optional)
+      // Note: requestQuoteAndWait expects amount as string
+      // const quantity = await requestQuoteAndWait({
+      //   address,
+      //   symbol,
+      //   side,
+      //   amount: totalUSDC.toString(),
+      // }).catch(() => 0);
+
+      // Fire the NewIndexOrder (signed inside QuoteContext hook)
+      const id = await sendNewIndexOrder({
+        address,
+        symbol,
+        side,
+        amount: totalUSDC.toString(),
+      });
+      setClientOrderId(id);
+
+      setOrderStatus("done");
     } catch (e) {
-      console.error("Approval error:", e);
-      setApprovalStatus("error");
+      console.error("Order error:", e);
+      setOrderStatus("error");
+      toast.error("Failed to send index order.");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleDeposit = async () => {
+  // STEP 2 — Approve & Deposit (second)
+  const handleApproval = async () => {
     try {
       setIsProcessing(true);
-      setDepositStatus("idle");
+      setApprovalStatus("idle");
 
       const eip1193 = getActiveWalletProvider();
       const userAddr = getActiveWalletAccount();
@@ -159,402 +413,348 @@ export function TransactionConfirmModal({
 
       const provider = new BrowserProvider(eip1193);
       const signer = await provider.getSigner();
-      const otcIndex = new Contract(OTC_INDEX_ADDRESS, otcIndexAbi.abi, signer);
+      const usdc = new Contract(USDC_ADDRESS, erc20Abi.abi, signer);
 
-      const network = await provider.getNetwork();
-      const chainId = network.chainId; // bigint in ethers v6
+      const amount = parseUnits(totalUSDC.toString(), USDC_DECIMALS);
+      const owner = (await signer.getAddress()) as `0x${string}`;
+      const allowance: bigint = await usdc.allowance(owner, index_address);
 
-      const amount = parseUnits(
-        transactions
-          ?.reduce((sum, t) => sum + Number(t.amount), 0)
-          .toString() || "0",
-        USDC_DECIMALS
-      );
-
-      if (approvalBlock == null) {
-        toast.error(
-          "Missing approval block number — please approve again to continue."
-        );
-        setDepositStatus("error");
-        setIsProcessing(false);
-        return;
+      if (allowance < amount) {
+        const tx = await usdc.approve(index_address, amount);
+        const receipt = await tx.wait();
+        setApprovalBlock(BigInt(receipt.blockNumber));
+      } else {
+        const latest = await provider.getBlockNumber();
+        setApprovalBlock(BigInt(latest));
       }
 
-      const addrBN = BigInt(userAddr);
-      const seqNumNewOrderSingle =
-        ((chainId & ((1n << 32n) - 1n)) << (64n + 160n)) | // 4B chain
-        ((approvalBlock & ((1n << 64n) - 1n)) << 160n) | // 8B approval block
-        (addrBN & ((1n << 160n) - 1n));
-
-      const tx = await otcIndex.deposit(
-        amount,
-        seqNumNewOrderSingle,
-        process.env.NEXT_PUBLIC_ADMIN_ADDRESS,
-        ethers.ZeroAddress
-      );
-
-      await tx.wait();
-      setTxHash(tx.hash);
-      setFinalizing(true);
-
-      const quantity = await requestQuoteAndWait({
-        address: wallet?.accounts[0]?.address || "",
-        symbol: "USDC",
-        side: "1",
-        amount: amount,
-      });
-
-      await sendMintInvoiceToBackend({
-        txHash: tx.hash,
-        blockNumber: tx.blockNumber,
-        logIndex: 0,
-        eventType: "mint",
-        contractAddress: OTC_INDEX_ADDRESS,
-        network: "base",
-        userAddress: wallet?.accounts[0]?.address,
-        amount: Number(amount),
-        quantity: quantity || 0,
-      });
-
-      sendNewIndexOrder({
-        address: wallet?.accounts[0]?.address || "",
-        symbol: "USDC",
-        side: "1",
-        amount: amount,
-        quantity,
-      });
-      // Show success modal
-      setShowSuccessModal(true);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      // await _tx.wait();
-      setDepositStatus("done");
-      // handleClose();
+      setApprovalStatus("done");
+      toast.success("USDC approved.");
     } catch (e) {
-      console.error("Deposit error:", e);
-      setDepositStatus("error");
+      console.error("Approval error:", e);
+      setApprovalStatus("error");
+      toast.error("Approval failed.");
     } finally {
       setIsProcessing(false);
     }
   };
 
+  const handleDeposit = async () => {
+    try {
+      setIsProcessing(true);
+      setDepositStatus("idle");
+
+      const provider = new BrowserProvider((window as any).ethereum);
+      const signer = await provider.getSigner();
+      const otcIndex = new Contract(index_address, otcIndexAbi.abi, signer);
+
+      const network = await provider.getNetwork();
+      const chainId = network.chainId; // bigint
+      const userAddr = ethers.getAddress(await signer.getAddress());
+
+      const amount = parseUnits(totalUSDC.toString(), USDC_DECIMALS);
+
+      if (approvalBlock == null) {
+        toast.error("Missing approval block — please approve again.");
+        setDepositStatus("error");
+        return;
+      }
+
+      // 4B chain | 8B block | 20B address
+      const addrBN = BigInt(userAddr);
+      const seqNumNewOrderSingle =
+        ((chainId & ((1n << 32n) - 1n)) << (64n + 160n)) |
+        ((approvalBlock & ((1n << 64n) - 1n)) << 160n) |
+        (addrBN & ((1n << 160n) - 1n));
+
+      const admin = process.env.NEXT_PUBLIC_ADMIN_ADDRESS || ethers.ZeroAddress;
+
+      const tx = await otcIndex.deposit(
+        amount,
+        seqNumNewOrderSingle,
+        admin,
+        ethers.ZeroAddress
+      );
+
+      const receipt = await tx.wait();
+      setTxHash(tx.hash);
+
+      setDepositStatus("done");
+      toast.success("Deposit confirmed on-chain.");
+
+      setTxHash(tx.hash);
+      setTxBlockNumber(receipt.blockNumber);
+    } catch (e) {
+      console.error("Deposit error:", e);
+      setDepositStatus("error");
+      toast.error("Deposit failed.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Reset modal internal state on close
   const handleClose = () => {
     setStep("review");
-    setBundleApproved("idle");
-    setTxConfirmed(false);
+    setOrderStatus("idle");
+    setApprovalStatus("idle");
+    setDepositStatus("idle");
+    setApprovalBlock(null);
+    setClientOrderId(null);
+    setOrderProgressPct(0);
+    setMintInvoice(null);
+    setTxHash(null);
     setIsProcessing(false);
     onClose();
   };
 
-  const handleSendFixQuote = async () => {
-    try {
-      setFixStatus("idle");
-
-      const userAddress = wallet?.accounts[0]?.address;
-      const totalAmount =
-        transactions
-          ?.reduce((sum, t) => sum + Number(t.amount), 0)
-          .toString() || "0";
-
-      const quoteReq = buildNewQuoteRequest({
-        chainId: 1,
-        address: userAddress || "",
-        symbol: "USDC",
-        side: "1",
-        amount: totalAmount,
-        seqNum: Math.floor(Math.random() * 100000),
+  useEffect(() => {
+    const haveTx = txHash && typeof txBlockNumber === "number";
+    const haveQty = typeof mintedQuantity === "number";
+    if (!sentInvoiceRef.current && haveTx && haveQty) {
+      sentInvoiceRef.current = true; // guard against duplicates
+      const amountBN = parseUnits(totalUSDC.toString(), USDC_DECIMALS);
+      sendMintInvoiceToBackend({
+        txHash: txHash!,
+        blockNumber: txBlockNumber!,
+        logIndex: 0,
+        eventType: "mint",
+        contractAddress: index_address,
+        network: "base",
+        userAddress: wallet?.accounts[0]?.address,
+        amount: Number(amountBN),
+        quantity: mintedQuantity!,
+      }).catch((err) => {
+        console.error("sendMintInvoiceToBackend failed:", err);
+        sentInvoiceRef.current = false; // allow retry
       });
-
-      console.log("🚀 Sending FIX message:", quoteReq);
-
-      // Simulate network
-      await new Promise((r) => setTimeout(r, 1000));
-
-      setFixStatus("done");
-      handleClose();
-    } catch (err) {
-      console.error("FIX quote failed", err);
-      setFixStatus("error");
     }
-  };
+  }, [
+    txHash,
+    txBlockNumber,
+    mintedQuantity,
+    index_address,
+    wallet?.accounts,
+    totalUSDC,
+  ]);
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent
-          className="max-w-2xl bg-background border-accent text-primary z-50"
-          onInteractOutside={(e) => e.preventDefault()}
-        >
-          <div className="flex justify-between items-center pb-4">
-            <DialogTitle className="text-lg font-bold">
-              {step === "review" ? "Review transaction" : "Confirm transaction"}
-            </DialogTitle>
-          </div>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent
+        className="max-w-2xl bg-background border-accent text-primary z-50"
+        onInteractOutside={(e: any) => e.preventDefault()}
+      >
+        <div className="flex justify-between items-center pb-2">
+          <DialogTitle className="text-lg font-bold">
+            {step === "review" ? "Review transaction" : "Confirm transaction"}
+          </DialogTitle>
+        </div>
 
-          {step === "review" && transactions ? (
-            <div className="space-y-4">
-              {/* Multiple Transaction Items */}
-              {transactions.map((transaction, index) => (
-                <div key={transaction.token} className="space-y-3">
-                  {/* Token Info */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-transparent rounded-full flex items-center justify-center">
-                      <span className="text-[12px] font-bold">
-                        <IndexMaker className="w-[24px] h-[24px] text-muted" />
-                      </span>
+        {/* REVIEW */}
+        {step === "review" && transactions ? (
+          <div className="space-y-4">
+            {transactions.map((t, idx) => (
+              <div key={t.token} className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-transparent rounded-full flex items-center justify-center">
+                    <IndexMaker className="w-[24px] h-[24px] text-muted" />
+                  </div>
+                  <span className="font-bold text-[18px]">{t.token}</span>
+                </div>
+
+                <div className="space-y-3 bg-foreground rounded-lg p-4 pt-8 pb-4">
+                  <div className="flex justify-between items-center text-[12px]">
+                    <span className="text-secondary">Supply</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-transparent rounded-full flex items-center justify-center">
+                        <Image
+                          src={USDC}
+                          alt="USDC"
+                          width={20}
+                          height={20}
+                          className="rounded-full"
+                        />
+                      </div>
+                      <span className="font-medium">{t.amount} USDC</span>
                     </div>
-                    <span className="font-bold text-[18px]">
-                      {transaction.token}
-                    </span>
                   </div>
 
-                  {/* Transaction Details */}
-                  <div className="space-y-3 bg-foreground rounded-lg p-4 pt-8 pb-4">
-                    <div className="flex justify-between items-center text-[12px]">
-                      <span className="text-secondary">Supply</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-transparent rounded-full flex items-center justify-center">
-                          <Image
-                            src={USDC}
-                            alt="USDC"
-                            width={20}
-                            height={20}
-                            className="rounded-full"
-                          />
-                        </div>
-                        <span className="font-medium">
-                          {transaction.amount} USDC
-                          {/* {transaction.value} */}
-                        </span>
-                      </div>
+                  <div className="flex justify-between items-center text-[12px]">
+                    <span className="text-secondary">Year to Date</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium">{t.apy}</span>
+                      <Sparkles className="w-4 h-4 text-blue-400" />
                     </div>
+                  </div>
 
-                    <div className="flex justify-between items-center text-[12px]">
-                      <span className="text-secondary">Year to Date</span>
-                      <div className="flex items-center gap-1">
-                        <span className="font-medium">{transaction.apy}</span>
-                        <Sparkles className="w-4 h-4 text-blue-400" />
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center text-[12px]">
-                      <span className="text-secondary">Collateral</span>
-                      <div className="flex items-center gap-1">
-                        {transaction.collateral.length > 0 ? (
-                          transaction.collateral
-                            .slice(0, 5)
-                            .map((collateral, index) => (
-                              <CustomTooltip
-                                key={"collateral-" + index.toString()}
-                                content={
-                                  <div className="flex flex-col gap-1 min-w-[220px] bg-foreground rounded-[8px]">
-                                    <div className="flex justify-between border-b py-1 px-3 border-accent">
-                                      <span>Collateral</span>
-                                      <div className="flex items-center">
-                                        <Image
-                                          src={collateral.logo || USDC}
-                                          alt={"USDC"}
-                                          width={17}
-                                          height={17}
-                                        />
-                                        <span>PT-U...025</span>
-                                      </div>
-                                    </div>
-                                    <div className="flex justify-between border-b py-1 px-3 border-accent">
-                                      <span className="">Oracle</span>
-                                      <a
-                                        target="_blank"
-                                        href="https://etherscan.io/address/0xDddd770BADd886dF3864029e4B377B5F6a2B6b83"
-                                        className="hover:bg-[afafaf20]"
-                                      >
-                                        Exchange rate
-                                      </a>
-                                      <Copy className="w-[15px] h-[15px]" />
-                                    </div>
-                                  </div>
-                                }
-                              >
-                                <div className="flex items-center gap-1 hover:px-1 hover:transition-all">
-                                  {/* <span className="hover:px-1 hover:transition-all text-primary text-[12px] cursor-pointer">
-                                    {collateral.name}
-                                  </span> */}
+                  <div className="flex justify-between items-center text-[12px]">
+                    <span className="text-secondary">Collateral</span>
+                    <div className="flex items-center gap-1">
+                      {t.collateral.slice(0, 5).map((c, i) => (
+                        <CustomTooltip
+                          key={`col-${i}`}
+                          content={
+                            <div className="flex flex-col gap-1 min-w-[220px] bg-foreground rounded-[8px]">
+                              <div className="flex justify-between border-b py-1 px-3 border-accent">
+                                <span>Collateral</span>
+                                <div className="flex items-center">
                                   <Image
-                                    src={collateral.logo ?? USDC}
-                                    alt={collateral.name}
+                                    src={c.logo || USDC}
+                                    alt={"USDC"}
                                     width={17}
                                     height={17}
-                                    className="object-cover w-full h-full"
                                   />
+                                  <span>PT-U...025</span>
                                 </div>
-                              </CustomTooltip>
-                            ))
-                        ) : (
-                          <></>
-                        )}
-                        {transaction.collateral.length > 5 && (
-                          <CustomTooltip
-                            content={
-                              <div className="flex flex-col gap-2 p-2 overflow-y-auto max-h-[300px] bg-foreground">
-                                {transaction.collateral
-                                  .slice(5)
-                                  .map((collateral, index) => (
-                                    <div
-                                      key={index}
-                                      className="flex items-center gap-2"
-                                    >
-                                      <span>{collateral.name}</span>
-                                    </div>
-                                  ))}
                               </div>
-                            }
-                          >
-                            <span className="text-[12px] pl-2 text-secondary">
-                              + {transaction.collateral.length - 5}
-                            </span>
-                          </CustomTooltip>
-                        )}
-                      </div>
+                              <div className="flex justify-between border-b py-1 px-3 border-accent">
+                                <span className="">Oracle</span>
+                                <a
+                                  target="_blank"
+                                  href="https://etherscan.io/address/0xDddd770BADd886dF3864029e4B377B5F6a2B6b83"
+                                  className="hover:bg-[afafaf20]"
+                                >
+                                  Exchange rate
+                                </a>
+                                <Copy className="w-[15px] h-[15px]" />
+                              </div>
+                            </div>
+                          }
+                        >
+                          <div className="flex items-center gap-1 hover:px-1 hover:transition-all">
+                            <Image
+                              src={c.logo ?? USDC}
+                              alt={c.name}
+                              width={17}
+                              height={17}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                        </CustomTooltip>
+                      ))}
+                      {t.collateral.length > 5 && (
+                        <CustomTooltip
+                          content={
+                            <div className="flex flex-col gap-2 p-2 overflow-y-auto max-h-[300px] bg-foreground">
+                              {t.collateral.slice(5).map((c, i) => (
+                                <div
+                                  key={i}
+                                  className="flex items-center gap-2"
+                                >
+                                  <span>{c.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          }
+                        >
+                          <span className="text-[12px] pl-2 text-secondary">
+                            + {t.collateral.length - 5}
+                          </span>
+                        </CustomTooltip>
+                      )}
                     </div>
                   </div>
-
-                  {index < transactions.length - 1 && (
-                    <div className="border-t border-accent my-4" />
-                  )}
                 </div>
-              ))}
 
-              {/* Terms */}
-              <p className="text-[11px] text-secondary">
-                By confirming this transaction, you agree to the{" "}
-                <a
-                  target="_blank"
-                  href={
-                    "https://psymm.gitbook.io/indexmaker/index-maker-hld/compliance/terms-of-use"
-                  }
-                  className="underline cursor-pointer"
-                >
-                  Terms of Use
-                </a>{" "}
-                and the services provisions relating to the IndexMaker Vault.
-              </p>
+                {idx < transactions.length - 1 && (
+                  <div className="border-t border-accent my-4" />
+                )}
+              </div>
+            ))}
 
-              {/* Confirm Button */}
-              <Button
-                onClick={handleConfirm}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={isProcessing}
+            <p className="text-[11px] text-secondary">
+              By confirming this transaction, you agree to the{" "}
+              <a
+                target="_blank"
+                href="https://psymm.gitbook.io/indexmaker/index-maker-hld/compliance/terms-of-use"
+                className="underline cursor-pointer"
               >
-                {isProcessing ? "Processing..." : "Confirm"}
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* STEP 1: Token Approval */}
-              <div className="flex items-start gap-3">
-                <div className="mt-1">
-                  {approvalStatus === "done" ? (
-                    <CheckCircle2 className="text-blue-500 w-5 h-5" />
-                  ) : approvalStatus === "error" ? (
-                    <XCircle className="text-red-500 w-5 h-5" />
-                  ) : (
-                    <Circle className="text-blue-500 w-5 h-5 animate-pulse" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="text-[15px] font-medium text-primary">
-                    Approve bundler to spend your{" "}
-                    {transactions
-                      ?.reduce((sum, t) => sum + Number(t.amount), 0)
-                      .toString() || "0"}{" "}
-                    USDC (via permit)
-                  </p>
-                  {approvalStatus === "idle" && (
-                    <Button
-                      onClick={handleApproval}
-                      size="sm"
-                      className="mt-2 bg-blue-600 hover:bg-blue-700 text-white"
-                      disabled={isProcessing}
-                    >
-                      {isProcessing ? "Waiting for Wallet..." : "Approve USDC"}
-                    </Button>
-                  )}
-                  {approvalStatus === "error" && (
-                    <Button
-                      onClick={handleApproval}
-                      size="sm"
-                      variant="outline"
-                      className="mt-2 text-red-500 border-red-500"
-                    >
-                      Retry Approval
-                    </Button>
-                  )}
-                </div>
-              </div>
+                Terms of Use
+              </a>{" "}
+              and the service provisions relating to the IndexMaker Vault.
+            </p>
 
-              {/* STEP 2: Execute Deposit */}
-              <div className="flex items-start gap-3">
-                <div className="mt-1">
-                  {depositStatus === "done" ? (
-                    <CheckCircle2 className="text-blue-500 w-5 h-5" />
-                  ) : depositStatus === "error" ? (
-                    <XCircle className="text-red-500 w-5 h-5" />
-                  ) : (
-                    <Circle
-                      className={`w-5 h-5 ${
-                        approvalStatus === "done"
-                          ? "text-blue-500"
-                          : "text-secondary"
-                      }`}
-                    />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="text-[15px] font-medium text-primary">
-                    Execute deposit transaction
-                  </p>
-                  <div
-                    className={`mt-4 space-y-2 ${
-                      approvalStatus !== "done" ? "opacity-50" : ""
-                    }`}
-                  >
-                    {transactions?.map((t) => (
-                      <div
-                        key={t.token + "-deposit"}
-                        className="p-3 bg-foreground rounded-lg text-[12px] text-secondary"
-                      >
-                        Supply {t.amount} USDC to {t.token}
-                      </div>
-                    ))}
-                  </div>
-
-                  {approvalStatus === "done" && depositStatus !== "done" && (
-                    <Button
-                      onClick={handleDeposit}
-                      size="sm"
-                      className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white"
-                      disabled={isProcessing}
-                    >
-                      {isProcessing ? "Processing..." : "Execute Transaction"}
-                    </Button>
-                  )}
-                  {depositStatus === "error" && (
-                    <p className="text-sm text-red-500 mt-2">
-                      Deposit failed. Please try again.
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* STEP 3: Send FIX Message */}
-              {/* <div className="flex items-start gap-3">
+            <Button
+              onClick={handleConfirm}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={isProcessing}
+            >
+              {isProcessing ? "Processing..." : "Confirm"}
+            </Button>
+          </div>
+        ) : (
+          // CONFIRM / PROCESSING
+          <div className="space-y-5">
+            {/* STEP 1: Send Index Order (FIRST) */}
+            <div className="flex items-start gap-3">
               <div className="mt-1">
-                {fixStatus === "done" ? (
+                {orderStatus === "done" ? (
                   <CheckCircle2 className="text-blue-500 w-5 h-5" />
-                ) : fixStatus === "error" ? (
+                ) : orderStatus === "error" ? (
+                  <XCircle className="text-red-500 w-5 h-5" />
+                ) : (
+                  <Circle className="text-blue-500 w-5 h-5 animate-pulse" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-[15px] font-medium text-primary">
+                  Send Index Order (create order with {totalUSDC} USDC)
+                </p>
+
+                {/* Progress bar (fills when server emits IndexOrderFill) */}
+                <div className="mt-3">
+                  <div className="h-2 rounded bg-accent overflow-hidden">
+                    <div
+                      className="h-2 bg-blue-600 transition-all"
+                      style={{ width: `${orderProgressPct}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[11px] text-secondary mt-1">
+                    <span>Order progress</span>
+                    <span>{orderProgressPct.toFixed(1)}%</span>
+                  </div>
+                </div>
+
+                {orderStatus === "idle" && (
+                  <Button
+                    onClick={handleSendOrder}
+                    size="sm"
+                    className="mt-3 bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Sending...
+                      </span>
+                    ) : (
+                      "Send Order"
+                    )}
+                  </Button>
+                )}
+                {orderStatus === "error" && (
+                  <Button
+                    onClick={handleSendOrder}
+                    size="sm"
+                    variant="outline"
+                    className="mt-3 text-red-500 border-red-500"
+                  >
+                    Retry Send Order
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* STEP 2: Approve & Deposit (SECOND) */}
+            <div className="flex items-start gap-3">
+              <div className="mt-1">
+                {approvalStatus === "done" && depositStatus === "done" ? (
+                  <CheckCircle2 className="text-blue-500 w-5 h-5" />
+                ) : approvalStatus === "error" || depositStatus === "error" ? (
                   <XCircle className="text-red-500 w-5 h-5" />
                 ) : (
                   <Circle
                     className={`w-5 h-5 ${
-                      depositStatus === "done"
+                      orderStatus === "done"
                         ? "text-blue-500"
                         : "text-secondary"
                     }`}
@@ -563,90 +763,125 @@ export function TransactionConfirmModal({
               </div>
               <div className="flex-1">
                 <p className="text-[15px] font-medium text-primary">
-                  Send quote request to IndexMaker
+                  Approve & deposit USDC to Index contract
                 </p>
 
-                {depositStatus === "done" && fixStatus !== "done" && (
-                  <Button
-                    onClick={handleSendFixQuote}
-                    size="sm"
-                    className="mt-2 bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    Send FIX Quote
-                  </Button>
-                )}
-
-                {fixStatus === "error" && (
-                  <p className="text-sm text-red-500 mt-2">
-                    Sending FIX message failed. Please retry.
-                  </p>
-                )}
-              </div>
-            </div> */}
-
-              {/* Final Step: Transaction Finalizing */}
-              {finalizing && txHash && (
-                <div className="flex items-start gap-3 mt-4">
-                  <div className="mt-1">
-                    <CheckCircle2 className="w-5 h-5 text-blue-500" />
+                <div
+                  className={`mt-3 space-y-2 ${
+                    orderStatus !== "done"
+                      ? "opacity-50 pointer-events-none"
+                      : ""
+                  }`}
+                >
+                  <div className="p-3 bg-foreground rounded-lg text-[12px] text-secondary">
+                    Approve bundler to spend {totalUSDC} USDC
                   </div>
-                  <div className="flex-1">
-                    <p className="text-[15px] font-medium text-primary">
-                      Transaction{" "}
+                  {approvalStatus !== "done" ? (
+                    <Button
+                      onClick={handleApproval}
+                      size="sm"
+                      className="mt-1 bg-blue-600 hover:bg-blue-700 text-white"
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? (
+                        <span className="inline-flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Waiting
+                          for wallet...
+                        </span>
+                      ) : (
+                        "Approve USDC"
+                      )}
+                    </Button>
+                  ) : (
+                    <>
+                      <div className="p-3 bg-foreground rounded-lg text-[12px] text-secondary">
+                        Execute on-chain deposit
+                      </div>
+                      {depositStatus !== "done" && (
+                        <Button
+                          onClick={handleDeposit}
+                          size="sm"
+                          className="mt-1 bg-blue-600 hover:bg-blue-700 text-white"
+                          disabled={isProcessing}
+                        >
+                          {isProcessing ? (
+                            <span className="inline-flex items-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin" />{" "}
+                              Processing...
+                            </span>
+                          ) : (
+                            "Execute Deposit"
+                          )}
+                        </Button>
+                      )}
+                    </>
+                  )}
+
+                  {(approvalStatus === "error" ||
+                    depositStatus === "error") && (
+                    <p className="text-sm text-red-500">
+                      {approvalStatus === "error"
+                        ? "Approval failed. Please retry."
+                        : "Deposit failed. Please retry."}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* STEP 3: Finalizing + links */}
+            {(txHash || mintInvoice) && (
+              <div className="flex items-start gap-3">
+                <div className="mt-1">
+                  <CheckCircle2 className="w-5 h-5 text-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-[15px] font-medium text-primary">
+                    Finalized
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {txHash && (
                       <a
-                        href={`https://basescan.org/tx/${txHash}`}
+                        href={`${EXPLORER_TX}${txHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="underline text-blue-500"
+                        className="inline-flex items-center gap-1 text-blue-500 text-sm underline"
                       >
-                        {txHash.slice(0, 6)}...{txHash.slice(-4)}
-                      </a>{" "}
-                      is finalizing
-                    </p>
-                    <p className="text-sm text-secondary">
-                      Feel free to browse as the transaction finalizes
-                    </p>
+                        <LinkIcon className="w-4 h-4" />
+                        View on Explorer ({txHash.slice(0, 6)}...
+                        {txHash.slice(-4)})
+                      </a>
+                    )}
+                    <Button
+                      variant={mintInvoice ? "default" : "secondary"}
+                      disabled={!mintInvoice}
+                      className={`text-sm ${
+                        mintInvoice
+                          ? "bg-blue-600 hover:bg-blue-700 text-white"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        mintInvoice && openMintInvoiceWindow(mintInvoice)
+                      }
+                    >
+                      {mintInvoice
+                        ? "Open Mint Invoice"
+                        : "Waiting for Mint Invoice..."}
+                    </Button>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-          {showSuccessModal && (
-            <div className="fixed inset-0 bg-transaprent bg-opacity-60 flex items-center justify-center z-200">
-              <div className="bg-background p-6 rounded-lg max-w-md w-full border border-accent z-100">
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <CheckCircle2 className="w-12 h-12 text-green-500" />
-                  <h3 className="text-lg font-bold text-primary">
-                    Transaction Successful!
-                  </h3>
-                  <p className="text-sm text-secondary">
-                    Your deposit has been confirmed on the blockchain.
-                  </p>
-                  {txHash && (
-                    <a
-                      href={`https://basescan.org/tx/${txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 text-sm underline"
-                    >
-                      View on Explorer
-                    </a>
-                  )}
-                  <Button
-                    onClick={() => {
-                      setShowSuccessModal(false);
-                      toast.success("Deposit success...");
-                    }}
-                    className="mt-4 bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
-                  >
-                    Continue
-                  </Button>
-                </div>
               </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </>
+            )}
+
+            {/* Footer actions */}
+            {(depositStatus === "done" || mintInvoice) && (
+              <Button onClick={handleClose} className="w-full">
+                Close
+              </Button>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

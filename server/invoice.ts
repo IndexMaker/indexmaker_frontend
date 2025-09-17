@@ -6,11 +6,11 @@ const toUTCStartOfDay = (d: Date) =>
   new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0)
   );
-const formatAPIDateUTC = (d: Date) => {
+const formatAPIDateUTC = (d: Date, to: boolean) => {
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = d.getUTCDate(); // no pad
-  return `${y}-${m}-${day}T00:00:00.000Z`;
+  return to ? `${y}-${m}-${day}T23:59:59.000Z` : `${y}-${m}-${day}T00:00:00.000Z`;
 };
 // Mock data for fallback
 const mockAssets: Asset[] = [
@@ -141,8 +141,8 @@ export async function fetchMintInvoices(
   to: Date
 ): Promise<MintInvoice[]> {
   try {
-    const fromStr = formatAPIDateUTC(toUTCStartOfDay(from));
-    const toStr = formatAPIDateUTC(toUTCStartOfDay(to));
+    const fromStr = formatAPIDateUTC(toUTCStartOfDay(from), false);
+    const toStr = formatAPIDateUTC(toUTCStartOfDay(to), true);
 
     const url = `${API_BASE_URL}/mint_invoices/from/${fromStr}/to/${toStr}`;
     const response = await fetch(url, { cache: "no-store" });

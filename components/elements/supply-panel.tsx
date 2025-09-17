@@ -709,6 +709,7 @@ export function SupplyPanel({
         isOpen={confirmModalOpen}
         onClose={onConfirmTransactionClose}
         transactions={transactions}
+        index_address={vaults && vaults[0] && vaults[0].address ? vaults[0].address : ''}
       />
     </>
   );
