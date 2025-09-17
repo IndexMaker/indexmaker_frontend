@@ -240,7 +240,8 @@ export function TransactionConfirmModal({
   const [txBlockNumber, setTxBlockNumber] = useState<number | null>(null);
   const [mintedQuantity, setMintedQuantity] = useState<number | null>(null);
   const sentInvoiceRef = useRef(false);
-
+  const fillUnsubRef = useRef<null | (() => void)>(null);
+  const invoiceUnsubRef = useRef<null | (() => void)>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const { wallet, connectWallet } = useWallet();
@@ -261,36 +262,36 @@ export function TransactionConfirmModal({
   }, [subscribeOrderFill, subscribeMintInvoice]);
 
   // subscribe effect — deps ALWAYS length 1
-  useEffect(() => {
-    if (!clientOrderId) return;
+  // useEffect(() => {
+  //   if (!clientOrderId) return;
 
-    const unsubFill = subscribeOrderFillRef.current(
-      String(clientOrderId),
-      (pct: number) => {
-        setOrderProgressPct(Math.min(Number(pct) || 0, 100));
-      }
-    );
+  //   const unsubFill = subscribeOrderFillRef.current(
+  //     String(clientOrderId),
+  //     (pct: number) => {
+  //       setOrderProgressPct(Math.min(Number(pct) || 0, 100));
+  //     }
+  //   );
 
-    const unsubInvoice = subscribeMintInvoiceRef.current(
-      String(clientOrderId),
-      (invoice: any) => {
-        console.log("[SUB] invoice", invoice);
-        setMintInvoice(invoice);
-        const q = Number(invoice?.filled_quantity);
-        if (!Number.isNaN(q)) setMintedQuantity(q);
-        setOrderProgressPct(100);
-      }
-    );
+  //   const unsubInvoice = subscribeMintInvoiceRef.current(
+  //     String(clientOrderId),
+  //     (invoice: any) => {
+  //       console.log("[SUB] invoice", invoice);
+  //       setMintInvoice(invoice);
+  //       const q = Number(invoice?.filled_quantity);
+  //       if (!Number.isNaN(q)) setMintedQuantity(q);
+  //       setOrderProgressPct(100);
+  //     }
+  //   );
 
-    return () => {
-      try {
-        unsubFill && unsubFill();
-      } catch {}
-      try {
-        unsubInvoice && unsubInvoice();
-      } catch {}
-    };
-  }, [clientOrderId]);
+  //   return () => {
+  //     try {
+  //       unsubFill && unsubFill();
+  //     } catch {}
+  //     try {
+  //       unsubInvoice && unsubInvoice();
+  //     } catch {}
+  //   };
+  // }, [clientOrderId]);
 
   // Derived totals
   const totalUSDC = useMemo(() => {
@@ -300,47 +301,47 @@ export function TransactionConfirmModal({
 
   // Lightweight WS listener for order fills + mint invoice for THIS order only.
   // (We keep QuoteContext intact; this is scoped to the modal lifecycle.)
-  const wsRef = useRef<WebSocket | null>(null);
-  useEffect(() => {
-    if (!clientOrderId || !isOpen) return;
+  // const wsRef = useRef<WebSocket | null>(null);
+  // useEffect(() => {
+  //   if (!clientOrderId || !isOpen) return;
 
-    const url = process.env.NEXT_PUBLIC_QUOTE_SERVER;
-    if (!url) return;
+  //   const url = process.env.NEXT_PUBLIC_QUOTE_SERVER;
+  //   if (!url) return;
 
-    wsRef.current = new WebSocket(url);
-    wsRef.current.onopen = () => {
-      // No need to send anything; server broadcasts updates
-    };
-    wsRef.current.onmessage = (e) => {
-      try {
-        const msg = JSON.parse(e.data);
-        const type = msg?.standard_header?.msg_type;
+  //   wsRef.current = new WebSocket(url);
+  //   wsRef.current.onopen = () => {
+  //     // No need to send anything; server broadcasts updates
+  //   };
+  //   wsRef.current.onmessage = (e) => {
+  //     try {
+  //       const msg = JSON.parse(e.data);
+  //       const type = msg?.standard_header?.msg_type;
 
-        if (
-          type === "IndexOrderFill" &&
-          msg?.client_order_id === clientOrderId
-        ) {
-          const pct = Math.min(parseFloat(msg.fill_rate || "0") * 100, 100);
-          if (!Number.isNaN(pct)) setOrderProgressPct(pct);
-        }
+  //       if (
+  //         type === "IndexOrderFill" &&
+  //         msg?.client_order_id === clientOrderId
+  //       ) {
+  //         const pct = Math.min(parseFloat(msg.fill_rate || "0") * 100, 100);
+  //         if (!Number.isNaN(pct)) setOrderProgressPct(pct);
+  //       }
 
-        if (type === "MintInvoice" && msg?.client_order_id === clientOrderId) {
-          setMintInvoice(msg);
-          const q = Number(msg?.filled_quantity);
-          if (!Number.isNaN(q)) setMintedQuantity(q);
-        }
-      } catch {
-        // ignore bad frames
-      }
-    };
-    wsRef.current.onclose = () => {};
-    wsRef.current.onerror = () => {};
+  //       if (type === "MintInvoice" && msg?.client_order_id === clientOrderId) {
+  //         setMintInvoice(msg);
+  //         const q = Number(msg?.filled_quantity);
+  //         if (!Number.isNaN(q)) setMintedQuantity(q);
+  //       }
+  //     } catch {
+  //       // ignore bad frames
+  //     }
+  //   };
+  //   wsRef.current.onclose = () => {};
+  //   wsRef.current.onerror = () => {};
 
-    return () => {
-      wsRef.current?.close();
-      wsRef.current = null;
-    };
-  }, [clientOrderId, isOpen]);
+  //   return () => {
+  //     wsRef.current?.close();
+  //     wsRef.current = null;
+  //   };
+  // }, [clientOrderId, isOpen]);
 
   // Flow actions
   const handleConfirm = async () => {
@@ -365,26 +366,38 @@ export function TransactionConfirmModal({
       setOrderStatus("idle");
 
       const address = wallet.accounts[0].address;
-      const symbol = "SY100"; // funding symbol (user is supplying USDC)
-      const side: "1" | "2" = "1"; // buy/mint
+      const symbol = "SY100";
+      const side: "1" | "2" = "1";
 
-      // Use quote to pre-calc quantity for UX (optional)
-      // Note: requestQuoteAndWait expects amount as string
-      // const quantity = await requestQuoteAndWait({
-      //   address,
-      //   symbol,
-      //   side,
-      //   amount: totalUSDC.toString(),
-      // }).catch(() => 0);
-
-      // Fire the NewIndexOrder (signed inside QuoteContext hook)
       const id = await sendNewIndexOrder({
         address,
         symbol,
         side,
         amount: totalUSDC.toString(),
       });
-      setClientOrderId(id);
+
+      const orderId = String(id);
+      console.log("[MODAL] clientOrderId", orderId);
+      setClientOrderId(orderId);
+
+      // (re)subscribe immediately so we don't miss early messages
+      fillUnsubRef.current?.();
+      invoiceUnsubRef.current?.();
+
+      fillUnsubRef.current = subscribeOrderFill(orderId, (pct: number) => {
+        setOrderProgressPct(Math.min(Number(pct) || 0, 100));
+      });
+
+      invoiceUnsubRef.current = subscribeMintInvoice(
+        orderId,
+        (invoice: any) => {
+          console.log("[MODAL] invoice", invoice);
+          setMintInvoice(invoice);
+          const q = Number(invoice?.filled_quantity);
+          if (!Number.isNaN(q)) setMintedQuantity(q);
+          setOrderProgressPct(100);
+        }
+      );
 
       setOrderStatus("done");
     } catch (e) {
@@ -495,6 +508,11 @@ export function TransactionConfirmModal({
 
   // Reset modal internal state on close
   const handleClose = () => {
+    fillUnsubRef.current?.();
+    invoiceUnsubRef.current?.();
+    fillUnsubRef.current = null;
+    invoiceUnsubRef.current = null;
+
     setStep("review");
     setOrderStatus("idle");
     setApprovalStatus("idle");
@@ -504,6 +522,9 @@ export function TransactionConfirmModal({
     setOrderProgressPct(0);
     setMintInvoice(null);
     setTxHash(null);
+    setTxBlockNumber(null);
+    setMintedQuantity(null);
+    sentInvoiceRef.current = false;
     setIsProcessing(false);
     onClose();
   };
@@ -701,20 +722,6 @@ export function TransactionConfirmModal({
                   Send Index Order (create order with {totalUSDC} USDC)
                 </p>
 
-                {/* Progress bar (fills when server emits IndexOrderFill) */}
-                <div className="mt-3">
-                  <div className="h-2 rounded bg-accent overflow-hidden">
-                    <div
-                      className="h-2 bg-blue-600 transition-all"
-                      style={{ width: `${orderProgressPct}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-[11px] text-secondary mt-1">
-                    <span>Order progress</span>
-                    <span>{orderProgressPct.toFixed(1)}%</span>
-                  </div>
-                </div>
-
                 {orderStatus === "idle" && (
                   <Button
                     onClick={handleSendOrder}
@@ -765,6 +772,20 @@ export function TransactionConfirmModal({
                 <p className="text-[15px] font-medium text-primary">
                   Approve & deposit USDC to Index contract
                 </p>
+
+                {/* Progress bar (fills when server emits IndexOrderFill) */}
+                <div className="mt-3">
+                  <div className="h-2 rounded bg-accent overflow-hidden">
+                    <div
+                      className="h-2 bg-blue-600 transition-all"
+                      style={{ width: `${orderProgressPct}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[11px] text-secondary mt-1">
+                    <span>Order progress</span>
+                    <span>{orderProgressPct.toFixed(1)}%</span>
+                  </div>
+                </div>
 
                 <div
                   className={`mt-3 space-y-2 ${

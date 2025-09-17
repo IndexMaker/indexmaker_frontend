@@ -10,9 +10,11 @@ interface QuoteContextType {
   isConnected: boolean;
   indexPrices: Record<string, string>;
   sendMessage: (message: any) => void;
-  sendNewIndexOrder: (order: any) => void;
+  sendNewIndexOrder: (order: any) => Promise<string>;
   sendNewQuoteRequest: (order: any) => void;
   requestQuoteAndWait: (order: any) => Promise<number>;
+  subscribeOrderFill: (id: string, cb: (pct: number) => void) => () => void; // NEW
+  subscribeMintInvoice: (id: string, cb: (invoice: any) => void) => () => void; // NEW
 }
 
 const QuoteContext = createContext<QuoteContextType | undefined>(undefined);
@@ -38,6 +40,8 @@ export function QuoteProvider({
     sendNewIndexOrder,
     sendNewQuoteRequest,
     requestQuoteAndWait,
+    subscribeOrderFill, // NEW
+    subscribeMintInvoice, // NEW
   } = useQuoteSocket(storedIndexes, amount, network);
 
   return (
@@ -51,6 +55,8 @@ export function QuoteProvider({
         sendNewIndexOrder,
         sendNewQuoteRequest,
         requestQuoteAndWait,
+        subscribeOrderFill, // NEW
+        subscribeMintInvoice, // NEW
       }}
     >
       {children}
