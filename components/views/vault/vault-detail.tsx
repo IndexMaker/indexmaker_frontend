@@ -1,12 +1,12 @@
 "use client";
 
 import {
-    fetchBtcHistoricalData,
-    fetchDepositTransactionData,
-    fetchEthHistoricalData,
-    fetchHistoricalData,
-    fetchUserTransactionData,
-    fetchVaultAssets,
+  fetchBtcHistoricalData,
+  fetchDepositTransactionData,
+  fetchEthHistoricalData,
+  fetchHistoricalData,
+  fetchUserTransactionData,
+  fetchVaultAssets,
 } from "@/server/indices";
 import { PerformanceChart } from "@/components/elements/performance-chart";
 import { TimePeriodSelector } from "@/components/elements/time-period";
@@ -18,10 +18,10 @@ import { VaultSupply } from "@/components/elements/vault-supplyposition";
 import IndexMaker from "@/components/icons/indexmaker";
 import SymmioIndices from "@/components/icons/symmioIndices";
 import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
 } from "@/components/ui/accordian";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,19 +29,19 @@ import { CustomButton } from "@/components/ui/custom-button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useLanguage } from "@/contexts/language-context";
 import { useQuoteContext } from "@/contexts/quote-context";
 import { useWallet } from "@/contexts/wallet-context";
 import {
-    Activity,
-    SupplyPosition,
-    VaultAsset,
-    mockup_vaults,
+  Activity,
+  SupplyPosition,
+  VaultAsset,
+  mockup_vaults,
 } from "@/lib/data";
 import { getIndexData } from "@/lib/IndexMockupData";
 import { cn, getERC20AddressForIndex, shortenAddress } from "@/lib/utils";
@@ -49,19 +49,19 @@ import { RootState } from "@/redux/store";
 import { addSelectedVault } from "@/redux/vaultSlice";
 import { IndexListEntry } from "@/types/index";
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@radix-ui/react-popover";
 import {
-    ArrowUpRight,
-    CheckCircle,
-    Copy,
-    Eye,
-    EyeOff,
-    FileText,
-    HelpCircle,
-    Search,
+  ArrowUpRight,
+  CheckCircle,
+  Copy,
+  Eye,
+  EyeOff,
+  FileText,
+  HelpCircle,
+  Search,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -122,6 +122,13 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
   const [supplyPositions, setSupplyPositions] = useState<SupplyPosition[]>([]);
   const [userActivities, setUserActivities] = useState<Activity[]>([]);
 
+  const [IndexPrice, setIndexPrice] = useState<string>(index?.indexPrice ? String(index?.indexPrice) : '0');
+  useEffect(() => {
+    const symbol = index?.ticker;
+    if (symbol && indexPrices[symbol]) {
+      setIndexPrice(formatUSD(Number(indexPrices[symbol]) * index?.totalSupply));
+    }
+  }, [indexPrices, index?.ticker]);
   // const storedWallet = useSelector((state: RootState) => state.wallet.wallet);
   const dispatch = useDispatch();
   const handleSupplyClick = (name: string, ticker: string) => {
@@ -132,6 +139,13 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
   );
 
   const [indexDescription, setIndexDescription] = useState("");
+
+  const formatUSD = (n?: number) =>
+    n == null || Number.isNaN(n)
+      ? "0.00"
+      : new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(
+          n
+        );
 
   useEffect(() => {
     const fetchData = async (indexId: number) => {
@@ -426,7 +440,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                     <div></div>
 
                     {/* Properties Text */}
-                    <div className="flex flex-row items-end gap-4 text-secondary  text-[11px]">
+                    <div className="flex flex-row items-end gap-4 text-secondary -mt-[30px] text-[11px]">
                       <Link href={"#"}>
                         <div className="flex flex-col items-center justify-center hover:text-[#2470ff]">
                           <FileText className="w-4" />
@@ -526,10 +540,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                       </InfoMobileCard>
 
                       <InfoMobileCard title={t("table.totalSupply")}>
-                        <TokenValue
-                          token={vault.token}
-                          value={index.totalSupply}
-                        />
+                        <TokenValue token={vault.token} value={IndexPrice} />
                       </InfoMobileCard>
 
                       <InfoMobileCard title={t("table.oneYearPerformance")}>
@@ -545,16 +556,11 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                       </InfoMobileCard>
 
                       <InfoMobileCard title={t("table.vaultAddress")}>
-                        <AddressInfo
-                          address={getERC20AddressForIndex(index.indexId) || ""}
-                        />
+                        <AddressInfo address={index.address || ""} />
                       </InfoMobileCard>
 
                       <InfoMobileCard title={t("table.liquidity")}>
-                        <TokenValue
-                          token={vault.token}
-                          value={index.totalSupply}
-                        />
+                        <TokenValue token={vault.token} value={IndexPrice} />
                       </InfoMobileCard>
 
                       <InfoMobileCard title={t("table.guardianAddress")}>
@@ -742,10 +748,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                       </InfoMobileCard>
 
                       <InfoMobileCard title={t("table.totalSupply")}>
-                        <TokenValue
-                          token={vault.token}
-                          value={index.totalSupply}
-                        />
+                        <TokenValue token={vault.token} value={IndexPrice} />
                       </InfoMobileCard>
 
                       <InfoMobileCard title={t("table.oneYearPerformance")}>
@@ -761,16 +764,11 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                       </InfoMobileCard>
 
                       <InfoMobileCard title={t("table.vaultAddress")}>
-                        <AddressInfo
-                          address={getERC20AddressForIndex(index.indexId) || ""}
-                        />
+                        <AddressInfo address={index.address || ""} />
                       </InfoMobileCard>
 
                       <InfoMobileCard title={t("table.liquidity")}>
-                        <TokenValue
-                          token={vault.token}
-                          value={index.totalSupply}
-                        />
+                        <TokenValue token={vault.token} value={IndexPrice} />
                       </InfoMobileCard>
 
                       <InfoMobileCard title={t("table.guardianAddress")}>
@@ -850,12 +848,12 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                               />
                             </div>
                             <span className="text-secondary text-[14px] font-normal">
-                              {index.totalSupply} USDC
+                              {IndexPrice} USDC
                             </span>
                           </div>
-                          <div className="text-[13px] text-secondary px-[2px] bg-accent">
+                          {/* <div className="text-[13px] text-secondary px-[2px] bg-accent">
                             {index.totalSupply}
-                          </div>
+                          </div> */}
                         </div>
                       </InfoCard>
 
@@ -880,19 +878,14 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                       <InfoCard title={t("table.vaultAddress")}>
                         <div className="flex items-center gap-2">
                           <span className="text-secondary text-[14px] font-normal">
-                            {shortenAddress(
-                              getERC20AddressForIndex(index.indexId)
-                            )}
+                            {shortenAddress(index.address)}
                           </span>
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-5 w-5 hover:bg-transparent hover:text-primary cursor-pointer"
                             onClick={() =>
-                              copyToClipboard(
-                                getERC20AddressForIndex(index.indexId),
-                                "Index address"
-                              )
+                              copyToClipboard(index.address, "Index address")
                             }
                           >
                             <Copy className="h-3 w-3 text-secondary" />
@@ -917,12 +910,12 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                               />
                             </div>
                             <span className="text-secondary text-[14px] font-normal">
-                              {index.totalSupply} USDC
+                              {IndexPrice} USDC
                             </span>
                           </div>
-                          <div className="text-[13px] text-secondary px-[2px] bg-[#fafafa1a]">
+                          {/* <div className="text-[13px] text-secondary px-[2px] bg-[#fafafa1a]">
                             {index.totalSupply}
-                          </div>
+                          </div> */}
                         </div>
                       </InfoCard>
 
@@ -1556,7 +1549,7 @@ const TokenValue = ({
     icon: string;
     address?: string;
   };
-  value: number;
+  value: string;
 }) => (
   <div className="flex flex-row items-center lg:items-center gap-1 lg:gap-2">
     <div className="flex items-center gap-2">

@@ -29,10 +29,10 @@ export default function IndexBalance({
 }: IndexBalanceProps) {
   const { wallet, address, connectWallet } = useWallet();
   const onClickBuyButton = useCallback(async () => {
-    if (index.name !== "SY100") {
-      toast.warning("Only SY100 can be deposited right now...");
-      return;
-    }
+    // if (index.name !== "SY100") {
+    //   toast.warning("Only SY100 can be deposited right now...");
+    //   return;
+    // }
 
     if (!wallet) await connectWallet();
 

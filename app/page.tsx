@@ -6,19 +6,19 @@ import SplashScreen from "@/app/SplashScreen";
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-  }, []);
+  useEffect(() => {}, []);
 
   return (
     <>
-      {loading && (
+      {loading ? (
         <SplashScreen
           onFinish={() => {
             setLoading(false);
           }}
         />
+      ) : (
+        <Dashboard />
       )}
-      <Dashboard />
     </>
   );
 }

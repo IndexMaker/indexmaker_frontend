@@ -19,7 +19,7 @@ import Image from "next/image";
 import { useLanguage } from "@/contexts/language-context";
 import Link from "next/link";
 
-interface VaultReAllocationProps {
+interface VaultActivityProps {
   activities: Activity[];
   visibleColumns: { id: string; name: string; visible: boolean }[];
 }
@@ -33,7 +33,7 @@ const allActivityColumns = [
 export function VaultActivity({
   activities,
   visibleColumns,
-}: VaultReAllocationProps) {
+}: VaultActivityProps) {
   const { t } = useLanguage();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -64,7 +64,7 @@ export function VaultActivity({
                 target="_blank"
               >
                 <RightArrow
-                  className="rotate-135 text-[#FFFFFF99]"
+                  className="rotate-135 text-muted"
                   width="13px"
                   height="13px"
                 />
@@ -81,7 +81,7 @@ export function VaultActivity({
               target="_blank"
             >
               <RightArrow
-                className="rotate-135 text-[#FFFFFF99]"
+                className="rotate-135 text-muted"
                 width="13px"
                 height="13px"
               />

@@ -512,20 +512,8 @@ export function VaultTable({
                                   currentChainId === selectedNetwork ? (
                                     <Button
                                       className={cn(
-                                        "bg-[#2470ff] hover:bg-blue-700 text-white text-[11px] rounded-[4px] px-[5px] py-[8px] h-[26px] sticky right-0",
-                                        selectedVault
-                                          .map((v) => v.name)
-                                          .includes(vault.name) ||
-                                          vault.name !== "SY100"
-                                          ? "opacity-30 cursor-not-allowed"
-                                          : "cursor-pointer"
+                                        "bg-[#2470ff] hover:bg-blue-700 text-white text-[11px] rounded-[4px] px-[5px] py-[8px] h-[26px] sticky right-0"
                                       )}
-                                      disabled={
-                                        selectedVault
-                                          .map((v) => v.name)
-                                          .includes(vault.name) ||
-                                        vault.name !== "SY100"
-                                      }
                                       onClick={(e: any) => {
                                         e.stopPropagation();
                                         onSupplyClick?.(

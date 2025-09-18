@@ -51,26 +51,26 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} h-[calc(100vh-46px)] antialiased bg-foreground`}
       >
         <WalletProvider>
-          {/* <PHProvider>
-            <PostHogPageview /> */}
-          {/* <PostHogErrorTracker /> */}
-          <ReduxProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="light"
-              enableSystem
-              disableTransitionOnChange
-            >
-              <QuoteProvider>
-                <LanguageProvider>
-                  {children}
-                  <Toaster />
-                  <SubscriptionTrigger />
-                </LanguageProvider>
-              </QuoteProvider>
-            </ThemeProvider>
-          </ReduxProvider>
-          {/* </PHProvider> */}
+          <PHProvider>
+            <PostHogPageview />
+            {/* <PostHogErrorTracker /> */}
+            <ReduxProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="light"
+                enableSystem
+                disableTransitionOnChange
+              >
+                <QuoteProvider>
+                  <LanguageProvider>
+                    {children}
+                    <Toaster />
+                    <SubscriptionTrigger />
+                  </LanguageProvider>
+                </QuoteProvider>
+              </ThemeProvider>
+            </ReduxProvider>
+          </PHProvider>
         </WalletProvider>
       </body>
     </html>
