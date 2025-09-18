@@ -37,6 +37,9 @@ import { useWallet } from "../../../contexts/wallet-context";
 import { HowEarnWorks } from "./how-earn-works";
 import ConnectedWalletBalances from "@/components/elements/connect-wallet-balance";
 import IBKRAlertBanner from "@/components/elements/AnnouncementBanner";
+import { useQuoteContext } from "@/contexts/quote-context";
+import Image from "next/image";
+import USDC from "../../../public/logos/usd-coin.png";
 
 type ColumnType = {
   id: string;
@@ -93,28 +96,45 @@ export function EarnContent({
   const totalVolume = useSelector(
     (state: RootState) => state.index.totalVolume
   );
+  const { indexPrices } = useQuoteContext();
+
+  const formatUSDC = (n?: number) =>
+    n == null || Number.isNaN(n)
+      ? "0.00"
+      : new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(
+          n
+        );
+
   const [depositTransactionLoading, setDepositTransactionLoading] =
-    useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+    useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [indexLists, setIndexLists] = useState<IndexListEntry[]>([]);
   const [selectedIndexId, setSelectedIndexId] = useState<number | null>(null);
 
-  // get all balance of the connected wallet
-
   const storedIndexes = useSelector((state: RootState) => state.index.indices);
+
+  // ---- helper to get a live price for a ticker ----
+  const normalize = (s: string) => s.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  const getLiveIndexPrice = (symbol?: string): number | undefined => {
+    if (!symbol || !indexPrices) return undefined;
+    if (indexPrices[symbol] != null) return Number(indexPrices[symbol]);
+    const norm = normalize(symbol);
+    for (const [k, v] of Object.entries(indexPrices)) {
+      if (normalize(k) === norm) return Number(v);
+    }
+    return undefined;
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const response = await fetchAllIndices();
-        const data = response;
+        const data = await fetchAllIndices();
         setIndexLists(data || []);
         dispatch(setIndices(data || []));
-
         localStorage.setItem("storedVaults", JSON.stringify(data));
       } catch (error) {
         console.error("Error fetching performance data:", error);
-        setIsLoading(false);
       } finally {
         setIsLoading(false);
       }
@@ -125,15 +145,43 @@ export function EarnContent({
     const fetchInfo = async () => {
       const response = await getIndexMakerInfo();
       if (response) {
-        dispatch(setTotalManaged(response.totalManaged));
+        // Only set volume from backend; we'll compute totalManaged live below.
         dispatch(setTotalVolume(response.totalVolume));
       }
     };
 
-    !totalManaged && fetchInfo();
+    if (!totalVolume) fetchInfo();
 
     dispatch(clearSelectedVault());
   }, []);
+
+  // ---- compute & dispatch live total managed (AUM) whenever data or prices change ----
+  useEffect(() => {
+    // Prefer Redux indices; fall back to local state
+    const indices: IndexListEntry[] =
+      storedIndexes && storedIndexes.length > 0 ? storedIndexes : indexLists;
+
+    if (!indices || indices.length === 0) return;
+
+    const liveAUM = indices.reduce((acc, idx) => {
+      const qty = Number(idx.totalSupply || 0); // minted quantity (index tokens)
+      const livePrice = getLiveIndexPrice(idx.ticker); // USDC per token
+
+      if (livePrice != null && Number.isFinite(livePrice)) {
+        return acc + qty * livePrice;
+      }
+
+      // Fallbacks:
+      // - backend-provided USD if available
+      if ((idx as any).totalSupplyUSD != null) {
+        return acc + Number((idx as any).totalSupplyUSD || 0);
+      }
+      // - last resort: treat totalSupply as USDC (legacy behavior)
+      return acc + Number(idx.totalSupply || 0);
+    }, 0);
+
+    dispatch(setTotalManaged(String(liveAUM)));
+  }, [indexPrices, storedIndexes, indexLists, dispatch]);
 
   useEffect(() => {
     // const termsAccepted = localStorage.getItem("termsAccepted");
@@ -292,8 +340,15 @@ export function EarnContent({
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0 h-[20px]">
-                <div className="font-normal text-secondary text-[15px] pb-2">
-                  ${totalManaged ? totalManaged : 0}
+                <div className="flex items-center justify-between font-normal text-secondary text-[15px] pb-2">
+                  <span>{totalManaged ? formatUSDC(Number(totalManaged)) : 0}</span>
+                  <Image
+                    src={USDC}
+                    alt={"Total Supply"}
+                    width={16}
+                    height={16}
+                    className="object-cover w-[16px] h-[16px]"
+                  />
                 </div>
               </CardContent>
             </Card>
