@@ -15,7 +15,7 @@ const fmtDate = (ts: number) => {
 };
 
 const renderVal = (v: number | string | undefined | null) =>
-  v == null || v === "" ? "" : fmt7(v);
+  v == null || v === "" || v === 0 ? "" : fmt7(v);
 
 // --- helpers ---------------------------------------------------------
 
@@ -26,20 +26,22 @@ const sumLotAll = (lot?: Partial<CollateralLot>) =>
   toNum(lot?.spent_amount);
 
 const sumSpendAll = (spend?: {
+  ready_amount?: number | string;
   preauth_amount?: number | string;
   spent_amount?: number | string;
-}) => toNum(spend?.preauth_amount) + toNum(spend?.spent_amount);
+}) => 
+  toNum(spend?.ready_amount) +
+  toNum(spend?.preauth_amount) +
+  toNum(spend?.spent_amount);
 
-const sumBalances = (side?: {
+const sumDeposit = (side?: {
   unconfirmed_balance?: number | string;
   ready_balance?: number | string;
   preauth_balance?: number | string;
-  spent_balance?: number | string;
 }) =>
   toNum(side?.unconfirmed_balance) +
   toNum(side?.ready_balance) +
-  toNum(side?.preauth_balance) +
-  toNum(side?.spent_balance);
+  toNum(side?.preauth_balance);
 
 // Try common field names for seq and tx hash so we work with your API shape.
 const getDepositSeq = (lot: any): string | undefined =>
@@ -61,21 +63,23 @@ const basescanBase = (chainId?: number) =>
 
 function BalanceRow({
   title,
+  isInner,
   dr,
   cr,
 }: {
   title: string;
+  isInner?: boolean | null;
   dr?: number | string | null;
   cr?: number | string | null;
 }) {
-  return (
-    <tr className="border-b last:border-b-0">
+  return (cr !== 0 || dr !== 0) && (
+    <tr className={isInner ? "border-b last:border-b-0 bg-accent" : "border-b last:border-b-0"}>
       <td className="py-2 pl-2" />
       <td className="py-2 pl-2 text-sm text-muted-foreground">{title}</td>
-      <td className="py-2 pr-2 text-right text-sm tabular-nums border-l">
+      <td className="py-2 pr-2 text-right text-sm tabular-nums">
         {renderVal(dr)}
       </td>
-      <td className="py-2 pr-2 text-right text-sm tabular-nums">
+      <td className="py-2 pr-2 text-right text-sm tabular-nums border-l" width="6em">
         {renderVal(cr)}
       </td>
     </tr>
@@ -103,8 +107,8 @@ function LotRows({
   const depositHref = depositTxHash
     ? `${explorer}/tx/${depositTxHash}`
     : depositSeq
-    ? `${explorer}/search?f=0&q=${encodeURIComponent(depositSeq)}`
-    : undefined;
+      ? `${explorer}/search?f=0&q=${encodeURIComponent(depositSeq)}`
+      : undefined;
 
   return (
     <>
@@ -121,7 +125,6 @@ function LotRows({
           </button>
         </td>
         <td className="py-2 text-sm">{fmtDate(lot.created_timestamp)}</td>
-        <td className="py-2 text-xs break-all">{lot.payment_id}</td>
 
         {/* NEW: Deposit ID (Seq Num) w/ BaseScan link */}
         <td className="py-2 text-xs break-all">
@@ -134,32 +137,34 @@ function LotRows({
                 className="underline underline-offset-2"
                 title="View on BaseScan"
               >
-                {depositSeq}
+                Deposit ({depositSeq})
               </a>
             ) : (
-              depositSeq
+              "Deposit (" + depositSeq + ")"
             )
           ) : (
-            ""
+            lot.payment_id
           )}
         </td>
 
-        <td className="py-2 border-l text-xs break-all">{/* Order ID in spends */}</td>
+        <td className="py-2 text-xs break-all">{/* Order ID in spends */}</td>
 
         {/* DR (sum of all DR states) */}
         <td
           className={cn(
-            "py-2 pr-2 text-right text-sm tabular-nums border-l",
+            "py-2 pr-2 text-right text-sm tabular-nums",
             !isCR ? "" : "text-muted-foreground"
           )}
         >
           {!isCR ? fmt7(lotSum) : ""}
         </td>
 
+        {/* !! IMPORTANT: Vertical line must separate DR | CR!! (also avoid other vertical lines) */}
+
         {/* CR (sum of all CR states) */}
         <td
           className={cn(
-            "py-2 pr-2 text-right text-sm tabular-nums",
+            "py-2 pr-2 border-l text-right text-sm tabular-nums",
             isCR ? "" : "text-muted-foreground"
           )}
         >
@@ -176,17 +181,18 @@ function LotRows({
               <td />
               <td className="py-2 text-sm">{fmtDate(spend.timestamp)}</td>
               <td className="py-2 text-xs break-all">{spend.payment_id}</td>
-              <td className="py-2 text-xs break-all">{/* Deposit ID empty on spend */}</td>
-              <td className="py-2 border-l text-xs break-all">{spend.client_order_id}</td>
+              <td className="py-2 text-xs break-all">{spend.client_order_id}</td>
 
-              {/* DR spend sum */}
-              <td className="py-2 pr-2 text-right text-sm tabular-nums border-l">
-                {!isCR ? fmt7(spendSum) : ""}
-              </td>
-
-              {/* CR spend sum */}
+              {/* DR spend sum (!! IMPORTANT: All spends must use opposite side !!) */}
               <td className="py-2 pr-2 text-right text-sm tabular-nums">
                 {isCR ? fmt7(spendSum) : ""}
+              </td>
+
+              {/* !! IMPORTANT: Vertical line must separate DR | CR!! (also avoid other vertical lines) */}
+
+              {/* CR spend sum  (!! IMPORTANT: All spends must use opposite side !!) */}
+              <td className="py-2 pr-2 border-l text-right text-sm tabular-nums">
+                {!isCR ? fmt7(spendSum) : ""}
               </td>
             </tr>
           );
@@ -219,10 +225,14 @@ export function CollateralPositionSection({ position }: { position?: Position | 
   const drLots = [...(side_dr?.open_lots ?? []), ...(side_dr?.closed_lots ?? [])];
   const crLots = [...(side_cr?.open_lots ?? []), ...(side_cr?.closed_lots ?? [])];
 
-  // Totals for balances table (Top)
-  const totalDepositCR = sumBalances(side_cr);
-  const totalPaidDR =
-    [...drLots, ...crLots].reduce((acc, lot) => acc + toNum(lot.spent_amount), 0) || 0;
+
+  // Amount deposited and actually paid -> You deposit (CR) to pay (DR)
+  const totalDepositCR = sumDeposit(side_cr);
+  const totalPaidCR = crLots.reduce((acc, lot) => acc + toNum(lot.spent_amount), 0) || 0;
+
+  // Amount requested and actually withdrawn -> You request (DR) to draw (CR)
+  const totalRequestDR = sumDeposit(side_dr);
+  const totalDrawDR = drLots.reduce((acc, lot) => acc + toNum(lot.spent_amount), 0) || 0;
 
   // Local state for expanded lots
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
@@ -251,25 +261,25 @@ export function CollateralPositionSection({ position }: { position?: Position | 
           <table className="w-full text-sm">
             <colgroup>
               <col style={{ width: 20 }} />
-              <col style={{ width: "30%" }} />
-              <col style={{ width: "35%" }} />
-              <col style={{ width: "35%" }} />
+              <col style={{ width: "60%" }} />
+              <col style={{ width: "20%" }} />
+              <col style={{ width: "20%" }} />
             </colgroup>
             <thead>
               <tr className="bg-background text-xs uppercase tracking-wide">
                 <th className="text-left p-2"></th>
                 <th className="text-left p-2">Balance</th>
-                <th className="text-right p-2 border-l">Debit (DR)</th>
-                <th className="text-right p-2">Credit (CR)</th>
+                <th className="text-right p-2">Debit (DR)</th>
+                <th className="text-right p-2 border-l">Credit (CR)</th>
               </tr>
             </thead>
             <tbody>
-              <BalanceRow title="Total Deposit" dr={null} cr={totalDepositCR} />
-              <BalanceRow title="In Custody" dr={null} cr={side_cr?.unconfirmed_balance} />
-              <BalanceRow title="Ready To Trade" dr={null} cr={side_cr?.ready_balance} />
-              <BalanceRow title="In Progress" dr={null} cr={side_cr?.preauth_balance} />
-              <BalanceRow title="Billed" dr={null} cr={side_cr?.spent_balance} />
-              <BalanceRow title="Total Paid" dr={totalPaidDR} cr={null} />
+              <BalanceRow title="Total Unprocessed" dr={totalRequestDR} cr={totalDepositCR} />
+              <BalanceRow isInner title="To Custody" dr={side_cr.unconfirmed_balance} cr={side_dr.unconfirmed_balance} />
+              <BalanceRow isInner title="To Venue" dr={side_cr.ready_balance} cr={side_dr.ready_balance} />
+              <BalanceRow isInner title="To Solver" dr={side_cr.preauth_balance} cr={side_dr.preauth_balance} />
+              <BalanceRow title="Total Paid" dr={totalDrawDR} cr={totalPaidCR} />
+              <BalanceRow isInner title="To Mint" dr={side_cr.spent_balance} cr={side_dr.spent_balance} />
             </tbody>
           </table>
         </div>
@@ -282,23 +292,21 @@ export function CollateralPositionSection({ position }: { position?: Position | 
           <table className="w-full text-sm" id="collateral-lots-table">
             <colgroup>
               <col style={{ width: 20 }} />
-              <col style={{ width: "12%" }} />  {/* Date */}
-              <col style={{ width: "12%" }} />  {/* Payment ID */}
-              <col style={{ width: "10%" }} />  {/* Deposit ID */}
-              <col style={{ width: "8%" }} />   {/* Order ID */}
+              <col style={{ width: "20%" }} />  {/* Date */}
+              <col style={{ width: "20%" }} />  {/* ID */}
+              <col style={{ width: "20%" }} />   {/* Order ID */}
               {/* Numeric columns aligned with top: 35% + 35% */}
-              <col style={{ width: "35%" }} />  {/* DR */}
-              <col style={{ width: "35%" }} />  {/* CR */}
+              <col style={{ width: "20%" }} />  {/* DR */}
+              <col style={{ width: "20%" }} />  {/* CR */}
             </colgroup>
             <thead>
               <tr className="bg-background text-xs uppercase tracking-wide">
                 <th className="text-left p-2"></th>
                 <th className="text-left p-2">Date</th>
-                <th className="text-left p-2">Payment ID</th>
-                <th className="text-left p-2">Deposit ID</th>
-                <th className="text-left p-2 border-l">Order ID</th>
-                <th className="text-right p-2 border-l">Debit (DR)</th>
-                <th className="text-right p-2">Credit (CR)</th>
+                <th className="text-left p-2">ID</th>
+                <th className="text-left p-2">Order ID</th>
+                <th className="text-right p-2">Debit (DR)</th>
+                <th className="text-right p-2 border-l">Credit (CR)</th>
               </tr>
             </thead>
             <tbody>
