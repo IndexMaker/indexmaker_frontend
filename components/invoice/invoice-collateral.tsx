@@ -29,7 +29,7 @@ const sumSpendAll = (spend?: {
   ready_amount?: number | string;
   preauth_amount?: number | string;
   spent_amount?: number | string;
-}) => 
+}) =>
   toNum(spend?.ready_amount) +
   toNum(spend?.preauth_amount) +
   toNum(spend?.spent_amount);
@@ -159,7 +159,7 @@ function LotRows({
           {!isCR ? fmt7(lotSum) : ""}
         </td>
 
-        {/* !! IMPORTANT: Vertical line must separate DR | CR!! (also avoid other vertical lines) */}
+        {/* Vertical line should separate DR | CR, and we should avoid other vertical lines */}
 
         {/* CR (sum of all CR states) */}
         <td
@@ -183,14 +183,14 @@ function LotRows({
               <td className="py-2 text-xs break-all">{spend.payment_id}</td>
               <td className="py-2 text-xs break-all">{spend.client_order_id}</td>
 
-              {/* DR spend sum (!! IMPORTANT: All spends must use opposite side !!) */}
+              {/* DR spend sum (All spends must use opposite side) */}
               <td className="py-2 pr-2 text-right text-sm tabular-nums">
                 {isCR ? fmt7(spendSum) : ""}
               </td>
 
-              {/* !! IMPORTANT: Vertical line must separate DR | CR!! (also avoid other vertical lines) */}
+              {/* Vertical line should separate DR | CR, and we should avoid other vertical lines */}
 
-              {/* CR spend sum  (!! IMPORTANT: All spends must use opposite side !!) */}
+              {/* CR spend sum  (All spends must use opposite side) */}
               <td className="py-2 pr-2 border-l text-right text-sm tabular-nums">
                 {!isCR ? fmt7(spendSum) : ""}
               </td>
@@ -274,9 +274,21 @@ export function CollateralPositionSection({ position }: { position?: Position | 
               </tr>
             </thead>
             <tbody>
+              {/* !!! IMPORATANT: The use of opposite side is intentional.
+                  Rule of thumb: The sum of all Credits (CR) must match sum of all Debits (DR).
+                  These are totals. Say we received $100 deposit (CR) in total, however $90 was already
+                  used to pay for mints, i.e. $90 was sent To Mint (DR), and to cover for that we paid (CR).
+                  We show Total Paid as CR to balance out To Mint on DR, and to keep correctness we
+                  deduct Total Paid $90 from total deposit $100, and remainder of $10 we call Total Unprocessed.
+                  Next we need to explain where that remaining $10 is and for that we "transfer" sub-amounts of
+                  that To Custody, To Trading, and To Solver. This way our balance sheet is correctly balanced,
+                  and all CR less all DR sum up to zero, which is essential. The total-zero-sum is the tool
+                  used in accounting to guarantee that some moneys aren't lost somewhere. When we're breaking
+                  down, we need to do it in such a way that we obtain total-zero-sum.
+              */}
               <BalanceRow title="Total Unprocessed" dr={totalRequestDR} cr={totalDepositCR} />
               <BalanceRow isInner title="To Custody" dr={side_cr.unconfirmed_balance} cr={side_dr.unconfirmed_balance} />
-              <BalanceRow isInner title="To Venue" dr={side_cr.ready_balance} cr={side_dr.ready_balance} />
+              <BalanceRow isInner title="To Trading" dr={side_cr.ready_balance} cr={side_dr.ready_balance} />
               <BalanceRow isInner title="To Solver" dr={side_cr.preauth_balance} cr={side_dr.preauth_balance} />
               <BalanceRow title="Total Paid" dr={totalDrawDR} cr={totalPaidCR} />
               <BalanceRow isInner title="To Mint" dr={side_cr.spent_balance} cr={side_dr.spent_balance} />
