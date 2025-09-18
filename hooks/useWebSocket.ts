@@ -36,9 +36,7 @@ export default function useQuoteSocket(
   // derive EVM address from uncompressed pubkey (0x04 + X + Y)
   const pubToAddress = (pub: Uint8Array): `0x${string}` => {
     const hash = keccak256(pub.slice(1)); // drop 0x04 prefix
-    return getAddress(
-      ("0x" + hash.slice(26)) as `0x${string}`
-    ) as `0x${string}`;
+    return getAddress(("0x" + hash.slice(26)) as `0x${string}`) as `0x${string}`;
   };
 
   // EXACTLY like your server sample
@@ -61,17 +59,14 @@ export default function useQuoteSocket(
     if (!/^0x[0-9a-fA-F]{64}$/.test(hex))
       throw new Error("Private key must be 0x + 64 hex chars");
     signingPrivHexRef.current = hex;
-    if (typeof window !== "undefined")
-      localStorage.setItem("imSigningKeyHex", hex);
+    if (typeof window !== "undefined") localStorage.setItem("imSigningKeyHex", hex);
   };
 
   // Optional helpers if you want to check what address/pubkey you’re using
   const getSigningPublicKey = () => {
     const hex =
       signingPrivHexRef.current ||
-      (typeof window !== "undefined"
-        ? localStorage.getItem("imSigningKeyHex")
-        : null);
+      (typeof window !== "undefined" ? localStorage.getItem("imSigningKeyHex") : null);
     if (!hex) return null;
     const priv = h2b(hex);
     const pub = secp.getPublicKey(priv, false);
@@ -80,9 +75,7 @@ export default function useQuoteSocket(
   const getSigningAddress = () => {
     const hex =
       signingPrivHexRef.current ||
-      (typeof window !== "undefined"
-        ? localStorage.getItem("imSigningKeyHex")
-        : null);
+      (typeof window !== "undefined" ? localStorage.getItem("imSigningKeyHex") : null);
     if (!hex) return null;
     const priv = h2b(hex);
     const pub = secp.getPublicKey(priv, false);
@@ -112,55 +105,77 @@ export default function useQuoteSocket(
     const numSuffix = (parseInt(hex.slice(18, 22), 16) % 9000) + 1001;
     return `${code1}-${code2}-${code3}-${numSuffix}`;
   }
+
   const orderFillCallbacks = useRef<Record<string, (pct: number) => void>>({});
-  const mintInvoiceCallbacks = useRef<Record<string, (invoice: any) => void>>(
-    {}
-  );
-  const wsRef = useRef<WebSocket | null>(null);
+  const mintInvoiceCallbacks = useRef<Record<string, (invoice: any) => void>>({});
+  const wsQuotesRef = useRef<WebSocket | null>(null);
+  const wsOrdersRef = useRef<WebSocket | null>(null);
+
   const [indexPrices, setPrices] = useState<Record<string, string>>({});
-  const [isConnected, setIsConnected] = useState(false);
+  const [isQuotesConnected, setIsQuotesConnected] = useState(false);
+  const [isOrdersConnected, setIsOrdersConnected] = useState(false);
+
+  // Back-compat alias: treat overall isConnected as "quotes connected"
+  const isConnected = isQuotesConnected;
+
   const quoteIdMap = useRef<Record<string, string>>({});
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const seqNumRef = useRef(1);
+
+  // Separate seq nums per socket
+  const seqQuoteRef = useRef(1);
+  const seqOrderRef = useRef(1);
+
   const quoteCallbacks = useRef<Record<string, (quantity: number) => void>>({});
-  const reconnectAttempts = useRef(0);
+  const reconnectQuotesAttempts = useRef(0);
+  const reconnectOrdersAttempts = useRef(0);
   const lastFillRef = useRef<Record<string, number>>({});
   const pendingInvoiceRef = useRef<Record<string, any>>({});
 
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const reconnect = () => {
-    if (reconnectTimeoutRef.current || wsRef.current) return;
+  const reconnectQuotesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectOrdersTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const timeout = Math.min(1000 * 2 ** reconnectAttempts.current, 10000); // max 10s
-    reconnectTimeoutRef.current = setTimeout(() => {
-      reconnectAttempts.current += 1;
-      reconnectTimeoutRef.current = null;
-      connect(); // try to reconnect
+  const reconnectQuotes = () => {
+    if (reconnectQuotesTimeoutRef.current || wsQuotesRef.current) return;
+    const timeout = Math.min(1000 * 2 ** reconnectQuotesAttempts.current, 10000);
+    reconnectQuotesTimeoutRef.current = setTimeout(() => {
+      reconnectQuotesAttempts.current += 1;
+      reconnectQuotesTimeoutRef.current = null;
+      connectQuotes();
     }, timeout);
   };
-  const connect = () => {
-    if (wsRef.current) return;
+  const reconnectOrders = () => {
+    if (reconnectOrdersTimeoutRef.current || wsOrdersRef.current) return;
+    const timeout = Math.min(1000 * 2 ** reconnectOrdersAttempts.current, 10000);
+    reconnectOrdersTimeoutRef.current = setTimeout(() => {
+      reconnectOrdersAttempts.current += 1;
+      reconnectOrdersTimeoutRef.current = null;
+      connectOrders();
+    }, timeout);
+  };
 
-    wsRef.current = new WebSocket(process.env.NEXT_PUBLIC_QUOTE_SERVER!);
+  const connectQuotes = () => {
+    if (wsQuotesRef.current) return;
 
-    wsRef.current.onopen = () => {
-      setIsConnected(true);
-      reconnectAttempts.current = 0;
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
+    wsQuotesRef.current = new WebSocket(process.env.NEXT_PUBLIC_QUOTE_SERVER!);
+
+    wsQuotesRef.current.onopen = () => {
+      setIsQuotesConnected(true);
+      reconnectQuotesAttempts.current = 0;
+      if (reconnectQuotesTimeoutRef.current) {
+        clearTimeout(reconnectQuotesTimeoutRef.current);
+        reconnectQuotesTimeoutRef.current = null;
       }
     };
 
-    wsRef.current.onmessage = (event: MessageEvent) => {
+    wsQuotesRef.current.onmessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
         if (data.ref_seq_num !== undefined) {
-          seqNumRef.current = data.ref_seq_num + 1;
+          seqQuoteRef.current = data.ref_seq_num + 1;
         }
         if (data.standard_header?.msg_type === "IndexQuoteResponse") {
           const quoteId = data.client_quote_id;
-          const symbol = quoteIdMap.current[data.client_quote_id];
+          const symbol = quoteIdMap.current[quoteId];
           const quantity = parseFloat(data.quantity_possible);
           if (!symbol || !quantity) return;
 
@@ -171,6 +186,38 @@ export default function useQuoteSocket(
           const price = (amount / quantity).toFixed(2);
           setPrices((prev) => ({ ...prev, [symbol]: price }));
         }
+      } catch (e) {
+        console.error("Invalid FIX JSON from QUOTES server:", e);
+      }
+    };
+
+    wsQuotesRef.current.onclose = () => {
+      setIsQuotesConnected(false);
+      wsQuotesRef.current = null;
+      reconnectQuotes();
+    };
+  };
+
+  const connectOrders = () => {
+    if (wsOrdersRef.current) return;
+
+    wsOrdersRef.current = new WebSocket(process.env.NEXT_PUBLIC_ORDER_SERVER!);
+
+    wsOrdersRef.current.onopen = () => {
+      setIsOrdersConnected(true);
+      reconnectOrdersAttempts.current = 0;
+      if (reconnectOrdersTimeoutRef.current) {
+        clearTimeout(reconnectOrdersTimeoutRef.current);
+        reconnectOrdersTimeoutRef.current = null;
+      }
+    };
+
+    wsOrdersRef.current.onmessage = (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.ref_seq_num !== undefined) {
+          seqOrderRef.current = data.ref_seq_num + 1;
+        }
 
         if (data.standard_header?.msg_type === "IndexOrderFill") {
           console.log("[WS FILL]", data.client_order_id, data.fill_rate);
@@ -178,12 +225,10 @@ export default function useQuoteSocket(
           const pct = Math.min(parseFloat(data.fill_rate ?? "0") * 100, 100);
           if (Number.isNaN(pct)) return;
 
-          // deliver to exact match
           if (orderFillCallbacks.current[id]) {
             lastFillRef.current[id] = pct;
             orderFillCallbacks.current[id](pct);
           } else {
-            // alias to the only active subscriber (common case: 1 order in-flight)
             const activeIds = Object.keys(orderFillCallbacks.current);
             if (activeIds.length === 1) {
               const onlyId = activeIds[0];
@@ -191,21 +236,19 @@ export default function useQuoteSocket(
               lastFillRef.current[onlyId] = pct;
               orderFillCallbacks.current[onlyId](pct);
             } else {
-              // no subscriber (or multiple) — remember by real id
               lastFillRef.current[id] = pct;
             }
           }
           return;
         }
+
         if (data.standard_header?.msg_type === "MintInvoice") {
           const id = data.client_order_id;
 
-          // deliver to exact match
           if (mintInvoiceCallbacks.current[id]) {
             console.debug("[HOOK] deliver invoice", id);
             mintInvoiceCallbacks.current[id](data);
           } else {
-            // alias to the only active subscriber (handles id mismatch EKD vs LAS)
             const activeIds = Object.keys(mintInvoiceCallbacks.current);
             if (activeIds.length === 1) {
               const onlyId = activeIds[0];
@@ -213,33 +256,58 @@ export default function useQuoteSocket(
               mintInvoiceCallbacks.current[onlyId](data);
             } else {
               console.debug("[HOOK] buffer invoice", id);
-              pendingInvoiceRef.current[id] = data; // keep if multiple subs exist
+              pendingInvoiceRef.current[id] = data;
             }
           }
           return;
         }
       } catch (e) {
-        console.error("Invalid FIX JSON from server:", e);
+        console.error("Invalid FIX JSON from ORDERS server:", e);
       }
     };
 
-    wsRef.current.onclose = () => {
-      setIsConnected(false);
-      wsRef.current = null;
-
-      reconnect();
+    wsOrdersRef.current.onclose = () => {
+      setIsOrdersConnected(false);
+      wsOrdersRef.current = null;
+      reconnectOrders();
     };
+  };
+
+  // Unified helpers
+  const connect = () => {
+    connectQuotes();
+    connectOrders();
   };
 
   const disconnect = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
-    wsRef.current?.close();
+    wsQuotesRef.current?.close();
+    wsOrdersRef.current?.close();
   };
 
-  const sendMessage = (msg: any) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(msg));
+  // Route messages to the correct socket by msg_type (keeps back-compat if someone calls sendMessage)
+  const sendQuoteMessage = (msg: any) => {
+    if (wsQuotesRef.current?.readyState === WebSocket.OPEN) {
+      wsQuotesRef.current.send(JSON.stringify(msg));
     }
+  };
+  const sendOrderMessage = (msg: any) => {
+    if (wsOrdersRef.current?.readyState === WebSocket.OPEN) {
+      wsOrdersRef.current.send(JSON.stringify(msg));
+    }
+  };
+  const sendMessage = (msg: any) => {
+    const type = msg?.standard_header?.msg_type;
+    if (
+      type === "NewIndexOrder" ||
+      type === "CancelIndexOrder" ||
+      type === "ReplaceIndexOrder" ||
+      type === "CancelIndexReplaceRequest"
+    ) {
+      return sendOrderMessage(msg);
+    }
+    // Default to quotes socket for quote-related or unknown (legacy behavior used quotes)
+    return sendQuoteMessage(msg);
   };
 
   const sendNewIndexOrder = async (order: {
@@ -249,7 +317,7 @@ export default function useQuoteSocket(
     amount: string;
   }) => {
     const currentTime = new Date().toISOString();
-    const seqNum = seqNumRef.current++;
+    const seqNum = seqOrderRef.current++;
     const client_order_id = await generateClientId(
       Date.now().toString(),
       order.address,
@@ -260,11 +328,9 @@ export default function useQuoteSocket(
     let privHex = process.env.NEXT_PUBLIC_ADMIN_PK || "";
     const priv = h2b(privHex);
 
-    // 2) derive pubkey + address (this is what backend will authorize)
     const pub = secp.getPublicKey(priv, false); // 65B uncompressed
     const signerAddress = pubToAddress(pub);
 
-    // 3) build message
     const timestamp = new Date().toISOString();
 
     const payload = {
@@ -283,20 +349,15 @@ export default function useQuoteSocket(
       amount: order.amount,
     };
 
-    // 4) sign EXACT minimal payload
     const minimal = getMinimalSignPayload(payload); // { msg_type, id }
     const hash = sha256(toUtf8Bytes(JSON.stringify(minimal))); // Uint8Array(32)
 
-    // 5) noble v1 sync sign (needs sha256Sync + hmacSha256Sync set above)
     const sig = secp.signSync(hash, priv, { canonical: true, der: false }); // 64B r||s
     const signatureHex = ("0x" + b2h(sig)) as `0x${string}`;
     const pubKeyHex = ("0x" + b2h(pub)) as `0x${string}`;
 
-    // optional local verify
     if (!secp.verify(sig, hash, pub)) {
-      console.error(
-        "Local verify failed — check minimal JSON / hash / signature"
-      );
+      console.error("Local verify failed — check minimal JSON / hash / signature");
     }
 
     const message = {
@@ -311,7 +372,7 @@ export default function useQuoteSocket(
     lastFillRef.current = {}; // clear stale last fill cache
     console.debug("[HOOK] sendNewIndexOrder client_order_id", client_order_id);
 
-    sendMessage(message);
+    sendOrderMessage(message);
     return client_order_id;
   };
 
@@ -339,7 +400,7 @@ export default function useQuoteSocket(
           msg_type: "NewQuoteRequest",
           sender_comp_id: "FE",
           target_comp_id: "SERVER",
-          seq_num: seqNumRef.current++,
+          seq_num: seqQuoteRef.current++,
           timestamp: new Date().toISOString(),
         },
         chain_id: 1,
@@ -354,7 +415,7 @@ export default function useQuoteSocket(
         },
       };
 
-      sendMessage(message);
+      sendQuoteMessage(message);
     });
   };
 
@@ -377,7 +438,7 @@ export default function useQuoteSocket(
         msg_type: "NewQuoteRequest",
         sender_comp_id: "FE",
         target_comp_id: "SERVER",
-        seq_num: seqNumRef.current++,
+        seq_num: seqQuoteRef.current++,
         timestamp: new Date().toISOString(),
       },
       chain_id: 1,
@@ -392,24 +453,22 @@ export default function useQuoteSocket(
       },
     };
 
-    sendMessage(message);
+    sendQuoteMessage(message);
     return client_quote_id;
   };
 
-  // ✅ Setup real-time quote polling
+  // ✅ Setup real-time quote polling (quotes socket only)
   useEffect(() => {
-    if (!isConnected) {
-      connect();
+    if (!isQuotesConnected) {
+      connectQuotes();
       return;
     }
     if (indexes.length === 0) return;
 
-    // Clear any previous interval
     if (intervalRef.current) clearInterval(intervalRef.current);
 
     intervalRef.current = setInterval(() => {
       indexes.forEach((index) => {
-        if (index.ticker !== "SY100") return;
         const quoteId = `Q-${index.ticker}-${Date.now()}`;
         quoteIdMap.current[quoteId] = index.ticker;
         const message = {
@@ -417,7 +476,7 @@ export default function useQuoteSocket(
             msg_type: "NewQuoteRequest",
             sender_comp_id: "FE",
             target_comp_id: "SERVER",
-            seq_num: seqNumRef.current++,
+            seq_num: seqQuoteRef.current++,
             timestamp: new Date().toISOString(),
           },
           chain_id: Network,
@@ -431,14 +490,14 @@ export default function useQuoteSocket(
             signature: [],
           },
         };
-        sendMessage(message);
+        sendQuoteMessage(message);
       });
     }, 10000); // 🔁 every 10 seconds
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [indexes, isConnected, amount, Network]);
+  }, [indexes, isQuotesConnected, amount, Network]);
 
   const subscribeOrderFill = (id: string, cb: (pct: number) => void) => {
     orderFillCallbacks.current[id] = cb;
@@ -467,15 +526,35 @@ export default function useQuoteSocket(
   };
 
   return {
+    // connections
     connect,
+    connectQuotes,
+    connectOrders,
     disconnect,
-    isConnected,
+
+    // status
+    isConnected, // alias of quotes
+    isQuotesConnected,
+    isOrdersConnected,
+
+    // data/state
     indexPrices,
+
+    // actions
     sendNewIndexOrder,
     sendNewQuoteRequest,
     requestQuoteAndWait,
+
+    // low-level (kept for back-compat; routes by msg_type)
     sendMessage,
+
+    // subscriptions
     subscribeOrderFill,
     subscribeMintInvoice,
+
+    // optional helpers
+    setSigningPrivateKey,
+    getSigningPublicKey,
+    getSigningAddress,
   };
 }

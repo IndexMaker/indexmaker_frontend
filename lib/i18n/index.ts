@@ -187,7 +187,7 @@ export const translations: Translations = {
       balance: "Balance",
       native: "Native",
       contract: "Conract Address",
-      value: "USD Value",
+      value: "Value",
       asset: "Assets"
     },
     type: {

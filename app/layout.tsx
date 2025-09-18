@@ -1,17 +1,21 @@
-import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
-import { LanguageProvider } from "@/contexts/language-context";
-import { QuoteProvider } from "@/contexts/quote-context";
-import { ReduxProvider } from "@/provider/reduxProvider";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { LanguageProvider } from "@/contexts/language-context";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
+import { ReduxProvider } from "@/provider/reduxProvider";
 // import { initPostHog } from "../lib/posthog";
-import { WalletProvider } from "@/contexts/wallet-context";
 import {
-    PHProvider,
-    PostHogPageview
+  PHProvider,
+  // PostHogErrorTracker,
+  PostHogPageview,
 } from "../lib/posthog";
+import SessionTracker from "../components/posthog/sessionTracker";
+import { WalletProvider } from "@/contexts/wallet-context";
+import { QuoteProvider } from "@/contexts/quote-context";
+import SubscriptionTrigger from "@/components/elements/subscription-trigger";
+import AnnouncementBanner from "@/components/elements/AnnouncementBanner";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -35,8 +39,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // initPostHog();
-
   return (
     <html lang="en">
       <head>
@@ -46,29 +48,29 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white`}
+        className={`${geistSans.variable} ${geistMono.variable} h-[calc(100vh-46px)] antialiased bg-foreground`}
       >
         <WalletProvider>
-          <PHProvider>
-            <PostHogPageview />
-
-            <ReduxProvider>
+          {/* <PHProvider>
+            <PostHogPageview /> */}
+          {/* <PostHogErrorTracker /> */}
+          <ReduxProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem
+              disableTransitionOnChange
+            >
               <QuoteProvider>
-                <ThemeProvider
-                  attribute="class"
-                  defaultTheme="light"
-                  enableSystem={false}
-                  forcedTheme="light"
-                  disableTransitionOnChange
-                >
-                  <LanguageProvider>
-                    {children}
-                    <Toaster />
-                  </LanguageProvider>
-                </ThemeProvider>
+                <LanguageProvider>
+                  {children}
+                  <Toaster />
+                  <SubscriptionTrigger />
+                </LanguageProvider>
               </QuoteProvider>
-            </ReduxProvider>
-          </PHProvider>
+            </ThemeProvider>
+          </ReduxProvider>
+          {/* </PHProvider> */}
         </WalletProvider>
       </body>
     </html>

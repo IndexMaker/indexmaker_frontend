@@ -39,6 +39,7 @@ export interface IndexListEntry {
     fiveYearReturn: number;
     tenYearReturn: number;
   };
+  indexPrice?: number;
 }
 
 export interface Asset {

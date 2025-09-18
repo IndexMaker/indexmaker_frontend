@@ -14,6 +14,9 @@ import Link from "next/link";
 import { cn, shortenAddress } from "@/lib/utils";
 import RightArrow from "../icons/right-arrow";
 import { useLanguage } from "@/contexts/language-context";
+import { useQuoteContext } from "@/contexts/quote-context";
+import IndexMaker from "../icons/indexmaker";
+import { useCallback, useMemo } from "react";
 
 export interface TokenBalance {
   address: string; // "native" for gas token
@@ -58,7 +61,7 @@ const columns = [
   { id: "asset", name: "Asset" },
   { id: "balance", name: "Balance" },
   { id: "value", name: "Value" },
-//   { id: "extra", name: "Info" },
+  //   { id: "extra", name: "Info" },
   { id: "contract", name: "Contract" },
 ] as const;
 
@@ -94,7 +97,23 @@ export default function WalletHoldingsTable({
   className,
 }: WalletHoldingsTableProps) {
   const { t } = useLanguage();
-
+  const { indexPrices } = useQuoteContext();
+  const normalize = useCallback(
+    (s: string) => s.replace(/[^A-Za-z0-9]/g, "").toUpperCase(),
+    []
+  );
+  const getLiveIndexPrice = useCallback(
+    (symbol: string): number | undefined => {
+      if (!indexPrices) return undefined;
+      if (indexPrices[symbol] != null) return Number(indexPrices[symbol]);
+      const norm = normalize(symbol);
+      for (const [k, v] of Object.entries(indexPrices)) {
+        if (normalize(k) === norm) return Number(v);
+      }
+      return undefined;
+    },
+    [indexPrices, normalize]
+  );
   const filterZero = (amt: number) => (hideZeroBalances ? amt > 0 : true);
 
   const tokenRows = tokens
@@ -106,33 +125,44 @@ export default function WalletHoldingsTable({
     .filter((r) => filterZero(r.amount))
     .sort((a, b) => (b.value ?? 0) - (a.value ?? 0) || b.amount - a.amount);
 
-  const itpRows = itps
-    .map((itp) => ({
-      ...itp,
-      amount: formatUnits(itp.balanceRaw, itp.decimals),
-      value: toUSD(formatUnits(itp.balanceRaw, itp.decimals), itp.usdPrice),
-    }))
-    .filter((r) => filterZero(r.amount))
-    .sort((a, b) => (b.value ?? 0) - (a.value ?? 0) || b.amount - a.amount);
+  const itpRows = useMemo(() => {
+    return itps
+      .map((itp) => {
+        const amount = Number(itp.balanceRaw); // already human units in your code
+        const livePrice = getLiveIndexPrice(itp.symbol); // USDC per ITP
+        const priceToUse = livePrice ?? itp.usdPrice;
+        return { ...itp, amount, value: toUSD(amount, priceToUse) };
+      })
+      .filter((r) => filterZero(r.amount))
+      .sort((a, b) => (b.value ?? 0) - (a.value ?? 0) || b.amount - a.amount);
+  }, [itps, getLiveIndexPrice, filterZero]);
 
   const hasAnyRows = tokenRows.length + itpRows.length > 0;
 
   const sectionHeader = (label: string) => (
     <TableRow>
-      <TableCell colSpan={columns.length} className="bg-white/5 text-[12px] uppercase tracking-wide text-secondary py-2">
+      <TableCell
+        colSpan={columns.length}
+        className="bg-white/5 text-[12px] uppercase tracking-wide text-secondary py-2"
+      >
         {label}
       </TableCell>
     </TableRow>
   );
 
   return (
-    <Card className={cn("bg-foreground border-none rounded-[8px] py-0", className)}>
+    <Card
+      className={cn("bg-foreground border-none rounded-[8px] py-0", className)}
+    >
       <CardContent className="p-0 overflow-x-auto">
         <Table>
           <TableHeader className="bg-foreground">
             <TableRow className="hover:bg-transparent border-[#afafaf1a] h-[44px]">
               {columns.map((c) => (
-                <TableHead key={c.id} className="text-secondary text-[13px] pl-[20px] pr-[48px]">
+                <TableHead
+                  key={c.id}
+                  className="text-secondary text-[13px] pl-[20px] pr-[48px]"
+                >
                   {t?.(`table.${c.id}` as any) ?? c.name}
                 </TableHead>
               ))}
@@ -141,7 +171,10 @@ export default function WalletHoldingsTable({
           <TableBody>
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
-                <TableRow key={`skel-${i}`} className="border-[#afafaf1a] h-[54px]">
+                <TableRow
+                  key={`skel-${i}`}
+                  className="border-[#afafaf1a] h-[54px]"
+                >
                   {columns.map((c) => (
                     <TableCell key={`${c.id}-${i}`} className="pl-[20px] pr-18">
                       <div className="h-4 w-32 rounded animate-pulse bg-white/10" />
@@ -151,34 +184,24 @@ export default function WalletHoldingsTable({
               ))
             ) : errorText ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center py-4 text-muted">
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center py-4 text-muted"
+                >
                   {errorText}
                 </TableCell>
               </TableRow>
             ) : !hasAnyRows ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center py-4 text-muted">
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center py-4 text-muted"
+                >
                   {t?.("common.noEarnPosition") ?? "No holdings found"}
                 </TableCell>
               </TableRow>
             ) : (
               <>
-                {/* TOKENS SECTION */}
-                {tokenRows.length > 0 && sectionHeader("Assets")}
-                {tokenRows.map((tkn, i) => (
-                  <HoldingsRow
-                    key={`tok-${tkn.address}-${i}`}
-                    type="token"
-                    symbol={tkn.symbol}
-                    name={tkn.name}
-                    logoUrl={tkn.logoUrl}
-                    amount={tkn.amount}
-                    value={tkn.value}
-                    contractAddress={tkn.address}
-                    explorerBaseUrl={explorerBaseUrl}
-                  />
-                ))}
-
                 {/* ITPs SECTION */}
                 {itpRows.length > 0 && sectionHeader("ITP Indexes")}
                 {itpRows.map((itp, i) => (
@@ -193,8 +216,28 @@ export default function WalletHoldingsTable({
                     contractAddress={itp.address}
                     explorerBaseUrl={explorerBaseUrl}
                     extra={
-                      itp.sharePct != null ? `${formatNumber(itp.sharePct, { maximumFractionDigits: 2 })}% ${t?.("table.share") ?? "Share"}` : undefined
+                      itp.sharePct != null
+                        ? `${formatNumber(itp.sharePct, {
+                            maximumFractionDigits: 2,
+                          })}% ${t?.("table.share") ?? "Share"}`
+                        : undefined
                     }
+                  />
+                ))}
+
+                {/* TOKENS SECTION */}
+                {tokenRows.length > 0 && sectionHeader("Assets")}
+                {tokenRows.map((tkn, i) => (
+                  <HoldingsRow
+                    key={`tok-${tkn.address}-${i}`}
+                    type="token"
+                    symbol={tkn.symbol}
+                    name={tkn.name}
+                    logoUrl={tkn.logoUrl}
+                    amount={tkn.amount}
+                    value={tkn.value}
+                    contractAddress={tkn.address}
+                    explorerBaseUrl={explorerBaseUrl}
                   />
                 ))}
               </>
@@ -230,7 +273,7 @@ function HoldingsRow({
   const isNative = contractAddress.toLowerCase() === "native";
   const contractUrl = isNative
     ? `${explorerBaseUrl}`
-    : `${explorerBaseUrl}/token/${contractAddress}`;
+    : `${explorerBaseUrl}/address/${contractAddress}`;
 
   return (
     <TableRow className="border-[#afafaf1a] hover:bg-foreground/50 h-[54px] text-[13px]">
@@ -238,29 +281,41 @@ function HoldingsRow({
       <TableCell className="pl-[20px] text-card pr-18">
         <div className="flex items-center gap-2">
           {logoUrl ? (
-            <Image src={logoUrl} alt={`${symbol} logo`} width={18} height={18} className="rounded-full" />
+            <Image
+              src={logoUrl}
+              alt={`${symbol} logo`}
+              width={18}
+              height={18}
+              className="rounded-full"
+            />
+          ) : type === "itp" ? (
+            <IndexMaker className="w-4 h-4 text-muted" />
           ) : (
             <div className="w-[18px] h-[18px] rounded-full bg-white/15" />
           )}
           <div className="flex items-center gap-2">
             <span className="font-medium">{symbol}</span>
             {name ? <span className="text-secondary">{name}</span> : null}
-            {type === "itp" ? (
-              <span className="ml-2 text-[10px] px-1 py-[2px] rounded bg-white/10 uppercase tracking-wide">ITP</span>
-            ) : null}
           </div>
         </div>
       </TableCell>
 
       {/* Balance */}
       <TableCell className="pl-[20px] text-card pr-18">
-        {formatNumber(amount, { maximumFractionDigits: 6 })} {symbol}
+        {formatNumber(amount, {
+          maximumFractionDigits: type === "itp" ? 30 : 6,
+        })}{" "}
+        {symbol}
       </TableCell>
 
       {/* Value */}
       <TableCell className="pl-[20px] text-card pr-18">
         <div className="px-[2px] pt-1 rounded-[4px] bg-accent text-secondary text-[11px] inline-flex items-center">
-          {value == null ? "—" : `$${formatNumber(value, { maximumFractionDigits: 2 })}`}
+          {value == null
+            ? "—"
+            : type === "itp"
+            ? `${formatNumber(value, { maximumFractionDigits: 6 })} USDC`
+            : `$${formatNumber(value, { maximumFractionDigits: 6 })}`}
         </div>
       </TableCell>
 
@@ -269,7 +324,11 @@ function HoldingsRow({
         <div className="flex items-center gap-2">
           <span>{isNative ? "Native" : shortenAddress(contractAddress)}</span>
           <Link href={contractUrl} target="_blank">
-            <RightArrow className="rotate-135 text-secondary" width="11px" height="11px" />
+            <RightArrow
+              className="rotate-135 text-secondary"
+              width="11px"
+              height="11px"
+            />
           </Link>
         </div>
       </TableCell>
