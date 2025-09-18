@@ -710,6 +710,7 @@ export function SupplyPanel({
         onClose={onConfirmTransactionClose}
         transactions={transactions}
         index_address={vaults && vaults[0] && vaults[0].address ? vaults[0].address : ''}
+        symbol={vaults && vaults[0] && vaults[0].ticker ? vaults[0].ticker : 'SY100'}
       />
     </>
   );

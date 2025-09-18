@@ -66,6 +66,7 @@ interface TransactionConfirmModalProps {
   onClose: () => void;
   transactions: TransactionItem[] | null;
   index_address: string;
+  symbol: string;
 }
 
 // ---------- Helpers (mint invoice UI, adapted from your sample) ----------
@@ -214,6 +215,7 @@ export function TransactionConfirmModal({
   onClose,
   transactions,
   index_address,
+  symbol
 }: TransactionConfirmModalProps) {
   // UI flow: review → confirm → processing
   const [step, setStep] = useState<"review" | "confirm">("review");
@@ -367,7 +369,6 @@ export function TransactionConfirmModal({
       setOrderStatus("idle");
 
       const address = wallet.accounts[0].address;
-      const symbol = "SY100";
       const side: "1" | "2" = "1";
 
       const id = await sendNewIndexOrder({
