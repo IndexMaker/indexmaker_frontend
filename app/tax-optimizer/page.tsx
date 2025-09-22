@@ -1935,6 +1935,45 @@ function CalculatorContent() {
               )}
             </>
           )}
+
+          <div className="pt-[16px]">
+            <div className="grid grid-cols-1">
+              <div className="col-span-1">
+                <h4 className="text-[20px] pb-2 pt-3 font-bold text-primary">
+                  LIMITATIONS OF THIS TAX OPTIMIZER
+                </h4>
+
+                <p className="text-[14px] mb-0 pb-4 text-secondary">
+                  The scope of this review was determined in consultation with
+                  the addressee of this document, and it does not purport to
+                  provide a comprehensive assessment of any matter beyond that
+                  scope. This document is provided solely for the use and
+                  benefit of the addressee and may not be relied upon by any
+                  other person, including, without limitation, any current or
+                  prospective investor, lender, or counterparty, for any purpose
+                  whatsoever. No third party is entitled to rely on this
+                  document in connection with any decision, including investment
+                  or transactional decisions.
+                </p>
+                <p className="text-[14px] mb-0 pb-4 text-secondary">
+                  This tax optimizer was not prepared by lawyers or tax advisors
+                  qualified in the United States or any other jurisdiction, and
+                  it must not be construed as, or relied upon as, legal, tax,
+                  investment, accounting, or business advice in those or any
+                  other jurisdictions. It is provided strictly for general
+                  informational and modeling purposes only. IndexMaker Labs
+                  makes no representation or warranty as to the accuracy,
+                  sufficiency, or completeness of the information or
+                  calculations contained herein, assumes no duty to update or
+                  supplement this document after the date hereof, and disclaims
+                  all liability arising from any reliance on this document. No
+                  portion of this document may be reproduced, distributed, or
+                  transmitted in any form without the prior written consent of
+                  IndexMaker Labs.
+                </p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </Dashboard>
