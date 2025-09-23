@@ -9,12 +9,21 @@ interface QuoteContextType {
   disconnect: () => void;
   isConnected: boolean;
   indexPrices: Record<string, string>;
+
   sendMessage: (message: any) => void;
+
   sendNewIndexOrder: (order: any) => Promise<string>;
+  sendCancelIndexOrder: (order: any) => Promise<void>;
+
   sendNewQuoteRequest: (order: any) => void;
   requestQuoteAndWait: (order: any) => Promise<number>;
-  subscribeOrderFill: (id: string, cb: (pct: number) => void) => () => void; // NEW
-  subscribeMintInvoice: (id: string, cb: (invoice: any) => void) => () => void; // NEW
+
+  subscribeOrderFill: (id: string, cb: (pct: number) => void) => () => void;
+  subscribeMintInvoice: (id: string, cb: (invoice: any) => void) => () => void;
+
+  // NEW: listen for NAKs
+  setNakHandler: (cb: (nak: any) => void) => void;
+  setAckHandler: (cb: (nak: any) => void) => void;
 }
 
 const QuoteContext = createContext<QuoteContextType | undefined>(undefined);
@@ -31,6 +40,7 @@ export function QuoteProvider({
   network = 8453,
 }: Props) {
   const storedIndexes = useSelector((state: RootState) => state.index.indices);
+
   const {
     connect,
     disconnect,
@@ -38,10 +48,13 @@ export function QuoteProvider({
     indexPrices,
     sendMessage,
     sendNewIndexOrder,
+    sendCancelIndexOrder,
     sendNewQuoteRequest,
     requestQuoteAndWait,
-    subscribeOrderFill, // NEW
-    subscribeMintInvoice, // NEW
+    subscribeOrderFill,
+    subscribeMintInvoice,
+    setNakHandler, // NEW
+    setAckHandler,
   } = useQuoteSocket(storedIndexes, amount, network);
 
   return (
@@ -53,10 +66,13 @@ export function QuoteProvider({
         indexPrices,
         sendMessage,
         sendNewIndexOrder,
+        sendCancelIndexOrder,
         sendNewQuoteRequest,
         requestQuoteAndWait,
-        subscribeOrderFill, // NEW
-        subscribeMintInvoice, // NEW
+        subscribeOrderFill,
+        subscribeMintInvoice,
+        setNakHandler, // NEW
+        setAckHandler
       }}
     >
       {children}

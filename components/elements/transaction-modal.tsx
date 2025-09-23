@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,7 @@ import {
   Copy,
   Loader2,
   Link as LinkIcon,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import { BrowserProvider, Contract, ethers, parseUnits } from "ethers";
@@ -215,7 +216,7 @@ export function TransactionConfirmModal({
   onClose,
   transactions,
   index_address,
-  symbol
+  symbol,
 }: TransactionConfirmModalProps) {
   // UI flow: review → confirm → processing
   const [step, setStep] = useState<"review" | "confirm">("review");
@@ -253,10 +254,71 @@ export function TransactionConfirmModal({
     sendNewIndexOrder,
     subscribeOrderFill,
     subscribeMintInvoice,
+    sendCancelIndexOrder,
+    setNakHandler,
+    setAckHandler,
   } = useQuoteContext();
 
+  const subscribeNakRef = useRef<null | ((nak: any) => void)>(null);
   const subscribeOrderFillRef = useRef(subscribeOrderFill);
   const subscribeMintInvoiceRef = useRef(subscribeMintInvoice);
+
+  useEffect(() => {
+    const handleNak = (nak: any) => {
+      console.error("[MODAL] NAK:", nak.reason);
+      setOrderStatus("error");
+      toast.error(`Order rejected: ${nak.reason || "Unknown reason"}`);
+    };
+    subscribeNakRef.current = handleNak;
+    setNakHandler(handleNak);
+
+    return () => {
+      setNakHandler(() => {});
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleAck = (ack: any) => {
+      const id = String(ack?.client_order_id ?? "");
+      const current = activeOrderIdRef.current;
+      console.log(ack, current);
+      if (!current || id !== current) return;
+
+      // Try to detect which message got ACKed
+      const s = JSON.stringify(ack).toLowerCase();
+      const ackedNew =
+        ack?.original_msg_type === "NewIndexOrder" ||
+        ack?.acknowledged_msg_type === "NewIndexOrder" ||
+        s.includes("newindexorder");
+
+      const ackedCancel =
+        ack?.original_msg_type === "CancelIndexOrder" ||
+        ack?.acknowledged_msg_type === "CancelIndexOrder" ||
+        s.includes("cancelindexorder");
+
+      if (ackedNew) {
+        // ✅ show that order is created & cancellable immediately after ACK
+        setOrderStatus("done");
+      } else if (ackedCancel) {
+        // ✅ reflect cancellation; disable next steps and clear progress
+        setOrderStatus("idle");
+        setOrderProgressPct(0);
+        // optionally also clear subscriptions to avoid stray updates
+        try {
+          fillUnsubRef.current?.();
+        } catch {}
+        try {
+          invoiceUnsubRef.current?.();
+        } catch {}
+        fillUnsubRef.current = null;
+        invoiceUnsubRef.current = null;
+        activeOrderIdRef.current = null;
+      }
+    };
+
+    setAckHandler(handleAck);
+    return () => setAckHandler(() => {});
+  }, [setAckHandler]);
 
   // keep refs updated when context functions change
   useEffect(() => {
@@ -355,7 +417,7 @@ export function TransactionConfirmModal({
   };
 
   // STEP 1 — Send Index Order (first)
-  const handleSendOrder = async () => {
+  const handleSendOrder = useCallback(async () => {
     try {
       if (!wallet?.accounts?.[0]?.address) {
         await connectWallet();
@@ -370,7 +432,6 @@ export function TransactionConfirmModal({
 
       const address = wallet.accounts[0].address;
       const side: "1" | "2" = "1";
-
       const id = await sendNewIndexOrder({
         address,
         symbol,
@@ -390,22 +451,25 @@ export function TransactionConfirmModal({
         // ignore stale fills from previous orders
         if (activeOrderIdRef.current !== orderId) return;
         setOrderProgressPct(Math.min(Number(pct) || 0, 100));
+
+        setOrderStatus("done");
       });
 
       invoiceUnsubRef.current = subscribeMintInvoice(
         orderId,
         (invoice: any) => {
-          console.log(activeOrderIdRef.current !== orderId)
-          if (activeOrderIdRef.current !== orderId) return; // ignore stale invoice
+          console.log(activeOrderIdRef.current !== orderId);
+          if (activeOrderIdRef.current !== orderId) return;
           console.log("[MODAL] invoice", invoice);
           setMintInvoice(invoice);
           const q = Number(invoice?.filled_quantity);
           if (!Number.isNaN(q)) setMintedQuantity(q);
           setOrderProgressPct(100);
+          setOrderStatus("done");
         }
       );
 
-      setOrderStatus("done");
+      setOrderStatus("idle");
     } catch (e) {
       console.error("Order error:", e);
       setOrderStatus("error");
@@ -413,6 +477,52 @@ export function TransactionConfirmModal({
     } finally {
       setIsProcessing(false);
     }
+  }, [wallet]);
+
+  const handleCancelOrder = async () => {
+    try {
+      if (!clientOrderId) return;
+      // Only allow cancel before on-chain deposit has succeeded
+      if (depositStatus === "done") return;
+
+      const addr = wallet?.accounts?.[0]?.address as `0x${string}` | undefined;
+      if (!addr) {
+        await connectWallet();
+      }
+      const address = (wallet?.accounts?.[0]?.address ||
+        getActiveWalletAccount()) as `0x${string}`;
+      if (!address) {
+        toast.error("Wallet connection required to cancel.");
+        return;
+      }
+
+      await sendCancelIndexOrder({
+        address,
+        symbol,
+        side: "1", // must match NewIndexOrder
+        amount: totalUSDC.toString(), // must match NewIndexOrder
+        client_order_id: clientOrderId,
+      });
+
+      toast.success("Order cancellation sent.");
+    } catch (e) {
+      console.error("Cancel error:", e);
+      toast.error("Failed to send cancellation.");
+    }
+  };
+
+  const handleCancelAndClose = async () => {
+    // Only auto-cancel if the user is in the confirm flow and hasn’t deposited yet,
+    // and we actually created an order.
+    if (
+      step === "confirm" &&
+      orderStatus === "done" &&
+      depositStatus !== "done" &&
+      clientOrderId
+    ) {
+      await handleCancelOrder();
+    }
+    handleClose();
   };
 
   // STEP 2 — Approve & Deposit (second)
@@ -717,7 +827,9 @@ export function TransactionConfirmModal({
             <div className="flex items-start gap-3">
               <div className="mt-1">
                 {orderStatus === "done" ? (
-                  <CheckCircle2 className="text-blue-500 w-5 h-5" />
+                  <>
+                    <CheckCircle2 className="text-blue-500 w-5 h-5" />
+                  </>
                 ) : orderStatus === "error" ? (
                   <XCircle className="text-red-500 w-5 h-5" />
                 ) : (
@@ -728,6 +840,20 @@ export function TransactionConfirmModal({
                 <p className="text-[15px] font-medium text-primary">
                   Send Index Order (create order with {totalUSDC} USDC)
                 </p>
+                {orderStatus === "done" && approvalStatus !== "done" && (
+                  <div className="mt-2 flex gap-2">
+                    <Button
+                      onClick={handleCancelOrder}
+                      size="sm"
+                      variant="outline"
+                      className="border-red-500 text-red-500"
+                      disabled={isProcessing}
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Cancel Order
+                    </Button>
+                  </div>
+                )}
 
                 {orderStatus === "idle" && (
                   <Button
