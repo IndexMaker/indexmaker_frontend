@@ -249,6 +249,7 @@ export default function useQuoteSocket(
     wsOrdersRef.current.onmessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
+        console.log(data)
         if (data.ref_seq_num !== undefined) {
           seqOrderRef.current = data.ref_seq_num + 1;
         }
@@ -263,7 +264,6 @@ export default function useQuoteSocket(
 
         if (data.standard_header?.msg_type === "NewIndexOrder" || data.standard_header?.msg_type === "CancelIndexOrder") {
           onAckCallbackRef.current?.(data);
-          return;
         }
 
         if (data.standard_header?.msg_type === "IndexOrderFill") {
@@ -286,7 +286,6 @@ export default function useQuoteSocket(
               lastFillRef.current[id] = pct;
             }
           }
-          return;
         }
 
         if (data.standard_header?.msg_type === "MintInvoice") {
@@ -306,7 +305,6 @@ export default function useQuoteSocket(
               pendingInvoiceRef.current[id] = data;
             }
           }
-          return;
         }
       } catch (e) {
         console.error("Invalid FIX JSON from ORDERS server:", e);

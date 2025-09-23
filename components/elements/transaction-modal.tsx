@@ -281,7 +281,6 @@ export function TransactionConfirmModal({
     const handleAck = (ack: any) => {
       const id = String(ack?.client_order_id ?? "");
       const current = activeOrderIdRef.current;
-      console.log(ack, current);
       if (!current || id !== current) return;
 
       // Try to detect which message got ACKed
@@ -477,7 +476,7 @@ export function TransactionConfirmModal({
     } finally {
       setIsProcessing(false);
     }
-  }, [wallet]);
+  }, [wallet, totalUSDC]);
 
   const handleCancelOrder = async () => {
     try {
