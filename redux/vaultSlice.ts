@@ -20,20 +20,27 @@ const vaultSlice = createSlice({
   reducers: {
     addSelectedVault(
       state,
-      action: PayloadAction<{ name: string, ticker: string }>
+      action: PayloadAction<{ name: string; ticker: string }>
     ) {
-      // Remove any vault with same vaultId AND amount === 0 or null
-      state.selectedVault = state.selectedVault.filter(
-        (v) =>
-          (v.amount && Number(v.amount) > 0)
-      );
+      const existingVault = state.selectedVault[0]; // Get the current vault
 
-      // Add the new one
-      state.selectedVault.push({
-        name: action.payload.name,
-        ticker: action.payload.ticker,
-        amount: '',
-      });
+      // If we're adding the same vault name, do nothing or update the ticker?
+      if (existingVault && existingVault.name === action.payload.name) {
+        // Option 1: Do nothing (keep existing vault as is)
+        return;
+
+        // Option 2: Update the ticker but keep the amount
+        // existingVault.ticker = action.payload.ticker;
+      } else {
+        // Different vault name - replace the existing one
+        state.selectedVault = [
+          {
+            name: action.payload.name,
+            ticker: action.payload.ticker,
+            amount: existingVault?.amount || "", // Keep amount if you want, or reset to empty
+          },
+        ];
+      }
     },
     removeSelectedVault(state, action: PayloadAction<string>) {
       state.selectedVault = state.selectedVault.filter(
