@@ -428,7 +428,6 @@ export function TransactionConfirmModal({
 
       setIsProcessing(true);
       setOrderStatus("idle");
-
       const address = wallet.accounts[0].address;
       const side: "1" | "2" = "1";
       const id = await sendNewIndexOrder({
@@ -676,7 +675,7 @@ export function TransactionConfirmModal({
   ]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={handleCancelAndClose}>
       <DialogContent
         className="max-w-2xl bg-background border-accent text-primary z-50"
         onInteractOutside={(e: any) => e.preventDefault()}
@@ -839,21 +838,6 @@ export function TransactionConfirmModal({
                 <p className="text-[15px] font-medium text-primary">
                   Send Index Order (create order with {totalUSDC} USDC)
                 </p>
-                {orderStatus === "done" && approvalStatus !== "done" && (
-                  <div className="mt-2 flex gap-2">
-                    <Button
-                      onClick={handleCancelOrder}
-                      size="sm"
-                      variant="outline"
-                      className="border-red-500 text-red-500"
-                      disabled={isProcessing}
-                    >
-                      <X className="w-4 h-4 mr-1" />
-                      Cancel Order
-                    </Button>
-                  </div>
-                )}
-
                 {orderStatus === "idle" && (
                   <Button
                     onClick={handleSendOrder}
@@ -1027,7 +1011,7 @@ export function TransactionConfirmModal({
             )}
 
             {/* Footer actions */}
-            {(depositStatus === "done" || mintInvoice) && (
+            {mintInvoice && (
               <Button onClick={handleClose} className="w-full">
                 Close
               </Button>
