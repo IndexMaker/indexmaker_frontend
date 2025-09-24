@@ -101,7 +101,11 @@ export function InvoiceExplorerDashboard() {
           status: "completed",
         }));
 
-        if (!cancelled) setInvoices(augmented as MintInvoice[]);
+        const sorted = augmented.sort((a, b) => 
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+
+        if (!cancelled) setInvoices(sorted as MintInvoice[]);
       } catch (e) {
         console.error("Failed to load invoices:", e);
       } finally {
@@ -113,7 +117,7 @@ export function InvoiceExplorerDashboard() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [filters.dateFrom?.getTime(), filters.dateTo?.getTime()]); // <-- only react to date changes
+  }, [filters.dateFrom?.getTime(), filters.dateTo?.getTime()]); 
 
   // ---- filtering (unchanged) ----
   const filteredInvoices = useMemo(() => {
