@@ -62,14 +62,14 @@ export class IndexController {
     // await this.etfMainService.processAllPendingRebalances()
 
     // await this.coinGeckoService.storeMissingPricesUntilToday();
-    await this.etfPriceService.getHistoricalDataFromTempRebalances(21);
+    // await this.etfPriceService.getHistoricalDataFromTempRebalances(21);
     // await this.etfPriceService.getHistoricalDataFromTempRebalances(22);
     // await this.etfPriceService.getHistoricalDataFromTempRebalances(23);
     // await this.etfPriceService.getHistoricalDataFromTempRebalances(24);
     // await this.etfPriceService.getHistoricalDataFromTempRebalances(25);
     // await this.etfPriceService.getHistoricalDataFromTempRebalances(27);
 
-    return;
+    // return;
     // SY100: Biweekly from 2022-01-01
     let sy100Start = new Date('2019-01-01');
     const now = new Date();
@@ -148,6 +148,13 @@ export class IndexController {
       'decentralized-finance-defi',
       27,
     );
+
+    await this.etfPriceService.getHistoricalDataFromTempRebalances(21);
+    await this.etfPriceService.getHistoricalDataFromTempRebalances(22);
+    await this.etfPriceService.getHistoricalDataFromTempRebalances(23);
+    await this.etfPriceService.getHistoricalDataFromTempRebalances(24);
+    await this.etfPriceService.getHistoricalDataFromTempRebalances(25);
+    await this.etfPriceService.getHistoricalDataFromTempRebalances(27);
   }
 
   @ApiOperation({ summary: 'Get index data' })
@@ -294,102 +301,99 @@ export class IndexController {
     // // Send CSV data
     // res.send(csvString);
 
-    const rebalanceData = []
-    const processedData = [...rebalanceData]
-      // 1. Filter out Bitget assets
-      .filter((item) => item.listing !== 'bg')
+    // const processedData = [...rebalanceData]
+    //   // 1. Filter out Bitget assets
+    //   .filter((item) => item.listing !== 'bg')
 
-      // 2. Sort by market cap descending
-      .sort((a, b) => b.market_cap - a.market_cap)
+    //   // 2. Sort by market cap descending
+    //   .sort((a, b) => b.market_cap - a.market_cap)
 
-      // 3. Add Bitget total weight to bi.BTCUSDC
-      .map((item, _, array) => {
-        const bitgetWeightSum = rebalanceData
-          .filter((e) => e.listing === 'bg')
-          .reduce((sum, e) => sum + parseFloat(e.weights), 0);
+    //   // 3. Add Bitget total weight to bi.BTCUSDC
+    //   .map((item, _, array) => {
+    //     const bitgetWeightSum = rebalanceData
+    //       .filter((e) => e.listing === 'bg')
+    //       .reduce((sum, e) => sum + parseFloat(e.weights), 0);
 
-        if (item.ticker === 'BTCUSDC' && item.listing === 'bi') {
-          return {
-            ...item,
-            weights: (parseFloat(item.weights) + bitgetWeightSum).toFixed(2),
-          };
-        }
-        return item;
-      })
+    //     if (item.ticker === 'BTCUSDC' && item.listing === 'bi') {
+    //       return {
+    //         ...item,
+    //         weights: (parseFloat(item.weights) + bitgetWeightSum).toFixed(2),
+    //       };
+    //     }
+    //     return item;
+    //   })
 
-      // 4. Sort again by market cap (after BTC update)
-      .sort((a, b) => b.market_cap - a.market_cap)
+    //   // 4. Sort again by market cap (after BTC update)
+    //   .sort((a, b) => b.market_cap - a.market_cap)
 
-      // 5. Final structure
-      .map((item, index) => ({
-        id: index + 1,
-        pair: item.pair.endsWith('USDT')
-          ? item.pair.replace('USDT', 'USDC')
-          : item.pair,
-        listing: 'Binance',
-        assetname: item.assetname,
-        sector: item.sector,
-        market_cap: item.market_cap,
-        weights: item.weights,
-        quantity: item.quantity,
-      }));
-    res.send(processedData);
+    //   // 5. Final structure
+    //   .map((item, index) => ({
+    //     id: index + 1,
+    //     pair: item.pair,
+    //     listing: 'Binance',
+    //     assetname: item.assetname,
+    //     sector: item.sector,
+    //     market_cap: item.market_cap,
+    //     weights: item.weights,
+    //     quantity: item.quantity,
+    //   }));
+    // res.send(processedData);
 
     // return processedData;
 
-    // const rebalanceData =
-    //   await this.etfPriceService.getTempRebalancedData(indexId);
+    const rebalanceData =
+      await this.etfPriceService.getTempRebalancedData(indexId);
 
-    // // Prepare CSV headers
-    // const headers = [
-    //   'Index',
-    //   'IndexId',
-    //   'Rebalance Date',
-    //   'Index Price',
-    //   'Weights',
-    //   // 'QUantities',
-    //   'Asset Prices',
-    // ];
+    // Prepare CSV headers
+    const headers = [
+      'Index',
+      'IndexId',
+      'Rebalance Date',
+      'Index Price',
+      'Weights',
+      // 'QUantities',
+      'Asset Prices',
+    ];
 
-    // // Convert data to CSV rows
-    // const csvRows: any[] = [];
+    // Convert data to CSV rows
+    const csvRows: any[] = [];
 
-    // // Add header row
-    // csvRows.push(headers.join(','));
+    // Add header row
+    csvRows.push(headers.join(','));
 
-    // // Add data rows
-    // rebalanceData.forEach((event) => {
-    //   const date = event.date;
-    //   const weightsString = JSON.stringify(event.weights)
-    //     .replace(/"/g, '')
-    //     .replace(/\\/g, '');
-    //   const pricesString = JSON.stringify(event.assetPrices)
-    //     .replace(/"/g, '')
-    //     .replace(/\\/g, '');
-    //   const row = [
-    //     event.index,
-    //     event.indexId,
-    //     date,
-    //     event.indexPrice,
-    //     `"${weightsString}"`,
-    //     // `"${quantitiesString}"`,
-    //     `"${pricesString}"`,
-    //   ];
+    // Add data rows
+    rebalanceData.forEach((event) => {
+      const date = event.date;
+      const weightsString = JSON.stringify(event.weights)
+        .replace(/"/g, '')
+        .replace(/\\/g, '');
+      const pricesString = JSON.stringify(event.assetPrices)
+        .replace(/"/g, '')
+        .replace(/\\/g, '');
+      const row = [
+        event.index,
+        event.indexId,
+        date,
+        event.indexPrice,
+        `"${weightsString}"`,
+        // `"${quantitiesString}"`,
+        `"${pricesString}"`,
+      ];
 
-    //   csvRows.push(row.join(','));
-    // });
+      csvRows.push(row.join(','));
+    });
 
-    // // Create CSV string
-    // const csvString = csvRows.join('\n');
+    // Create CSV string
+    const csvString = csvRows.join('\n');
 
-    // res.setHeader('Content-Type', 'text/csv');
-    // res.setHeader(
-    //   'Content-Disposition',
-    //   `attachment; filename="rebalance_data_${indexId}.csv"`,
-    // );
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="rebalance_data_${indexId}.csv"`,
+    );
 
-    // // Send CSV data
-    // res.send(csvString);
+    // Send CSV data
+    res.send(csvString);
   }
 
   @Get('/downloadDailyPriceData/:indexId')
@@ -482,6 +486,11 @@ export class IndexController {
   async fetchIndexLists() {
     const lists = await this.etfPriceService.getIndexList();
     return lists;
+  }
+
+  @Get('/syncMintInvoices')
+  async syncMintInvoices() {
+    await this.etfPriceService.syncMintInvoices();
   }
 
   @Post('deposit_transaction')
