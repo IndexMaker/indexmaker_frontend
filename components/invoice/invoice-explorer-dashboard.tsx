@@ -10,7 +10,11 @@ import { AssetTable } from "./asset-table";
 import { StatsOverview } from "./stats-overview";
 import { AdvancedSearch, type SearchFilters } from "./advanced-search";
 import { Asset, MintInvoice } from "@/types";
-import { fetchAssets, fetchInventory, fetchMintInvoices } from "@/server/invoice";
+import {
+  fetchAssets,
+  fetchInventory,
+  fetchMintInvoices,
+} from "@/server/invoice";
 import { useDispatch, useSelector } from "react-redux";
 import { setAssets } from "@/redux/assetSlice";
 import { RootState } from "@/redux/store";
@@ -101,10 +105,10 @@ export function InvoiceExplorerDashboard() {
           status: "completed",
         }));
 
-        const sorted = augmented.sort((a, b) => 
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        const sorted = augmented.sort(
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
-
         if (!cancelled) setInvoices(sorted as MintInvoice[]);
       } catch (e) {
         console.error("Failed to load invoices:", e);
@@ -117,29 +121,19 @@ export function InvoiceExplorerDashboard() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [filters.dateFrom?.getTime(), filters.dateTo?.getTime()]); 
+  }, [filters.dateFrom?.getTime(), filters.dateTo?.getTime()]);
 
-  // ---- filtering (unchanged) ----
   const filteredInvoices = useMemo(() => {
     return invoices.filter((invoice) => {
-      const matchesQuery =
-        !filters.query ||
-        invoice.symbol.toLowerCase().includes(filters.query.toLowerCase()) ||
-        invoice.address.toLowerCase().includes(filters.query.toLowerCase()) ||
-        invoice.client_order_id
-          .toLowerCase()
-          .includes(filters.query.toLowerCase()) ||
-        invoice.payment_id.toLowerCase().includes(filters.query.toLowerCase());
+      const matchesQuery = !filters.query; 
 
-      const matchesStatus =
-        !filters.status ||
-        filters.status === "all" ||
-        invoice.status === filters.status;
+      const matchesStatus = !filters.status || filters.status === "all";
 
-      const matchesSymbol =
-        filters.symbol === "all" || invoice.symbol === filters.symbol;
+      const matchesSymbol = filters.symbol === "all";
 
+      // Handle missing/undefined values
       const matchesAmount = (() => {
+        if (invoice.assets_value == null) return false; 
         const minAmount = filters.minAmount
           ? Number.parseFloat(filters.minAmount)
           : 0;
@@ -152,17 +146,21 @@ export function InvoiceExplorerDashboard() {
       })();
 
       const matchesFillRate = (() => {
+        if (invoice.fill_rate == null) return false; 
         const minRate = filters.fillRateMin
           ? Number.parseFloat(filters.fillRateMin) / 100
           : 0;
         const maxRate = filters.fillRateMax
           ? Number.parseFloat(filters.fillRateMax) / 100
-          : 1;
+          : 100;
         return invoice.fill_rate >= minRate && invoice.fill_rate <= maxRate;
       })();
 
       const matchesDate = (() => {
+        if (!invoice.timestamp) return false; 
         const invoiceDate = new Date(invoice.timestamp);
+        if (isNaN(invoiceDate.getTime())) return false; 
+
         const fromDate = filters.dateFrom;
         const toDate = filters.dateTo;
         if (fromDate && invoiceDate < fromDate) return false;
@@ -170,14 +168,15 @@ export function InvoiceExplorerDashboard() {
         return true;
       })();
 
-      return (
+      const result =
         matchesQuery &&
         matchesStatus &&
         matchesSymbol &&
         matchesAmount &&
         matchesFillRate &&
-        matchesDate
-      );
+        matchesDate;
+
+      return result;
     });
   }, [invoices, filters]);
 
@@ -303,7 +302,9 @@ export function InvoiceExplorerDashboard() {
 
         <TabsContent value="assets" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-[20px] text-primary">Supply to Expected Inventory</h2>
+            <h2 className="text-[20px] text-primary">
+              Supply to Expected Inventory
+            </h2>
             <Badge variant="outline" className="text-secondary">
               {filteredAssets.length} assets
             </Badge>
