@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { ethers } from "ethers";
 import { useWallet } from "@/contexts/wallet-context"; // your WalletProvider above
-import WalletHoldingsTable from "./wallet-assets";
+import WalletHoldingsTable, { ITPBalance } from "./wallet-assets";
+import { fetchDepositTransactionData } from "@/server/indices";
+import { SupplyPosition } from "@/lib/data";
 
 /**
  * Minimal ERC20 ABI for balance/decimals/symbol/name
@@ -31,8 +33,6 @@ export interface ConnectedWalletBalancesProps {
   /** Explorer base URL (default BaseScan). */
   explorerBaseUrl?: string;
   className?: string;
-
-  itpBalances: any;
 }
 
 export default function ConnectedWalletBalances({
@@ -40,12 +40,13 @@ export default function ConnectedWalletBalances({
   logos = {},
   prices = {},
   hideZeroBalances = true,
-  pollInterval = 300_000,
+  pollInterval = 30_000,
   explorerBaseUrl = "https://basescan.org",
   className,
-  itpBalances
 }: ConnectedWalletBalancesProps) {
   const { wallet, address, isConnected } = useWallet();
+  const [supplyPositions, setSupplyPositions] = useState<any[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const [balances, setBalances] = useState<
@@ -67,11 +68,45 @@ export default function ConnectedWalletBalances({
     [tokenAddresses]
   );
 
+  useEffect(() => {
+    if (wallet?.accounts) {
+      let intervalId: NodeJS.Timeout;
+      setSupplyPositions([])
+      const _fetchDepositTransaction = async (_indexId: number) => {
+        try {
+          const response = await fetchDepositTransactionData(
+            -1,
+            wallet.accounts[0]?.address
+          );
+          const data = response;
+          setSupplyPositions(data);
+        } catch (error) {
+          console.error("Error deposit transaction data:", error);
+        } finally {
+        }
+      };
+
+      // Fetch immediately
+      _fetchDepositTransaction(-1);
+
+      // Set up interval to fetch every 10 seconds
+      intervalId = setInterval(() => {
+        _fetchDepositTransaction(-1);
+      }, 10000);
+
+      // Cleanup function to clear interval when component unmounts or dependencies change
+      return () => {
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+      };
+    }
+  }, [wallet]);
+
   const fetchBalances = useCallback(async () => {
     if (!provider || !address) return;
 
     setLoading(true);
-    setError(undefined);
     try {
       const results: Array<{
         address: string;
@@ -138,15 +173,15 @@ export default function ConnectedWalletBalances({
   // initial + polling
   useEffect(() => {
     fetchBalances();
-    // if (!isConnected || !provider || !address) return;
-    // const id = setInterval(fetchBalances, pollInterval);
-    // return () => clearInterval(id);
+    if (!isConnected || !provider || !address) return;
+    const id = setInterval(fetchBalances, pollInterval);
+    return () => clearInterval(id);
   }, []);
 
   return (
     <WalletHoldingsTable
       tokens={balances}
-      itps={itpBalances}
+      itps={supplyPositions}
       hideZeroBalances={true}
       explorerBaseUrl="https://basescan.org"
     />

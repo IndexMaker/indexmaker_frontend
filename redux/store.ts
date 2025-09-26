@@ -5,6 +5,7 @@ import networkReducer from './networkSlice';
 import vaultReducer from "./vaultSlice";
 import walletReducer from "./walletSlice";
 import assetReducer from "./assetSlice";
+import mintInvoiceReducer from "./mintInvoicesSlice";
 
 export const store = configureStore({
   reducer: {
@@ -13,7 +14,8 @@ export const store = configureStore({
     vault: vaultReducer,
     index: indexReducer,
     calculator: calculatorReducer,
-    assets: assetReducer
+    assets: assetReducer,
+    mintInvoices: mintInvoiceReducer,
   },
 });
 

@@ -17,7 +17,7 @@ import {
 } from "@radix-ui/react-popover";
 import { Copy, X } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import { selectLatestMintInvoice } from "@/redux/mintInvoicesSlice";
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useMediaQuery } from "react-responsive";
@@ -29,6 +29,7 @@ import NavigationAlert from "../icons/navigation-alert";
 import AnimatedPrice from "./animate-price";
 import CustomTooltip from "./custom-tooltip";
 import { TransactionConfirmModal } from "./transaction-modal";
+import { format } from "date-fns";
 
 interface SupplyPanelProps {
   vaultIds: VaultInfo[];
@@ -61,6 +62,7 @@ export function SupplyPanel({
   open,
   setOpen,
 }: SupplyPanelProps) {
+  const pollInterval = 30_000;
   const { wallet, isWhitelisted, connectWallet } = useWallet();
   const { indexPrices } = useQuoteContext();
   const [quantity, setQuantity] = useState<{ [key: string]: number }>({});
@@ -116,19 +118,6 @@ export function SupplyPanel({
     return () => window.removeEventListener("resize", handleResize);
   }, [setOpen]);
 
-  // const handleMaxClick = () => {
-  //   // In a real app, this would set the max available balance
-  //   setAmount("1000.00");
-  // };
-
-  // const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   // Only allow numbers and decimals
-  //   const value = e.target.value;
-  //   if (/^[0-9]*\.?[0-9]*$/.test(value)) {
-  //     setAmount(value);
-  //   }
-  // };
-
   useEffect(() => {
     const fetchBalances = async () => {
       if (!wallet || !currentChainId || !TOKEN_METADATA[currentChainId]) {
@@ -136,12 +125,12 @@ export function SupplyPanel({
         return;
       }
 
-      setLoading(true);
       try {
         const client = getViemClient(currentChainId);
         const address = wallet.accounts[0].address as `0x${string}`;
         const newBalances: { [key: string]: number } = {};
         const tokens = TOKEN_METADATA[currentChainId];
+
         for (const [token, meta] of Object.entries(tokens)) {
           if (meta.type === "native") {
             const balanceWei = await client.getBalance({ address });
@@ -158,31 +147,35 @@ export function SupplyPanel({
                 formatUnits(balanceRaw as bigint, meta.decimals)
               );
             } catch (contractError) {
-              console.error(
-                `Failed to fetch balance for ${token}:`,
-                contractError
-              );
-              newBalances[token] = 0; // Set to 0 if contract call fails
+              newBalances[token] = 0;
             }
           }
         }
 
-        console.log("Fetched balances:", newBalances);
         setBalances(newBalances);
       } catch (error) {
-        console.error("Failed to fetch balances:", error);
         setBalances({});
       } finally {
-        setLoading(false);
       }
     };
 
+    // run immediately
     fetchBalances();
-  }, [wallet, currentChainId]);
+
+    if (!wallet || !currentChainId) return;
+
+    const id = setInterval(fetchBalances, pollInterval); // <- same pattern as your top code
+    return () => clearInterval(id);
+  }, [wallet, currentChainId, pollInterval]);
 
   const handleSupply = () => {
     // In a real app, this would handle the supply transaction
     setConfrimModalOpen(true);
+  };
+
+  const viewFullInvoice = (chain_id: string, address: string, client_order_id: string) => {
+    const invoiceUrl = `/invoices/${chain_id}/${address}/${client_order_id}`;
+    window.open(invoiceUrl, "_blank", "noopener,noreferrer");
   };
 
   const setMaxAmount = (vaultId: string) => {
@@ -256,7 +249,7 @@ export function SupplyPanel({
       )}
       <div
         className={cn(
-          "border-l border-accent bg-foreground overflow-hidden lg:relative fixed lg:border-none top-0 bottom-0 right-0 w-[300px] lg:w-[400px]",
+          "border-l border-accent bg-foreground overflow-hidden lg:relative fixed lg:border-none top-0 bottom-0 right-0 w-[350px] lg:w-[400px]",
           open ? "translate-x-0" : "translate-x-full lg:translate-x-0"
         )}
       >
@@ -283,7 +276,7 @@ export function SupplyPanel({
                         <h2 className="font-normal text-[15px] text-secondary">
                           {vault.name}
                         </h2>
-                        <div className="flex items-center gap-2 text-sm text-secondary">
+                        <div className="flex lg:flex-row flex-col lg:items-center items-start gap-2 text-sm text-secondary">
                           <span className="text-[11px] bg-accent px-2 py-0.5 rounded">
                             {shortenAddress(vault.curator)}
                           </span>
@@ -389,57 +382,6 @@ export function SupplyPanel({
                             >
                               {t("common.max")}
                             </Button>
-                            {/* <Popover
-                              open={maxpopoverOpen}
-                              onOpenChange={setMaxPopoverOpen}
-                            >
-                              <PopoverTrigger asChild>
-                                <Button
-                                  type="button"
-                                  className="px-[8px] py-[5px] h-[26px] text-[12px] rounded-[4px] bg-accent text-primary hover:bg-muted cursor-pointer"
-                                >
-                                  {t("common.max")}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                className="w-[320px] p-0 bg-ring text-card rounded-md flex flex-col gap-4 shadow-[0px_1px_20px_0px_rgba(0,0,0,0.04),0px_12px_16px_0px_rgba(6,9,11,0.05),0px_6px_12px_0px_rgba(0,0,0,0.07)] z-100 backdrop-blur-xl"
-                                align="center"
-                                sideOffset={10}
-                              >
-                                <div className="flex flex-col ">
-                                  <div className="px-[12px] py-[17px] flex flex-row gap-2 border-b-1 border-accent">
-                                    <Info className="w-4 h-4" />
-                                    <p className="text-[13px] font-normal text-secondary text-center ">
-                                      {t("common.maxSupplyConfirmation")}
-                                    </p>
-                                  </div>
-                                  <div className="flex justify-end flex-col items-end gap-2 px-[12px] py-[16px]">
-                                    <Button
-                                      variant="ghost"
-                                      className="text-[13px] px-[8px] py-[5px] bg-[#2470FF] !hover:bg-[#2470FF90] cursor-pointer h-[32px] rounded-[4px] w-full"
-                                      onClick={() => setMaxAmount(vault.name)}
-                                    >
-                                      {t("common.iUnderstand")}
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      className="text-[13px] px-[8px] py-[5px] bg-accent cursor-pointer h-[32px] rounded-[4px] w-full"
-                                      onClick={() => {
-                                        dispatch(
-                                          updateVaultAmount({
-                                            name: vault.name,
-                                            amount: 0,
-                                          })
-                                        );
-                                        setMaxPopoverOpen(false);
-                                      }}
-                                    >
-                                      {t("common.undoMaxSupply")}
-                                    </Button>
-                                  </div>
-                                </div>
-                              </PopoverContent>
-                            </Popover> */}
                           </div>
                         </div>
                       </div>
@@ -472,57 +414,6 @@ export function SupplyPanel({
                             {vault.performance?.oneYearReturn.toFixed(2) || "0"}{" "}
                             %
                           </span>
-                          {/* {Number(vault.performance?.oneYearReturn) > 5 && (
-                            <CustomTooltip
-                              key={"instantApy"}
-                              content={
-                                <div className="flex flex-col gap-1 min-w-[220px] bg-accent rounded-[8px]">
-                                  <div className="flex justify-between border-b py-1 px-3 border-accent">
-                                    <span className="text-sm">
-                                      Rate & Rewards
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between border-b py-1 px-3 border-accent">
-                                    <div className="flex items-center gap-1">
-                                      <BarChart2 className="h-4 w-4" />
-                                      <span>Rate</span>
-                                    </div>
-                                    <span>+5.25%</span>
-                                  </div>
-                                  <div className="flex justify-between border-b py-1 px-3 border-accent">
-                                    <div className="flex items-center gap-1">
-                                      <Image
-                                        src={USDC}
-                                        alt={"USDC"}
-                                        width={14}
-                                        height={14}
-                                      />
-                                      <span className="text-xs">
-                                        IndexMaker
-                                      </span>
-                                      <Copy className="w-[15px] h-[15px] cursor-pointer" />
-                                    </div>
-                                    <span className="font-bold">+1.16%</span>
-                                  </div>
-                                  <div className="flex justify-between border-b py-1 px-3 border-accent">
-                                    <div className="flex items-center">
-                                      <InstantAPY className="w-[17px] h-[17px]" />
-                                      <span className="text-[#2470FFe6]">
-                                        IndexMaker
-                                      </span>
-                                    </div>
-                                    <span className="font-bold text-[#2470FFe6]">
-                                      = 6.41%
-                                    </span>
-                                  </div>
-                                </div>
-                              }
-                            >
-                              <span className="text-[11px] text-blue-400">
-                                <InstantAPY className="w-[15px] h-[15px] hover:transition-all cursor-pointer" />
-                              </span>
-                            </CustomTooltip>
-                          )} */}
                         </div>
                       </div>
 
@@ -569,9 +460,6 @@ export function SupplyPanel({
                                   }
                                 >
                                   <div className="flex items-center gap-1 hover:px-1 hover:transition-all">
-                                    {/* <span className="hover:px-1 hover:transition-all text-primary text-[12px] cursor-pointer">
-                                    {collateral.name}
-                                  </span> */}
                                     <Image
                                       src={collateral.logo ?? USDC}
                                       alt={collateral.name}
@@ -614,6 +502,79 @@ export function SupplyPanel({
                 </div>
               );
             })}
+          </div>
+
+          <div className="flex flex-col p-4 border-t border-accent">
+            <h3 className="text-[14px] text-primary font-semibold mb-2">
+              Recent Mint Invoice
+            </h3>
+
+            {(() => {
+              const latest = useSelector(selectLatestMintInvoice);
+              if (!latest) {
+                return (
+                  <p className="text-[13px] text-secondary">
+                    There is no recent Mint Invoice for your connected wallet!
+                  </p>
+                );
+              }
+
+              return (
+                <div className="p-3 rounded-lg bg-accent border border-accent flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] text-secondary">
+                      {format(new Date(latest.timestamp), "MMM d, yyyy HH:mm")}
+                    </span>
+                    <span className="text-[12px] px-2 py-0.5 rounded bg-green-500/20 text-green-500">
+                      {latest.status}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Image
+                      src={USDC}
+                      alt="USDC"
+                      width={20}
+                      height={20}
+                      className="rounded-full"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-[14px] text-primary font-medium">
+                        {latest.filled_quantity.toLocaleString()}{" "}
+                        {latest.symbol}
+                      </span>
+                      <span className="text-[14px] text-primary font-medium">
+                        {latest.amount_paid.toLocaleString()} USDC
+                      </span>
+                      <span className="text-[12px] text-secondary">
+                        Invoice #{latest.payment_id}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="h-1 bg-background rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 transition-all"
+                      style={{ width: "100%" }} // since latest is completed
+                    />
+                  </div>
+                  <div className="w-full">
+                    <div
+                      className="text-[11px] text-secondary underline text-right float-right cursor-pointer"
+                      onClick={() =>
+                        viewFullInvoice(
+                          latest.chain_id,
+                          latest.address,
+                          latest.client_order_id
+                        )
+                      }
+                    >
+                      View full invoice data...
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
           {/* Footer */}
           {!wallet ? (
@@ -709,8 +670,12 @@ export function SupplyPanel({
         isOpen={confirmModalOpen}
         onClose={onConfirmTransactionClose}
         transactions={transactions}
-        index_address={vaults && vaults[0] && vaults[0].address ? vaults[0].address : ''}
-        symbol={vaults && vaults[0] && vaults[0].ticker ? vaults[0].ticker : 'SY100'}
+        index_address={
+          vaults && vaults[0] && vaults[0].address ? vaults[0].address : ""
+        }
+        symbol={
+          vaults && vaults[0] && vaults[0].ticker ? vaults[0].ticker : "SY100"
+        }
       />
     </>
   );

@@ -76,8 +76,8 @@ export function VaultActivity({
         return (
           <div className="flex items-center gap-2">
             <div>{shortenAddress(activity.hash)}</div>
-            <Link
-              href={`https://basescan.org/tx/${activity.hash}`}
+            <a
+              // href={`https://basescan.org/tx/${activity.hash}`}
               target="_blank"
             >
               <RightArrow
@@ -85,7 +85,7 @@ export function VaultActivity({
                 width="13px"
                 height="13px"
               />
-            </Link>
+            </a>
           </div>
         );
       case "transactionType":
