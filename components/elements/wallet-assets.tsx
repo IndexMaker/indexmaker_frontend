@@ -43,6 +43,7 @@ export interface ITPBalance {
   decimals: number;
   // Optional USD price per ITP token
   usdPrice?: number;
+  quantity?: string;
   // Optional: total share (%) the user owns of the ITP supply
   sharePct?: number;
 }
@@ -128,7 +129,7 @@ export default function WalletHoldingsTable({
   const itpRows = useMemo(() => {
     return itps
       .map((itp) => {
-        const amount = Number(itp.balanceRaw); // already human units in your code
+        const amount = Number(itp.quantity); // already human units in your code
         const livePrice = getLiveIndexPrice(itp.symbol); // USDC per ITP
         const priceToUse = livePrice ?? itp.usdPrice;
         return { ...itp, amount, value: toUSD(amount, priceToUse) };

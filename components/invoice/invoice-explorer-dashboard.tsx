@@ -18,6 +18,14 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { setAssets } from "@/redux/assetSlice";
 import { RootState } from "@/redux/store";
+import {
+  selectMintInvoices,
+  selectMintInvoicesLoading,
+  setError,
+  setInvoices,
+  setLoading,
+} from "@/redux/mintInvoicesSlice";
+import { useWallet } from "@/contexts/wallet-context";
 const now = new Date();
 
 // Default “from”: Jan 1, 2025 @ 00:00:00 UTC
@@ -36,13 +44,12 @@ const DEFAULT_TO = new Date(
   )
 );
 export function InvoiceExplorerDashboard() {
-  const [invoices, setInvoices] = useState<MintInvoice[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(true);
   const [loadingInvoices, setLoadingInvoices] = useState(true);
   const [activeTab, setActiveTab] = useState("invoices");
   const dispatch = useDispatch();
   const { assets } = useSelector((state: RootState) => state.assets);
-
+  const { wallet } = useWallet();
   const [filters, setFilters] = useState<SearchFilters>({
     query: "",
     status: "all",
@@ -56,64 +63,104 @@ export function InvoiceExplorerDashboard() {
   });
 
   useEffect(() => {
-    const loadAssets = async () => {
+    const loadInventory = async () => {
       try {
-        if (assets.length === 0) {
-          const [assetsData, inventory] = await Promise.all([
-            fetchAssets(),
-            fetchInventory(),
-          ]);
-          const invMap: Record<string, number> = Object.fromEntries(
-            Object.entries(inventory?.positions ?? {}).map(([key, val]) => {
-              const sym = val?.inventory_position?.symbol ?? key;
-              const raw = val?.actual_balance ?? 0;
-              const num = typeof raw === "string" ? parseFloat(raw) : raw;
-              return [sym, Number.isFinite(num) ? num : 0];
-            })
-          );
-          const filtered = assetsData
-            .filter((a) => invMap[a.symbol] != null)
-            .map((a) => ({ ...a, expected_inventory: invMap[a.symbol] }));
-          dispatch(setAssets(filtered));
+        const inventory = await fetchInventory();
+
+        if (!inventory?.positions) {
+          dispatch(setAssets([]));
+          return;
         }
+
+        // 1) Fetch Binance USDC pair prices
+        const priceRes = await fetch(
+          "https://api.binance.com/api/v3/ticker/price"
+        );
+        const priceData: { symbol: string; price: string }[] =
+          await priceRes.json();
+
+        // Build a lookup map, e.g. { BTC: 62345.12, ETH: 2950.55 }
+        const priceMap: Record<string, number> = {};
+        priceData.forEach((p) => {
+          if (p.symbol.endsWith("USDC")) {
+            const sym = p.symbol.replace("USDC", "");
+            priceMap[sym] = parseFloat(p.price);
+          }
+        });
+
+        // 2) Map inventory → Asset[]
+        const mapped: Asset[] = Object.entries(inventory.positions)
+          .flatMap(([key, val]: [string, any]) => {
+            const inv = val?.inventory_position;
+            if (!inv) return [];
+
+            const balanceRaw = val.actual_balance ?? 0;
+            const expected_inventory = parseFloat(
+              typeof balanceRaw === "string" ? balanceRaw : String(balanceRaw)
+            );
+
+            return [
+              {
+                id: key,
+                symbol: inv.symbol,
+                name: inv.symbol,
+                price_usd: priceMap[inv.symbol] ?? 0, // from Binance price
+                expected_inventory: Number.isFinite(expected_inventory)
+                  ? expected_inventory
+                  : 0,
+                created_at: inv.created_timestamp,
+                last_updated:
+                  inv.last_update_timestamp || inv.created_timestamp,
+              } as Asset,
+            ];
+          })
+          .sort((a, b) => a.symbol.localeCompare(b.symbol));
+        dispatch(setAssets(mapped));
       } catch (e) {
-        console.error("Failed to load assets/inventory:", e);
+        console.error("Failed to load inventory:", e);
       } finally {
         setLoadingAssets(false);
       }
     };
-    loadAssets();
-  }, [dispatch, assets.length]);
 
+    loadInventory();
+  }, [dispatch]);
+
+  const invoices = useSelector(selectMintInvoices);
+  const loading = useSelector(selectMintInvoicesLoading);
   // 2) Load invoices ONLY when dateFrom/dateTo change
   useEffect(() => {
     let cancelled = false;
-    // guard: both dates must exist
     const from = filters.dateFrom ?? DEFAULT_FROM;
     const to = filters.dateTo ?? DEFAULT_TO;
 
-    setLoadingInvoices(true);
+    dispatch(setLoading(true));
 
-    // small debounce so changing both dates triggers one call
     const t = setTimeout(async () => {
       try {
         const invoicesData = await fetchMintInvoices(from, to);
 
-        // mock augmentation you already had:
-        const augmented = invoicesData.map((inv) => ({
+        // 1) optional filter by address
+        let filtered = invoicesData;
+
+        // 2) augment with status
+        const augmented = filtered.map((inv) => ({
           ...inv,
-          status: "completed",
+          status: "completed" as const,
         }));
 
+        // 3) sort descending
         const sorted = augmented.sort(
           (a, b) =>
             new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
-        if (!cancelled) setInvoices(sorted as MintInvoice[]);
-      } catch (e) {
-        console.error("Failed to load invoices:", e);
-      } finally {
-        if (!cancelled) setLoadingInvoices(false);
+
+        if (!cancelled) {
+          dispatch(setInvoices(sorted as MintInvoice[]));
+        }
+      } catch (err: any) {
+        if (!cancelled)
+          dispatch(setError(err.message ?? "Failed to load invoices"));
       }
     }, 150);
 
@@ -121,11 +168,16 @@ export function InvoiceExplorerDashboard() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [filters.dateFrom?.getTime(), filters.dateTo?.getTime()]);
+  }, [
+    filters.dateFrom?.getTime(),
+    filters.dateTo?.getTime(),
+    wallet,
+    dispatch,
+  ]);
 
   const filteredInvoices = useMemo(() => {
     return invoices.filter((invoice) => {
-      const matchesQuery = !filters.query; 
+      const matchesQuery = !filters.query;
 
       const matchesStatus = !filters.status || filters.status === "all";
 
@@ -133,7 +185,7 @@ export function InvoiceExplorerDashboard() {
 
       // Handle missing/undefined values
       const matchesAmount = (() => {
-        if (invoice.assets_value == null) return false; 
+        if (invoice.assets_value == null) return false;
         const minAmount = filters.minAmount
           ? Number.parseFloat(filters.minAmount)
           : 0;
@@ -146,7 +198,7 @@ export function InvoiceExplorerDashboard() {
       })();
 
       const matchesFillRate = (() => {
-        if (invoice.fill_rate == null) return false; 
+        if (invoice.fill_rate == null) return false;
         const minRate = filters.fillRateMin
           ? Number.parseFloat(filters.fillRateMin) / 100
           : 0;
@@ -157,9 +209,9 @@ export function InvoiceExplorerDashboard() {
       })();
 
       const matchesDate = (() => {
-        if (!invoice.timestamp) return false; 
+        if (!invoice.timestamp) return false;
         const invoiceDate = new Date(invoice.timestamp);
-        if (isNaN(invoiceDate.getTime())) return false; 
+        if (isNaN(invoiceDate.getTime())) return false;
 
         const fromDate = filters.dateFrom;
         const toDate = filters.dateTo;

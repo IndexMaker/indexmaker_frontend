@@ -173,7 +173,11 @@ export function SupplyPanel({
     setConfrimModalOpen(true);
   };
 
-  const viewFullInvoice = (chain_id: string, address: string, client_order_id: string) => {
+  const viewFullInvoice = (
+    chain_id: string,
+    address: string,
+    client_order_id: string
+  ) => {
     const invoiceUrl = `/invoices/${chain_id}/${address}/${client_order_id}`;
     window.open(invoiceUrl, "_blank", "noopener,noreferrer");
   };
@@ -506,61 +510,57 @@ export function SupplyPanel({
 
           <div className="flex flex-col p-4 border-t border-accent">
             <h3 className="text-[14px] text-primary font-semibold mb-2">
-              Recent Mint Invoice
+              Previous Mint Invoices
             </h3>
 
             {(() => {
               const latest = useSelector(selectLatestMintInvoice);
               if (!latest) {
                 return (
-                  <p className="text-[13px] text-secondary">
-                    There is no recent Mint Invoice for your connected wallet!
+                  <p className="text-[13px] pt-4 text-secondary">
+                    There is no previous Mint Invoice for your connected wallet!
                   </p>
                 );
               }
 
               return (
-                <div className="p-3 rounded-lg bg-accent border border-accent flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] text-secondary">
-                      {format(new Date(latest.timestamp), "MMM d, yyyy HH:mm")}
+                <div className="p-2 rounded-lg bg-accent border border-accent flex flex-col gap-1">
+                  {/* Header: time + status */}
+                  <div className="flex items-center justify-between text-[12px]">
+                    <span className="text-secondary">
+                      {format(new Date(latest.timestamp), "MMM d, HH:mm:ss")}
                     </span>
-                    <span className="text-[12px] px-2 py-0.5 rounded bg-green-500/20 text-green-500">
-                      {latest.status}
+                    <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-500">
+                      {latest.status.charAt(0).toUpperCase() + latest.status.slice(1)}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  {/* Amount + invoice ID in one block */}
+                  <div className="flex items-center gap-2 text-[13px] text-primary">
                     <Image
                       src={USDC}
                       alt="USDC"
-                      width={20}
-                      height={20}
+                      width={18}
+                      height={18}
                       className="rounded-full"
                     />
-                    <div className="flex flex-col">
-                      <span className="text-[14px] text-primary font-medium">
-                        {latest.filled_quantity.toLocaleString()}{" "}
-                        {latest.symbol}
-                      </span>
-                      <span className="text-[14px] text-primary font-medium">
-                        {latest.amount_paid.toLocaleString()} USDC
-                      </span>
-                      <span className="text-[12px] text-secondary">
-                        Invoice #{latest.payment_id}
-                      </span>
-                    </div>
+                    <span className="font-medium">
+                      {Number(latest.amount_paid).toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                      USDC →
+                    </span>
+                    <IndexMaker className="text-muted w-[18px] h-[18px]" />
+                    <span className="font-medium">
+                      {Number(latest.filled_quantity).toExponential(2)}{" "}
+                      {latest.symbol}
+                    </span>
                   </div>
 
-                  <div className="h-1 bg-background rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-500 transition-all"
-                      style={{ width: "100%" }} // since latest is completed
-                    />
-                  </div>
-                  <div className="w-full">
-                    <div
-                      className="text-[11px] text-secondary underline text-right float-right cursor-pointer"
+                  <div className="text-[11px] text-blue-400">
+                    Invoice #
+                    <span
+                      className="pl-1 underline cursor-pointer"
                       onClick={() =>
                         viewFullInvoice(
                           latest.chain_id,
@@ -569,8 +569,19 @@ export function SupplyPanel({
                         )
                       }
                     >
-                      View full invoice data...
-                    </div>
+                      {latest.payment_id}
+                    </span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="relative h-4 bg-background rounded-full overflow-hidden mt-1">
+                    <div
+                      className="h-full bg-blue-500 transition-all"
+                      style={{ width: "100%" }}
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white">
+                      100%
+                    </span>
                   </div>
                 </div>
               );

@@ -76,7 +76,6 @@ export function EarnContent({
   const { wallet } = useWallet();
   const { t } = useLanguage();
   const [columns, setColumns] = useState(initialColumns);
-  const [supplyPositions, setSupplyPositions] = useState<SupplyPosition[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortColumn, setSortColumn] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -146,6 +145,7 @@ export function EarnContent({
       const response = await getIndexMakerInfo();
       if (response) {
         // Only set volume from backend; we'll compute totalManaged live below.
+        // dispatch(setTotalManaged(response.totalManaged))
         dispatch(setTotalVolume(response.totalVolume));
       }
     };
@@ -183,31 +183,7 @@ export function EarnContent({
     dispatch(setTotalManaged(String(liveAUM)));
   }, [indexPrices, storedIndexes, indexLists, dispatch]);
 
-  useEffect(() => {
-    // const termsAccepted = localStorage.getItem("termsAccepted");
-    // if ((!termsAccepted || termsAccepted === "false") && wallet) {
-    //   setShowHowEarnWorks(true);
-    // }
-
-    if (wallet?.accounts) {
-      const _fetchDepositTransaction = async (_indexId: number) => {
-        setDepositTransactionLoading(true);
-        try {
-          const response = await fetchDepositTransactionData(
-            -1,
-            wallet?.accounts[0]?.address
-          );
-          const data = response;
-          setSupplyPositions(data);
-        } catch (error) {
-          console.error("Error deposit transaction data:", error);
-        } finally {
-          setDepositTransactionLoading(false);
-        }
-      };
-      _fetchDepositTransaction(-1);
-    }
-  }, [wallet]);
+ 
   // Function to handle sorting
   const handleSort = (columnId: string, direction: "asc" | "desc") => {
     setSortColumn(columnId);
@@ -341,7 +317,9 @@ export function EarnContent({
               </CardHeader>
               <CardContent className="p-0 h-[20px]">
                 <div className="flex items-center justify-between font-normal text-secondary text-[15px] pb-2">
-                  <span>{totalManaged ? formatUSDC(Number(totalManaged)) : 0}</span>
+                  <span>
+                    {totalManaged ? formatUSDC(Number(totalManaged)) : 0}
+                  </span>
                   <Image
                     src={USDC}
                     alt={"Total Supply"}
@@ -448,7 +426,6 @@ export function EarnContent({
                   ) : activeMyearnTab === "position" ? (
                     <div className="mt-0">
                       <ConnectedWalletBalances
-                        itpBalances={supplyPositions}
                         tokenAddresses={[
                           "native", // show native chain balance
                           "0x833589fCD6eDb6E08f4c7C32D4f71b54bDa02913", // USDC on Base, for example

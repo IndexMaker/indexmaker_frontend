@@ -12,6 +12,7 @@ import { Asset } from "@/types";
 import { fetchAssets } from "@/server/invoice";
 import { RootState } from "@/redux/store";
 import { useSelector } from "react-redux";
+import { format } from "date-fns";
 
 interface AssetDetailsViewProps {
   assetId: string;
@@ -254,6 +255,19 @@ export function AssetDetailsView({ assetId }: AssetDetailsViewProps) {
                         : "—"}
                     </div>
                   </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Last Updated
+                    </label>
+                    <div className="text-sm">
+                      {asset.last_updated
+                        ? format(
+                            new Date(asset.last_updated),
+                            "MMM d, HH:mm:ss"
+                          )
+                        : "—"}
+                    </div>
+                  </div>
                 </div>
                 <div className="space-y-4">
                   <div>
@@ -270,14 +284,7 @@ export function AssetDetailsView({ assetId }: AssetDetailsViewProps) {
                     </label>
                     <div className="text-sm">
                       {asset.created_at
-                        ? new Date(asset.created_at).toLocaleDateString(
-                            "en-US",
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            }
-                          )
+                        ? format(new Date(asset.created_at), "MMM d, HH:mm:ss")
                         : "—"}
                     </div>
                   </div>

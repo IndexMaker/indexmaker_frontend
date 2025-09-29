@@ -25,6 +25,9 @@ import { useWallet } from "@/contexts/wallet-context";
 import { useQuoteContext } from "@/contexts/quote-context";
 import onboard from "@/lib/blocknative/web3-onboard";
 import { sendMintInvoiceToBackend } from "@/server/indices";
+import { setLatestInvoice } from "@/redux/mintInvoicesSlice";
+import { useDispatch } from "react-redux";
+import { MintInvoice } from "@/types";
 
 // ---------- Config ----------
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -231,7 +234,7 @@ export function TransactionConfirmModal({
   const [depositStatus, setDepositStatus] = useState<"idle" | "done" | "error">(
     "idle"
   );
-
+  const dispatch = useDispatch();
   // Progress + receipts
   const [clientOrderId, setClientOrderId] = useState<string | null>(null);
   const [orderProgressPct, setOrderProgressPct] = useState<number>(0);
@@ -460,6 +463,7 @@ export function TransactionConfirmModal({
           if (activeOrderIdRef.current !== orderId) return;
           console.log("[MODAL] invoice", invoice);
           setMintInvoice(invoice);
+          dispatch(setLatestInvoice(invoice as MintInvoice )); 
           const q = Number(invoice?.filled_quantity);
           if (!Number.isNaN(q)) setMintedQuantity(q);
           setOrderProgressPct(100);
@@ -475,7 +479,7 @@ export function TransactionConfirmModal({
     } finally {
       setIsProcessing(false);
     }
-  }, [wallet, totalUSDC]);
+  }, [wallet, totalUSDC, dispatch]);
 
   const handleCancelOrder = async () => {
     try {
@@ -649,7 +653,6 @@ export function TransactionConfirmModal({
     const haveQty = typeof mintedQuantity === "number";
     if (!sentInvoiceRef.current && haveTx && haveQty) {
       sentInvoiceRef.current = true; // guard against duplicates
-      const amountBN = parseUnits(totalUSDC.toString(), USDC_DECIMALS);
       sendMintInvoiceToBackend({
         txHash: txHash!,
         blockNumber: txBlockNumber!,
@@ -658,7 +661,7 @@ export function TransactionConfirmModal({
         contractAddress: index_address,
         network: "base",
         userAddress: wallet?.accounts[0]?.address,
-        amount: Number(amountBN),
+        amount: totalUSDC.toString(),
         quantity: mintedQuantity!,
       }).catch((err) => {
         console.error("sendMintInvoiceToBackend failed:", err);

@@ -34,6 +34,9 @@ const ITEMS_PER_PAGE = 10;
 export function InvoiceTable({ invoices }: InvoiceTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [copied, setCopied] = useState<string | null>(null);
+  const [copiedStates, setCopiedStates] = useState<{
+    [key: string]: string | null;
+  }>({});
   const totalPages = Math.ceil(invoices.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
@@ -81,21 +84,65 @@ export function InvoiceTable({ invoices }: InvoiceTableProps) {
       redirect(`/invoices/${chain_id}/${address}/${client_order_id}`);
   };
 
+  const handleAddressClick = (e: React.MouseEvent, address: string) => {
+    e.stopPropagation(); // Prevent row click event
+    window.open(
+      `https://basescan.org/address/${address}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
   function AddressLink({
     explorer,
     value,
     onCopy,
     copied,
+    onAddressClick,
   }: {
     explorer: string;
     value: string;
     onCopy: () => void;
     copied: boolean;
+    onAddressClick: (e: React.MouseEvent) => void;
   }) {
+    // Generate consistent random image based on address
+    const getAddressImage = (address: string) => {
+      // Simple hash function to convert address to a number
+      const hash = address.split("").reduce((a, b) => {
+        a = (a << 5) - a + b.charCodeAt(0);
+        return a & a;
+      }, 0);
+
+      // Use absolute value and modulo to get a number between 1-10
+      const imageNumber = (Math.abs(hash) % 10) + 1;
+
+      // You can use different image sources:
+      // Option 1: Placeholder images (like dice avatars)
+      return `https://api.dicebear.com/7.x/identicon/svg?seed=${address}&size=64&radius=10`;
+
+      // Option 2: Simple numbered placeholders (if you have your own images)
+      // return `/images/avatars/avatar-${imageNumber}.png`;
+
+      // Option 3: Gradient based on address
+      // return `https://placeholder.com/32x32/${address.slice(2, 8)}/ffffff`;
+    };
+
+    const addressImage = getAddressImage(value);
+
     return (
       <div className="flex items-center gap-2">
-        <a className="text-sm underline">
-          0x{value.slice(0, 6)}…{value.slice(-4)}
+        <img
+          src={addressImage}
+          alt="Address avatar"
+          className="w-4 h-4 rounded-full"
+        />
+        <a
+          className="text-sm underline hover:text-primary cursor-pointer"
+          onClick={onAddressClick}
+          title="View on BaseScan"
+        >
+          {value.slice(0, 6)}…{value.slice(-4)}
         </a>
         <button
           type="button"
@@ -117,10 +164,17 @@ export function InvoiceTable({ invoices }: InvoiceTableProps) {
     );
   }
 
-  const onCopy = (v: string, key: string) => {
+  const onCopy = (v: string, invoiceId: string, copyType: string) => {
     navigator.clipboard.writeText(v);
-    setCopied(key);
-    setTimeout(() => setCopied(null), 1000);
+    const copyKey = `${invoiceId}-${copyType}`;
+    setCopiedStates((prev) => ({ ...prev, [copyKey]: copyType }));
+    setTimeout(() => {
+      setCopiedStates((prev) => ({ ...prev, [copyKey]: null }));
+    }, 1000);
+  };
+
+  const isCopied = (invoiceId: string, copyType: string) => {
+    return copiedStates[`${invoiceId}-${copyType}`] === copyType;
   };
 
   return (
@@ -185,8 +239,17 @@ export function InvoiceTable({ invoices }: InvoiceTableProps) {
                     <AddressLink
                       explorer={""}
                       value={invoice.address}
-                      onCopy={() => onCopy(invoice.address!, "from")}
-                      copied={copied === "from"}
+                      onCopy={() =>
+                        onCopy(
+                          invoice.address!,
+                          invoice.client_order_id,
+                          "address"
+                        )
+                      }
+                      onAddressClick={(e) =>
+                        handleAddressClick(e, invoice.address)
+                      }
+                      copied={isCopied(invoice.client_order_id, "address")}
                     />
                   </TableCell>
                   <TableCell className="pl-[20px] text-card pr-18 font-medium">
@@ -204,7 +267,7 @@ export function InvoiceTable({ invoices }: InvoiceTableProps) {
                         />
                       </div>
                       <span className="text-secondary">
-                        {Math.round(invoice.fill_rate * 100)}%
+                        {Math.min(Math.round(invoice.fill_rate * 100), 100)}%
                       </span>
                     </div>
                   </TableCell>
