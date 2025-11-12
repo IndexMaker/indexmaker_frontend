@@ -1,8 +1,11 @@
+# Table of Contents
+
 * ✅ How to create a **custom index** (e.g., top 20 market cap assets of a specific CoinGecko category)
 * ⚙️ How it integrates with your **rebalance and deployment flow**
 * 🧠 How to simulate and push weights on-chain
 
-````markdown
+---
+
 # 📈 Custom Index Creation & Deployment Guide
 
 This document outlines how to create, simulate, and deploy **custom ETF-style indexes** that represent the **top 20 market cap assets** from a specific [CoinGecko category](https://www.coingecko.com/en/categories). These indexes are equal-weighted and can be simulated historically or deployed live on-chain.
@@ -45,7 +48,7 @@ GET /api/v3/coins/markets?vs_currency=usd
 &category=decentralized-finance-defi
 &order=market_cap_desc
 &per_page=20&page=1
-````
+```
 
 You’ll receive the top 20 tokens sorted by market cap in that category. Extract:
 
