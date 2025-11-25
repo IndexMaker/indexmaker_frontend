@@ -3,42 +3,42 @@
     "name": "Decentralized Finance Tokens",
     "symbol": "SYDF",
     "indexId": "27",
-    "address": "0xfA1AfB2854cfC22463667776B5fAA349d579d6e3",
-    "custodyId": "0xe2275d780b78176f5ad17a1287a41c7c51b323e10da1cd7207f0e894c20f8467"
+    "address": "0xcdce4c5ffd9cd0025d536dbc69a12cf7ada82193",
+    "custodyId": "0x210e00aa492644282247b829927edc614313ccc8d6a4379bfeaf5bfb53e04b21"
   },
   {
     "name": "A16Z Crypto Portfolio",
     "symbol": "SYAZ",
     "indexId": "22",
-    "address": "0xe28eD9Ee3A8C78A578a7A6738FF08189bCaa8bE3",
-    "custodyId": "0x8d1553c6ebd657aab61753eff17956bc7f951a742b197c6e3a7e2fc43f5931d4"
+    "address": "0x8a8cf8860f97d007fcf46ed790df794e008b3ce8",
+    "custodyId": "0x1f91329a4867fcda072b0a0eff1fbde89ed47ca42ef0ef48106ee061d4a7eca9"
   },
   {
     "name": "SY100",
     "symbol": "SY100",
     "indexId": "21",
-    "address": "0xF3eA34CfAD1ce45Ea39AaEb636a701E892510a10",
-    "custodyId": "0x762cc53b3c481fba6bf25f70cc7e7e1c547356518491d798d7c1c2e10616867f"
+    "address": "0x1a64a446e31f19172c6eb3197a1e85ff664af380",
+    "custodyId": "0xa5d6c5a609c5474ada7b324430c59e314076f75d3af69e705194834a39277e49"
   },
   {
     "name": "Artificial Intelligence Tokens",
     "symbol": "SYAI",
     "indexId": "24",
-    "address": "0xDAa97B90a22C0D6b390D242686c4463AC457D89e",
-    "custodyId": "0xc804669f30abc63f8068ee3e4ff473bf5ac1db8e1245df5537d4d860444c2dd9"
+    "address": "0x700892f09f8f8589ff3e69341b806adb06bb67fd",
+    "custodyId": "0x783fe9349f12a09b7ac73f9fb02bf6086886b858861de4a7dc7b478893f96a3d"
   },
   {
     "name": "Layer 2 Tokens",
     "symbol": "SYL2",
     "indexId": "23",
-    "address": "0xcbA67afAe691166306efe7AF58966755c7371205",
-    "custodyId": "0xe73fd05391ea139ee33dd12a02b590b3bfe43655d48fee6d22a08897ccda0288"
+    "address": "0x0cee77782fa57cfb66403c94c08e2e3e376dc388",
+    "custodyId": "0x853533084858fe64faeea7604c3c4143b7bcbf281412f1b89b79f9b80727047c"
   },
   {
     "name": "Meme Tokens",
     "symbol": "SYME",
     "indexId": "25",
-    "address": "0x2f484b4E41949f8A36c639bf2f02e719c3FB2a86",
-    "custodyId": "0xeb9587c88fcefdebcddc0eaf36f12183c202aa94743da22eaaa542e6a919dec3"
+    "address": "0xbab03330d8b41b20eb540b6361ab30b59d8ee849",
+    "custodyId": "0x87cd0c55b3d5fc1685094f3ed55ea97cbfd26572132d22d3a8ebca47d6658e78"
   }
 ]
