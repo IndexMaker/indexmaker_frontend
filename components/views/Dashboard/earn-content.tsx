@@ -40,7 +40,8 @@ import IBKRAlertBanner from "@/components/elements/AnnouncementBanner";
 import { useQuoteContext } from "@/contexts/quote-context";
 import Image from "next/image";
 import USDC from "../../../public/logos/usd-coin.png";
-
+import { Asset } from "@/types";
+import { fetchAssets, fetchInventory } from "@/server/invoice";
 type ColumnType = {
   id: string;
   title: string;
@@ -79,6 +80,8 @@ export function EarnContent({
   const [searchQuery, setSearchQuery] = useState("");
   const [sortColumn, setSortColumn] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [activeMyearnTab, setActiveMyearnTab] = useState<
     "position" | "historic"
@@ -89,12 +92,8 @@ export function EarnContent({
   );
 
   const dispatch = useDispatch();
-  const totalManaged = useSelector(
-    (state: RootState) => state.index.totalManaged
-  );
-  const totalVolume = useSelector(
-    (state: RootState) => state.index.totalVolume
-  );
+  
+
   const { indexPrices } = useQuoteContext();
 
   const formatUSDC = (n?: number) =>
@@ -140,17 +139,6 @@ export function EarnContent({
     };
 
     if (storedIndexes.length === 0) fetchData();
-
-    const fetchInfo = async () => {
-      const response = await getIndexMakerInfo();
-      if (response) {
-        // Only set volume from backend; we'll compute totalManaged live below.
-        // dispatch(setTotalManaged(response.totalManaged))
-        dispatch(setTotalVolume(response.totalVolume));
-      }
-    };
-
-    if (!totalVolume) fetchInfo();
 
     dispatch(clearSelectedVault());
   }, []);
@@ -287,6 +275,53 @@ export function EarnContent({
     // }
   }, [wallet, columns, currentChainId, selectedNetwork]);
 
+  useEffect(() => {
+    const loadAssets = async () => {
+      try {
+        const [assetsData, inventory] = await Promise.all([
+          fetchAssets(),
+          fetchInventory(),
+        ]);
+
+        console.log("🚀 ~ loadAssets ~ inventory:", inventory)
+
+        const invMap: Record<string, number> = Object.fromEntries(
+          Object.entries(inventory?.positions ?? {}).map(([key, val]) => {
+            const sym = val?.inventory_position?.symbol ?? key;
+            const raw = val?.actual_balance ?? 0;
+            const num = typeof raw === "string" ? parseFloat(raw) : raw;
+            return [sym, Number.isFinite(num) ? num : 0];
+          })
+        );
+
+        const filtered = assetsData
+          .filter((a) => invMap[a.symbol] != null)
+          .map((a) => ({
+            ...a,
+            expected_inventory: invMap[a.symbol],
+          }));
+
+        setAssets(filtered);
+      } catch (error) {
+        console.error("Failed to load assets:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAssets(); // Initial fetch
+
+    const intervalId = setInterval(loadAssets, 5000); // Fetch every 5 seconds
+
+    return () => clearInterval(intervalId); // Cleanup on unmount
+  }, []);
+
+
+  const totalVolume = assets.reduce(
+    (sum, asset) => sum + asset.expected_inventory,
+    0
+  );
+
   if (showHowEarnWorks) {
     return (
       <div className="bg-foreground border-none border-zinc-800 rounded-lg p-0 -mt-[60px] md:mt-0">
@@ -318,7 +353,7 @@ export function EarnContent({
               <CardContent className="p-0 h-[20px]">
                 <div className="flex items-center justify-between font-normal text-secondary text-[15px] pb-2">
                   <span>
-                    {totalManaged ? formatUSDC(Number(totalManaged)) : 0}
+                    {totalVolume   ? formatUSDC(Number(totalVolume)) : 0}
                   </span>
                   <Image
                     src={USDC}

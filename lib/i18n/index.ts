@@ -109,7 +109,7 @@ export const translations: Translations = {
       max: "Max",
       balance: "Balance",
       noClaimableRewards:
-        "You currently have no claimable or accruing rewards on Chain.",
+        "You currently have no closed positions.",
       noEarnPosition: "You currently have no assets on Chain.",
       switchWallet: "Switch Wallet",
       disconnectWallet: "Disconnect Wallet",
