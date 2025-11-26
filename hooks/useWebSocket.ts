@@ -103,8 +103,8 @@ export default function useQuoteSocket(
     Array.from(u8)
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
-  const sha256Bytes = async (data: Uint8Array) =>
-    new Uint8Array(await crypto.subtle.digest("SHA-256", data));
+      const sha256Bytes = async (data: Uint8Array) =>
+        new Uint8Array(await crypto.subtle.digest("SHA-256", new Uint8Array(data)));
 
   async function generateClientId(
     timestamp: string,

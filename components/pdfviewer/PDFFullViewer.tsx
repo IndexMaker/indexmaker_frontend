@@ -140,6 +140,7 @@ export function RichPDFViewer({ pdfUrl, className = "" }: RichPDFViewerProps) {
         canvas.height = viewport.height
         
         await page.render({
+          canvas: canvas,
           canvasContext: context,
           viewport: viewport
         }).promise
@@ -171,6 +172,7 @@ export function RichPDFViewer({ pdfUrl, className = "" }: RichPDFViewerProps) {
             canvas.height = viewport.height
             
             await page.render({
+              canvas: canvas,
               canvasContext: context,
               viewport: viewport
             }).promise
@@ -213,6 +215,7 @@ export function RichPDFViewer({ pdfUrl, className = "" }: RichPDFViewerProps) {
 
         // Render PDF page to canvas
         const renderContext = {
+          canvas: canvas,
           canvasContext: context,
           viewport: viewport,
         }
