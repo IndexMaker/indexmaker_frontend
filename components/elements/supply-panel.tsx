@@ -408,26 +408,26 @@ export function SupplyPanel({
                     {/* APY info */}
                     <div className="space-y-4 mb-6 pt-6">
                       <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-1">
+                        {/*<div className="flex items-center gap-1">
                           <span className="text-[12px] text-muted">
                             {t("table.oneYearPerformance")}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1">
+                         <div className="flex items-center gap-1">
                           <span className="font-normal text-primary text-[12px]">
                             {vault.performance?.oneYearReturn.toFixed(2) || "0"}{" "}
                             %
                           </span>
-                        </div>
+                        </div> */}
                       </div>
 
                       {/* Collateral Exposure */}
                       <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-1">
+                        {/* <div className="flex items-center gap-1">
                           <span className="text-[12px] text-muted">
                             {t("common.collateralExposure")}
                           </span>
-                        </div>
+                        </div>*/}
                         <div className="flex items-center gap-1">
                           {vault.collateral.length > 0 ? (
                             vault.collateral

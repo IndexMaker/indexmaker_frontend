@@ -31,6 +31,8 @@ import LeftArrow from "../icons/left-arrow";
 import RightArrow from "../icons/right-arrow";
 import CustomTooltip from "./custom-tooltip";
 import { useQuoteContext } from "@/contexts/quote-context";
+// Import AnimatedPrice to match SupplyPanel styling
+import AnimatedPrice from "./animate-price"; 
 
 interface VaultTableProps {
   visibleColumns: { id: string; title: string; visible: boolean }[];
@@ -70,12 +72,17 @@ export function VaultTable({
   const currentVaults = vaults.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(vaults.length / itemsPerPage);
 
-  const { indexPrices } = useQuoteContext(); // { SY100: '312715.56', SYAZ: '290194', ... }
+  // 1. Get Context
+  const { indexPrices } = useQuoteContext(); 
 
   const normalize = (s: string) => s.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  
+  // 2. Helper to get price (same logic pattern as SupplyPanel context usage)
   const getLiveIndexPrice = (symbol: string): number | undefined => {
     if (!indexPrices) return undefined;
     if (indexPrices[symbol] != null) return Number(indexPrices[symbol]);
+    
+    // Fallback normalization logic
     const norm = normalize(symbol);
     for (const [k, v] of Object.entries(indexPrices)) {
       if (normalize(k) === norm) return Number(v);
@@ -90,23 +97,20 @@ export function VaultTable({
           n
         );
 
-  // Compute live total supply (USDC) per ticker using live prices.
-  // Assumption: vault.totalSupply is the *minted quantity* (index token units).
-  // Fallbacks:
-  // - use vault.totalSupplyUSD if provided
-  // - else fall back to vault.totalSupply as-is
+  // 3. Compute live total supply (USDC) per ticker using live prices.
   const liveTotalSupplyUSDByTicker = useMemo(() => {
     const map: Record<string, number> = {};
     for (const v of vaults) {
-      const qty = Number(v.totalSupply ?? 0); // minted quantity (token units)
-      const livePrice = getLiveIndexPrice(v.ticker); // USDC per token
+      const qty = Number(v.totalSupply ?? 0); 
+      const livePrice = getLiveIndexPrice(v.ticker); 
       let usd: number;
+      
       if (livePrice != null && !Number.isNaN(livePrice)) {
+        // Calculate based on Live Price * Quantity
         usd = qty * livePrice;
       } else if ((v as any).totalSupplyUSD != null) {
         usd = Number((v as any).totalSupplyUSD) || 0;
       } else {
-        // If backend still sends USDC in totalSupply, this keeps old behavior.
         usd = Number(v.totalSupply) || 0;
       }
       map[v.ticker] = usd;
@@ -223,8 +227,9 @@ export function VaultTable({
                   </TableRow>
                 ))
               : currentVaults.map((vault: IndexListEntry) => {
-                  const liveSupplyUSD =
-                    liveTotalSupplyUSDByTicker[vault.ticker] ?? 0;
+                  const liveSupplyUSD = liveTotalSupplyUSDByTicker[vault.ticker] ?? 0;
+                  // Get unit price for display
+                  const unitPrice = getLiveIndexPrice(vault.ticker);
 
                   return (
                     <TableRow
@@ -266,13 +271,23 @@ export function VaultTable({
                                 </div>
                               )}
 
+                              {/* MODIFIED: Ticker Column now shows Ticker + Live Price */}
                               {col.id === "ticker" && (
                                 <div
-                                  className="flex items-center gap-2"
+                                  className="flex flex-col justify-center"
                                   onClick={() => assetDetail(vault)}
                                 >
-                                  <span className="text-card">
-                                    {vault.ticker}
+                                  <span className="text-card">{vault.ticker}</span>
+                                  {/* Live Unit Price Display */}
+                                  <span className="text-[10px] text-muted-foreground flex items-center">
+                                    {unitPrice ? (
+                                      <AnimatedPrice 
+                                        currency="USDC" 
+                                        value={unitPrice} 
+                                      />
+                                    ) : (
+                                      <span className="opacity-50">-</span>
+                                    )}
                                   </span>
                                 </div>
                               )}

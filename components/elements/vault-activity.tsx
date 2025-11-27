@@ -30,6 +30,7 @@ const allActivityColumns = [
   { id: "transactionType", name: "Transaction Type", visible: true },
   { id: "amount", name: "Amount", visible: true },
 ];
+
 export function VaultActivity({
   activities,
   visibleColumns,
@@ -157,12 +158,14 @@ export function VaultActivity({
             </TableHeader>
             <TableBody>
               {currentActivities.length === 0 ? (
-                <TableRow>
+                <TableRow className="hover:bg-transparent border-accent">
                   <TableCell
                     colSpan={visibleColumns.filter((c) => c.visible).length}
-                    className="text-center py-4 text-muted"
+                    className="h-[120px] text-center"
                   >
-                    No activity found
+                    <div className="flex flex-col items-center justify-center h-full text-muted text-[13px]">
+                      Data Coming in v0.8
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -191,25 +194,29 @@ export function VaultActivity({
           </Table>
         </CardContent>
       </Card>
-      <div className="flex justify-center items-center mt-4 text-primary text-sx">
-        <Button
-          className="text-[11px] text-muted bg-background p-0 h-4"
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage(currentPage - 1)}
-        >
-          <LeftArrow className="w-4 h-4" />
-        </Button>
-        <span className="text-[11px] text-muted">
-          {t("common.page")} {currentPage} {t("common.of")} {totalPages}
-        </span>
-        <Button
-          className="text-[11px] text-muted bg-background p-0 h-4"
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage(currentPage + 1)}
-        >
-          <RightArrow className="w-[8px] h-[8px] rotate-180 " />
-        </Button>
-      </div>
+
+      {/* Only show pagination if there is actually data */}
+      {activities.length > 0 && (
+        <div className="flex justify-center items-center mt-4 text-primary text-sx">
+          <Button
+            className="text-[11px] text-muted bg-background p-0 h-4"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(currentPage - 1)}
+          >
+            <LeftArrow className="w-4 h-4" />
+          </Button>
+          <span className="text-[11px] text-muted">
+            {t("common.page")} {currentPage} {t("common.of")} {totalPages}
+          </span>
+          <Button
+            className="text-[11px] text-muted bg-background p-0 h-4"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(currentPage + 1)}
+          >
+            <RightArrow className="w-[8px] h-[8px] rotate-180 " />
+          </Button>
+        </div>
+      )}
     </>
   );
 }

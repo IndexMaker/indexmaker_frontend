@@ -103,7 +103,7 @@ export const indexData: any = {
       for more detailed information about the index.`,
     },
     fundRisk:
-      "Crypto markets, especially foreign markets, are volatile and can decline significantly in response to adverse issuer, political, regulatory, market, or economic developments. The technology industries can be significantly affected by obsolescence of existing technology, short product cycles, falling prices and profits, and competition from new markets, and general economic conditions. Foreign securities are subject to ,interest rate, currency exchange rate, economic, and political risks. The securities of smaller, less well-known companies can be more volatile than those of larger companies. The fund may have additional ,volatility because it can invest a significant portion of assets in securities of a small number of individual issuers.",
+"none",
     portfolioManagerInsights: [
       {
         id: 1,
@@ -131,13 +131,13 @@ export const indexData: any = {
         id: "Index Overview",
         name: "Index Overview",
         url: "pdf-generation/pdfview/factsheet/SY100",
-        description: "Technical details about the Spark DAI vault",
+        description: "Technical details about the vault (coming in v0.8)",
       },
       {
         id: "audit",
         name: "Security Audit",
         url: "#",
-        description: "Security audit report by ChainSecurity",
+        description: "Security audit report (coming in v1.0)",
       },
     ],
   },
@@ -245,7 +245,7 @@ export const indexData: any = {
       for more detailed information about the fund.`,
     },
     fundRisk:
-      "Stock markets, especially foreign markets, are volatile and can decline significantly in response to adverse issuer, political, regulatory, market, or economic developments...",
+      "none",
     portfolioManagerInsights: [
       {
         id: 1,
@@ -273,13 +273,13 @@ export const indexData: any = {
         id: "Index Overview",
         name: "Index Overview",
         url: "pdf-generation/pdfview/factsheet/SYAZ",
-        description: "Technical details about the Spark DAI vault",
+        description: "Technical details about the vault (coming in v0.8)",
       },
       {
         id: "audit",
         name: "Security Audit",
         url: "#",
-        description: "Security audit report by ChainSecurity",
+        description: "Security audit report (coming in v1.0)",
       },
     ],
   },
@@ -387,7 +387,7 @@ export const indexData: any = {
       for more detailed information about the fund.`,
     },
     fundRisk:
-      "Stock markets, especially foreign markets, are volatile and can decline significantly in response to adverse issuer, political, regulatory, market, or economic developments...",
+      "none",
     portfolioManagerInsights: [
       {
         id: 1,
@@ -415,13 +415,13 @@ export const indexData: any = {
         id: "Index Overview",
         name: "Index Overview",
         url: "pdf-generation/pdfview/factsheet/SYAI",
-        description: "Technical details about the Spark DAI vault",
+        description: "Technical details about the vault (coming in v0.8)",
       },
       {
         id: "audit",
         name: "Security Audit",
         url: "#",
-        description: "Security audit report by ChainSecurity",
+        description: "Security audit report (coming in v1.0)",
       },
     ],
   },
@@ -529,7 +529,7 @@ export const indexData: any = {
       for more detailed information about the fund.`,
     },
     fundRisk:
-      "Stock markets, especially foreign markets, are volatile and can decline significantly in response to adverse issuer, political, regulatory, market, or economic developments...",
+      "none",
     portfolioManagerInsights: [
       {
         id: 1,
@@ -557,13 +557,13 @@ export const indexData: any = {
         id: "Index Overview",
         name: "Index Overview",
         url: "pdf-generation/pdfview/factsheet/SYME",
-        description: "Technical details about the Spark DAI vault",
+        description: "Technical details about the vault (coming in v0.8)",
       },
       {
         id: "audit",
         name: "Security Audit",
         url: "#",
-        description: "Security audit report by ChainSecurity",
+        description: "Security audit report (coming in v1.0)",
       },
     ],
   },
@@ -671,7 +671,7 @@ export const indexData: any = {
       for more detailed information about the fund.`,
     },
     fundRisk:
-      "Stock markets, especially foreign markets, are volatile and can decline significantly in response to adverse issuer, political, regulatory, market, or economic developments...",
+      "none",
     portfolioManagerInsights: [
       {
         id: 1,
@@ -699,13 +699,13 @@ export const indexData: any = {
         id: "Index Overview",
         name: "Index Overview",
         url: "pdf-generation/pdfview/factsheet/SYL2",
-        description: "Technical details about the Spark DAI vault",
+        description: "Technical details about the vault (coming in v0.8)",
       },
       {
         id: "audit",
         name: "Security Audit",
         url: "#",
-        description: "Security audit report by ChainSecurity",
+        description: "Security audit report (coming in v1.0)",
       },
     ],
   },
@@ -813,7 +813,7 @@ export const indexData: any = {
       for more detailed information about the fund.`,
     },
     fundRisk:
-      "Stock markets, especially foreign markets, are volatile and can decline significantly in response to adverse issuer, political, regulatory, market, or economic developments...",
+      "none",
     portfolioManagerInsights: [
       {
         id: 1,
@@ -841,13 +841,13 @@ export const indexData: any = {
         id: "Index Overview",
         name: "Index Overview",
         url: "pdf-generation/pdfview/factsheet/SYDF",
-        description: "Technical details about the Spark DAI vault",
+        description: "Technical details about the vault (coming in v0.8)",
       },
       {
         id: "audit",
         name: "Security Audit",
         url: "#",
-        description: "Security audit report by ChainSecurity",
+        description: "Security audit report (coming in v1.0)",
       },
     ],
   },

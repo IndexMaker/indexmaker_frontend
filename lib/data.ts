@@ -214,9 +214,9 @@ export const mockup_vaults: Vault[] = [
     documents: [
       {
         id: "whitepaper",
-        name: "Technical details about the Spark DAI vaultTechnical details about the Spark DAI vaultTechnical details about the Spark DAI vaultTechnical details about the Spark DAI vaultTechnical details about the Spark DAI vaultTechnical details about the Spark DAI vault",
+        name: "Technical details about the Spark DAI vault",
         url: "#",
-        description: "Technical details about the Spark DAI vault",
+        description: "Coming in v0.8",
       },
       {
         id: "audit",

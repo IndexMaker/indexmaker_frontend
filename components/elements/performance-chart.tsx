@@ -205,7 +205,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
       return (
         <div className="flex items-center justify-center h-64 bg-accent rounded-lg">
           <p className="text-secondary">
-            No historical data available for this index
+          Data Coming in v0.8
           </p>
         </div>
       );
