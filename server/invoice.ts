@@ -44,7 +44,7 @@ const mockInvoices: MintInvoice[] = [
   {
     id: "invoice_001",
     chain_id: "8453",
-    address: "0x742d35Cc6634C0532925a3b8D4C9db96590c6C87",
+    address: "0x1a64a446e31f19172c6eb3197a1e85ff664af380",
     client_order_id: "Q-1756899471364",
     payment_id: "pay_67890",
     symbol: "SY100",

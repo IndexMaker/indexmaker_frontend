@@ -321,262 +321,6 @@ export interface VaultAsset {
   weights: number;
 }
 
-export const vaultAllocations: VaultAllocation[] = [
-  {
-    id: "1",
-    percentage: "46.12%",
-    vaultSupply: {
-      amount: "242,198,468.99 DAI",
-      usdValue: "$242.1M",
-    },
-    collateral: {
-      name: "PT-sUSDe-27MAR2025",
-      icon: "green",
-    },
-    liquidationLTV: "91.5%",
-    netAPY: "5.11%",
-    oracle: "Chainlink",
-    supplyCap: "500,000,000 DAI",
-    capPercentage: "48.4%",
-    supplyAPY: "5.25%",
-    rewards: "None",
-    totalCollateral: "264,698,874 PT-sUSDe",
-    utilization: "91.5%",
-    rateAtUTarget: "5.2%",
-    marketId: "0x7a3e...e45d",
-  },
-  {
-    id: "2",
-    percentage: "22.48%",
-    vaultSupply: {
-      amount: "118,064,884.77 DAI",
-      usdValue: "$118.01M",
-    },
-    collateral: {
-      name: "PT-sUSDe-29MAY2025",
-      icon: "green",
-    },
-    liquidationLTV: "91.5%",
-    netAPY: "5.67%",
-    oracle: "Chainlink",
-    supplyCap: "200,000,000 DAI",
-    capPercentage: "59.0%",
-    supplyAPY: "5.80%",
-    rewards: "None",
-    totalCollateral: "129,032,660 PT-sUSDe",
-    utilization: "91.5%",
-    rateAtUTarget: "5.7%",
-    marketId: "0x8b2c...f32a",
-  },
-  {
-    id: "3",
-    percentage: "9.52%",
-    vaultSupply: {
-      amount: "50,000,376.01 DAI",
-      usdValue: "$49.98M",
-    },
-    collateral: {
-      name: "PT-sUSDe-29MAY2025",
-      icon: "yellow",
-    },
-    liquidationLTV: "91.5%",
-    netAPY: "0.74%",
-    oracle: "Chainlink",
-    supplyCap: "100,000,000 DAI",
-    capPercentage: "50.0%",
-    supplyAPY: "0.85%",
-    rewards: "None",
-    totalCollateral: "54,644,127 PT-sUSDe",
-    utilization: "91.5%",
-    rateAtUTarget: "0.8%",
-    marketId: "0x9c3d...a21b",
-  },
-  {
-    id: "4",
-    percentage: "7.38%",
-    vaultSupply: {
-      amount: "38,783,433.16 DAI",
-      usdValue: "$38.78M",
-    },
-    collateral: {
-      name: "PT-USDe-27MAR2025",
-      icon: "yellow",
-    },
-    liquidationLTV: "91.5%",
-    netAPY: "4.88%",
-    oracle: "Chainlink",
-    supplyCap: "100,000,000 DAI",
-    capPercentage: "38.8%",
-    supplyAPY: "5.00%",
-    rewards: "None",
-    totalCollateral: "42,386,266 PT-USDe",
-    utilization: "91.5%",
-    rateAtUTarget: "4.9%",
-    marketId: "0x6d4e...b78c",
-  },
-  {
-    id: "5",
-    percentage: "4.94%",
-    vaultSupply: {
-      amount: "25,966,814.51 DAI",
-      usdValue: "$25.95M",
-    },
-    collateral: {
-      name: "0x000...00",
-      icon: "gray",
-    },
-    liquidationLTV: "0%",
-    netAPY: "0.00%",
-    oracle: "None",
-    supplyCap: "50,000,000 DAI",
-    capPercentage: "51.9%",
-    supplyAPY: "0.00%",
-    rewards: "None",
-    totalCollateral: "0",
-    utilization: "0%",
-    rateAtUTarget: "0.0%",
-    marketId: "0x000...000",
-  },
-  {
-    id: "6",
-    percentage: "2.91%",
-    vaultSupply: {
-      amount: "15,306,285.73 DAI",
-      usdValue: "$15.3M",
-    },
-    collateral: {
-      name: "USDe",
-      icon: "gray",
-    },
-    liquidationLTV: "86%",
-    netAPY: "7.52%",
-    oracle: "Chainlink",
-    supplyCap: "30,000,000 DAI",
-    capPercentage: "51.0%",
-    supplyAPY: "7.65%",
-    rewards: "None",
-    totalCollateral: "17,798,007 USDe",
-    utilization: "86%",
-    rateAtUTarget: "7.5%",
-    marketId: "0x3f2a...c45e",
-  },
-  {
-    id: "7",
-    percentage: "2.58%",
-    vaultSupply: {
-      amount: "13,575,735.31 DAI",
-      usdValue: "$13.57M",
-    },
-    collateral: {
-      name: "sUSDe",
-      icon: "green",
-    },
-    liquidationLTV: "86%",
-    netAPY: "4.72%",
-    oracle: "Chainlink",
-    supplyCap: "30,000,000 DAI",
-    capPercentage: "45.3%",
-    supplyAPY: "4.85%",
-    rewards: "None",
-    totalCollateral: "15,786,901 sUSDe",
-    utilization: "86%",
-    rateAtUTarget: "4.8%",
-    marketId: "0x2e7b...a93d",
-  },
-  {
-    id: "8",
-    percentage: "1.9%",
-    vaultSupply: {
-      amount: "10,000,000.00 DAI",
-      usdValue: "$9.99M",
-    },
-    collateral: {
-      name: "PT-USDe-31JUL2025",
-      icon: "yellow",
-    },
-    liquidationLTV: "91.5%",
-    netAPY: "0.00%",
-    oracle: "Chainlink",
-    supplyCap: "20,000,000 DAI",
-    capPercentage: "50.0%",
-    supplyAPY: "0.00%",
-    rewards: "None",
-    totalCollateral: "10,928,962 PT-USDe",
-    utilization: "91.5%",
-    rateAtUTarget: "0.0%",
-    marketId: "0x4a1c...e72f",
-  },
-  {
-    id: "9",
-    percentage: "1.87%",
-    vaultSupply: {
-      amount: "9,827,894.31 DAI",
-      usdValue: "$9.82M",
-    },
-    collateral: {
-      name: "sUSDe",
-      icon: "green",
-    },
-    liquidationLTV: "91.5%",
-    netAPY: "5.48%",
-    oracle: "Chainlink",
-    supplyCap: "20,000,000 DAI",
-    capPercentage: "49.1%",
-    supplyAPY: "5.60%",
-    rewards: "None",
-    totalCollateral: "10,740,868 sUSDe",
-    utilization: "91.5%",
-    rateAtUTarget: "5.5%",
-    marketId: "0x5b3a...f12d",
-  },
-  {
-    id: "10",
-    percentage: "0.22%",
-    vaultSupply: {
-      amount: "1,188,638.93 DAI",
-      usdValue: "$1.18M",
-    },
-    collateral: {
-      name: "USDe",
-      icon: "gray",
-    },
-    liquidationLTV: "91.5%",
-    netAPY: "4.88%",
-    oracle: "Chainlink",
-    supplyCap: "10,000,000 DAI",
-    capPercentage: "11.9%",
-    supplyAPY: "5.00%",
-    rewards: "None",
-    totalCollateral: "1,298,512 USDe",
-    utilization: "91.5%",
-    rateAtUTarget: "4.9%",
-    marketId: "0x7c2d...a45e",
-  },
-  {
-    id: "11",
-    percentage: "0.01%",
-    vaultSupply: {
-      amount: "83,076.39 DAI",
-      usdValue: "$83.05K",
-    },
-    collateral: {
-      name: "USDe",
-      icon: "gray",
-    },
-    liquidationLTV: "77%",
-    netAPY: "7.96%",
-    oracle: "Chainlink",
-    supplyCap: "1,000,000 DAI",
-    capPercentage: "8.3%",
-    supplyAPY: "8.10%",
-    rewards: "None",
-    totalCollateral: "107,891 USDe",
-    utilization: "77%",
-    rateAtUTarget: "8.0%",
-    marketId: "0x8e1f...b23a",
-  },
-];
-
 export type ReAllocation = {
   id: string;
   timestamp: string;
@@ -589,119 +333,6 @@ export type ReAllocation = {
   letv?: number;
 };
 
-export const reallocations: ReAllocation[] = [
-  {
-    id: "tx-1",
-    timestamp: "2 days ago",
-    user: "0x298b...dFb5",
-    hash: "0xfb33...31ca",
-    amount: 7072894.47,
-    currency: "DM",
-    type: "Withdraw",
-    market: "🌬️ IT+USDE-29MAY2025 / DM",
-    letv: 91.5,
-  },
-  {
-    id: "tx-2",
-    timestamp: "2 days ago",
-    user: "0x298b...dFb5",
-    hash: "0xfb33...31ca",
-    amount: 10060000.0,
-    currency: "DM",
-    type: "Supply",
-    market: "🌬️ IT+USDe-31UA2025 / DM",
-    letv: 91.5,
-  },
-  {
-    id: "tx-3",
-    timestamp: "2 days ago",
-    user: "0x298b...dFb5",
-    hash: "0xfb33...31ca",
-    amount: 293085.97,
-    currency: "DM",
-    type: "Withdraw",
-    market: "🌬️ USDe / DM",
-    letv: 89.85,
-  },
-  {
-    id: "tx-4",
-    timestamp: "2 days ago",
-    user: "0x298b...dFb5",
-    hash: "0xfb33...31ca",
-    amount: 37970287.26,
-    currency: "DM",
-    type: "Withdraw",
-    market: "🌬️ IT+USDe-27MA20225 / DM",
-    letv: 91.5,
-  },
-  {
-    id: "tx-5",
-    timestamp: "2 days ago",
-    user: "0x298b...dFb5",
-    hash: "0xfb33...31ca",
-    amount: 1008372.67,
-    currency: "DM",
-    type: "Withdraw",
-    market: "🌬️ USDe / DM",
-    letv: 91.5,
-  },
-  {
-    id: "tx-6",
-    timestamp: "2 days ago",
-    user: "0x298b...dFb5",
-    hash: "0xfb33...31ca",
-    amount: 50000000.0,
-    currency: "DM",
-    type: "Supply",
-    market: "🌬️ IT+USDE-28MAY2025 / DM",
-    letv: 91.5,
-  },
-  {
-    id: "tx-7",
-    timestamp: "2 days ago",
-    user: "0x298b...dFb5",
-    hash: "0xfb33...31ca",
-    amount: 24752838.05,
-    currency: "DM",
-    type: "Withdraw",
-    market: "🌬️ UGLI / DM",
-    letv: 90,
-  },
-  {
-    id: "tx-8",
-    timestamp: "2 days ago",
-    user: "0x298b...dFb5",
-    hash: "0xfb33...31ca",
-    amount: 475978.81,
-    currency: "DM",
-    type: "Withdraw",
-    market: "🌬️ USDe / DM",
-    letv: 91.5,
-  },
-  {
-    id: "tx-9",
-    timestamp: "2 days ago",
-    user: "0x298b...dFb5",
-    hash: "0xfb33...31ca",
-    amount: 40975054.48,
-    currency: "DM",
-    type: "Withdraw",
-    market: "🌬️ IT+USDE-27MA20225 / DM",
-    letv: 91.5,
-  },
-  {
-    id: "tx-10",
-    timestamp: "2 days ago",
-    user: "0x298b...dFb5",
-    hash: "0xfb33...31ca",
-    amount: 51077925.31,
-    currency: "DM",
-    type: "Supply",
-    market: "🌬️ UGLI / DM",
-    letv: 90,
-  },
-];
-
 export type SupplyPosition = {
   id: string;
   indexName?: string;
@@ -712,16 +343,6 @@ export type SupplyPosition = {
   share: number;
 };
 
-export const supplyPositions: SupplyPosition[] = [
-  {
-    id: "1",
-    user: "0x298b...dFb5",
-    supply: "525,078,765.05",
-    supplyValueUSD: "$524.98M",
-    currency: "DAI",
-    share: 100,
-  },
-];
 
 export type Activity = {
   id: string;
@@ -765,128 +386,7 @@ export const transactionTypes = [
     name: "Collateral Redeem",
   },
 ];
-export const userActivities: Activity[] = [
-  {
-    id: "1",
-    dateTime: "2 hours ago",
-    wallet: "0x8fA2...3bC1",
-    hash: "0x4a2d...9e1f",
-    transactionType: "mint",
-    amount: {
-      amount: 12450.82,
-      currency: "DAI",
-      amountSummary: "$12.45k"
-    }
-  },
-  {
-    id: "2",
-    dateTime: "1 day ago",
-    wallet: "0x3Ee7...9dF2",
-    hash: "0x7b3c...2a4d",
-    transactionType: "collateral_deposit",
-    amount: {
-      amount: 87500.0,
-      currency: "ETH",
-      amountSummary: "$262.5k"
-    }
-  },
-  {
-    id: "3",
-    dateTime: "3 days ago",
-    wallet: "0x1B34...7eE5",
-    hash: "0x9e2a...3b7c",
-    transactionType: "index_deposit",
-    amount: {
-      amount: 42180.15,
-      currency: "DAI",
-      amountSummary: "$42.18k"
-    }
-  },
-  {
-    id: "4",
-    dateTime: "1 week ago",
-    wallet: "0x5D92...1fA3",
-    hash: "0x3c4d...8e9f",
-    transactionType: "burn",
-    amount: {
-      amount: 15600.75,
-      currency: "USDC",
-      amountSummary: "$15.6k"
-    }
-  },
-  {
-    id: "5",
-    dateTime: "2 weeks ago",
-    wallet: "0x7Ee1...4bC9",
-    hash: "0x1a2b...3c4d",
-    transactionType: "bridge",
-    amount: {
-      amount: 32800.0,
-      currency: "DAI",
-      amountSummary: "$32.8k"
-    }
-  },
-  {
-    id: "6",
-    dateTime: "3 weeks ago",
-    wallet: "0x2F45...6dE8",
-    hash: "0x5e6f...7a8b",
-    transactionType: "redeem",
-    amount: {
-      amount: 7450.25,
-      currency: "ETH",
-      amountSummary: "$22.35k"
-    }
-  },
-  {
-    id: "7",
-    dateTime: "1 month ago",
-    wallet: "0x9A23...1bE4",
-    hash: "0x8c9d...0e1f",
-    transactionType: "mint",
-    amount: {
-      amount: 58200.4,
-      currency: "USDC",
-      amountSummary: "$58.2k"
-    }
-  },
-  {
-    id: "8",
-    dateTime: "6 weeks ago",
-    wallet: "0x4B56...3cD7",
-    hash: "0x2d3e...4f5a",
-    transactionType: "collateral_deposit",
-    amount: {
-      amount: 125000.0,
-      currency: "DAI",
-      amountSummary: "$125k"
-    }
-  },
-  {
-    id: "9",
-    dateTime: "2 months ago",
-    wallet: "0x6C78...2eF9",
-    hash: "0x0a1b...2c3d",
-    transactionType: "index_deposit",
-    amount: {
-      amount: 87650.3,
-      currency: "USDC",
-      amountSummary: "$87.65k"
-    }
-  },
-  {
-    id: "10",
-    dateTime: "3 months ago",
-    wallet: "0x3D89...1fE2",
-    hash: "0x4e5f...6a7b",
-    transactionType: "bridge",
-    amount: {
-      amount: 215000.0,
-      currency: "DAI",
-      amountSummary: "$215k"
-    }
-  }
-];
+
 
 export const TOKEN_LIST = [
   {
@@ -897,14 +397,44 @@ export const TOKEN_LIST = [
   {
     symbol: 'USDC',
     type: 'erc20',
-    address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC contract address (mainnet)
+    address: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
     decimals: 6,
   },
   {
-    symbol: 'USDT',
+    symbol: 'SYDF',
     type: 'erc20',
-    address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', // USDT contract address (mainnet)
-    decimals: 6,
+    address: '0xcdce4c5ffd9cd0025d536dbc69a12cf7ada82193', 
+    decimals: 18,
+  },
+  {
+    symbol: 'SYME',
+    type: 'erc20',
+    address: '0xbab03330d8b41b20eb540b6361ab30b59d8ee849', 
+    decimals: 18,
+  },
+  {
+    symbol: 'SYAI',
+    type: 'erc20',
+    address: '0x700892f09f8f8589ff3e69341b806adb06bb67fd', 
+    decimals: 18,
+  },
+  {
+    symbol: 'SYL2',
+    type: 'erc20',
+    address: '0x0cee77782fa57cfb66403c94c08e2e3e376dc388', 
+    decimals: 18,
+  },
+  {
+    symbol: 'SYAZ',
+    type: 'erc20',
+    address: '0x8a8cf8860f97d007fcf46ed790df794e008b3ce8', 
+    decimals: 18,
+  },
+  {
+    symbol: 'SY100',
+    type: 'erc20',
+    address: '0x1a64a446e31f19172c6eb3197a1e85ff664af380', 
+    decimals: 18,
   },
 ];
 
@@ -938,6 +468,36 @@ export const TOKEN_METADATA: {
       type: 'erc20',
       address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
       decimals: 6,
+    },
+    SYDF: {
+      type: 'erc20',
+      address: '0xcdce4c5ffd9cd0025d536dbc69a12cf7ada82193', 
+      decimals: 18,
+    },
+    SYME: {
+      type: 'erc20',
+      address: '0xbab03330d8b41b20eb540b6361ab30b59d8ee849', 
+      decimals: 18,
+    },
+    SYAI: {
+      type: 'erc20',
+      address: '0x700892f09f8f8589ff3e69341b806adb06bb67fd', 
+      decimals: 18,
+    },
+    SYL2: {
+      type: 'erc20',
+      address: '0x0cee77782fa57cfb66403c94c08e2e3e376dc388', 
+      decimals: 18,
+    },
+    SYAZ: {
+      type: 'erc20',
+      address: '0x8a8cf8860f97d007fcf46ed790df794e008b3ce8', 
+      decimals: 18,
+    },
+    SY100: {      
+      type: 'erc20',
+      address: '0x1a64a446e31f19172c6eb3197a1e85ff664af380', 
+      decimals: 18,
     },
     // USDT: {
     //   type: 'erc20',

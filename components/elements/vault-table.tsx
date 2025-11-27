@@ -16,23 +16,28 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useLanguage } from "@/contexts/language-context";
+import { useQuoteContext } from "@/contexts/quote-context";
 import { cn } from "@/lib/utils";
 import { RootState } from "@/redux/store";
 import { IndexListEntry } from "@/types/index";
+import { ethers } from "ethers";
 import { ArrowDown, ArrowUp, Copy, Info } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useWallet } from "../../contexts/wallet-context";
 import USDC from "../../public/logos/usd-coin.png";
 import IndexMaker from "../icons/indexmaker";
 import LeftArrow from "../icons/left-arrow";
 import RightArrow from "../icons/right-arrow";
+import AnimatedPrice from "./animate-price";
 import CustomTooltip from "./custom-tooltip";
-import { useQuoteContext } from "@/contexts/quote-context";
-// Import AnimatedPrice to match SupplyPanel styling
-import AnimatedPrice from "./animate-price"; 
+
+const ERC20_ABI = [
+  "function totalSupply() view returns (uint256)",
+  "function decimals() view returns (uint8)",
+];
 
 interface VaultTableProps {
   visibleColumns: { id: string; title: string; visible: boolean }[];
@@ -60,6 +65,11 @@ export function VaultTable({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
+  // Use undefined as initial state to distinguish "loading" from "empty"
+  const [onChainSupplies, setOnChainSupplies] = useState<
+    Record<string, number | undefined>
+  >({});
+
   const selectedVault = useSelector(
     (state: RootState) => state.vault.selectedVault
   );
@@ -72,17 +82,29 @@ export function VaultTable({
   const currentVaults = vaults.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(vaults.length / itemsPerPage);
 
-  // 1. Get Context
-  const { indexPrices } = useQuoteContext(); 
+  const { indexPrices } = useQuoteContext();
+
+  const tokenAddressesRaw = [
+    "SYDF",
+    "0xcdce4c5ffd9cd0025d536dbc69a12cf7ada82193",
+    "SYL2",
+    "0x0cee77782fa57cfb66403c94c08e2e3e376dc388",
+    "SYAZ",
+    "0x8a8cf8860f97d007fcf46ed790df794e008b3ce8",
+    "SYAI",
+    "0x700892f09f8f8589ff3e69341b806adb06bb67fd",
+    "SYME",
+    "0xbab03330d8b41b20eb540b6361ab30b59d8ee849",
+    "SY100",
+    "0x1a64a446e31f19172c6eb3197a1e85ff664af380", // UPDATED ADDRESS
+  ];
 
   const normalize = (s: string) => s.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-  
-  // 2. Helper to get price (same logic pattern as SupplyPanel context usage)
+
   const getLiveIndexPrice = (symbol: string): number | undefined => {
     if (!indexPrices) return undefined;
     if (indexPrices[symbol] != null) return Number(indexPrices[symbol]);
-    
-    // Fallback normalization logic
+
     const norm = normalize(symbol);
     for (const [k, v] of Object.entries(indexPrices)) {
       if (normalize(k) === norm) return Number(v);
@@ -97,26 +119,90 @@ export function VaultTable({
           n
         );
 
-  // 3. Compute live total supply (USDC) per ticker using live prices.
+  // Effect: Fetch On-Chain Total Supply (Async & Staggered)
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchAllSuppliesStaggered = () => {
+      const provider = wallet?.provider;
+      if (!provider) return;
+
+      // Loop through addresses
+      for (let i = 0; i < tokenAddressesRaw.length; i += 2) {
+        const ticker = tokenAddressesRaw[i];
+        const address = tokenAddressesRaw[i + 1];
+
+        // Define an async function for THIS specific token
+        const fetchSingle = async () => {
+          // 1. Add a random delay between 0ms and 2000ms to stagger the updates visually
+          const randomDelay = Math.random() * 2000;
+          await new Promise((resolve) => setTimeout(resolve, randomDelay));
+
+          if (!isMounted) return;
+
+          try {
+            const contract = new ethers.Contract(address, ERC20_ABI, provider);
+
+            const [supplyRaw, decimals] = await Promise.all([
+              contract.totalSupply(),
+              contract.decimals().catch(() => 18),
+            ]);
+
+            const formattedSupply = parseFloat(
+              ethers.formatUnits(supplyRaw, decimals)
+            );
+
+            // 2. Update state individually as the result comes in
+            if (isMounted) {
+              setOnChainSupplies((prev) => ({
+                ...prev,
+                [ticker]: formattedSupply,
+              }));
+            }
+          } catch (error) {
+            console.error(`Failed to fetch supply for ${ticker}`, error);
+            if (isMounted) {
+              setOnChainSupplies((prev) => ({
+                ...prev,
+                [ticker]: 0,
+              }));
+            }
+          }
+        };
+
+        // Fire the async function
+        fetchSingle();
+      }
+    };
+
+    fetchAllSuppliesStaggered();
+
+    // Poll every 60s
+    const interval = setInterval(fetchAllSuppliesStaggered, 60000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [wallet?.provider]);
+
+  // Memoized AUM calculation
   const liveTotalSupplyUSDByTicker = useMemo(() => {
     const map: Record<string, number> = {};
+
     for (const v of vaults) {
-      const qty = Number(v.totalSupply ?? 0); 
-      const livePrice = getLiveIndexPrice(v.ticker); 
-      let usd: number;
-      
+      const qty = onChainSupplies[v.ticker] ?? 0;
+      const livePrice = getLiveIndexPrice(v.ticker);
+
+      let usd = 0;
       if (livePrice != null && !Number.isNaN(livePrice)) {
-        // Calculate based on Live Price * Quantity
         usd = qty * livePrice;
-      } else if ((v as any).totalSupplyUSD != null) {
-        usd = Number((v as any).totalSupplyUSD) || 0;
-      } else {
-        usd = Number(v.totalSupply) || 0;
       }
+
       map[v.ticker] = usd;
     }
     return map;
-  }, [vaults, indexPrices]);
+  }, [vaults, indexPrices, onChainSupplies]);
 
   const handleSort = (columnId: string) => {
     if (!onSort) return;
@@ -227,9 +313,15 @@ export function VaultTable({
                   </TableRow>
                 ))
               : currentVaults.map((vault: IndexListEntry) => {
-                  const liveSupplyUSD = liveTotalSupplyUSDByTicker[vault.ticker] ?? 0;
-                  // Get unit price for display
                   const unitPrice = getLiveIndexPrice(vault.ticker);
+                  const rawSupply = onChainSupplies[vault.ticker];
+                  const liveSupplyUSD =
+                    liveTotalSupplyUSDByTicker[vault.ticker] ?? 0;
+
+                  // Loading states
+                  const isPriceLoaded = unitPrice !== undefined;
+                  const isSupplyLoaded = rawSupply !== undefined;
+                  const isAumLoaded = isPriceLoaded && isSupplyLoaded;
 
                   return (
                     <TableRow
@@ -271,22 +363,23 @@ export function VaultTable({
                                 </div>
                               )}
 
-                              {/* MODIFIED: Ticker Column now shows Ticker + Live Price */}
                               {col.id === "ticker" && (
                                 <div
                                   className="flex flex-col justify-center"
                                   onClick={() => assetDetail(vault)}
                                 >
-                                  <span className="text-card">{vault.ticker}</span>
-                                  {/* Live Unit Price Display */}
-                                  <span className="text-[10px] text-muted-foreground flex items-center">
-                                    {unitPrice ? (
-                                      <AnimatedPrice 
-                                        currency="USDC" 
-                                        value={unitPrice} 
+                                  <span className="text-card">
+                                    {vault.ticker}
+                                  </span>
+                                  {/* Price Loading State */}
+                                  <span className="text-[10px] text-muted-foreground flex items-center h-[16px]">
+                                    {isPriceLoaded ? (
+                                      <AnimatedPrice
+                                        currency="USDC"
+                                        value={unitPrice}
                                       />
                                     ) : (
-                                      <span className="opacity-50">-</span>
+                                      <div className="h-2.5 w-12 bg-accent/80 animate-pulse rounded mt-0.5" />
                                     )}
                                   </span>
                                 </div>
@@ -305,8 +398,14 @@ export function VaultTable({
                                       height={12}
                                       className="object-cover w-[12px] h-[12px]"
                                     />
-                                    {/* LIVE total supply in USDC */}
-                                    <span>{formatUSD(liveSupplyUSD)} USDC</span>
+                                    {/* AUM Loading State */}
+                                    {isAumLoaded ? (
+                                      <span className="animate-in fade-in zoom-in duration-300">
+                                        {formatUSD(liveSupplyUSD)} USDC
+                                      </span>
+                                    ) : (
+                                      <div className="h-3 w-20 bg-accent/80 animate-pulse rounded" />
+                                    )}
                                   </div>
                                 </div>
                               )}

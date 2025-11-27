@@ -44,7 +44,7 @@ import {
   mockup_vaults,
 } from "@/lib/data";
 import { getIndexData } from "@/lib/IndexMockupData";
-import { cn, getERC20AddressForIndex, shortenAddress } from "@/lib/utils";
+import { cn, shortenAddress } from "@/lib/utils";
 import { RootState } from "@/redux/store";
 import { addSelectedVault } from "@/redux/vaultSlice";
 import { IndexListEntry } from "@/types/index";

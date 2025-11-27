@@ -605,7 +605,7 @@ export function SupplyPanel({
                   ⚠️Withdraw and Invest are pause until DAO is formed.
                 </span>
                 <div className="w-full text-[13px] text-secondary text-right">
-                  Estimated Fill Time : ~15 Minutes
+                  Estimated Fill Time : ~5 seconds
                 </div>
               </div>
               <div className="flex gap-10 lg:gap-10 items-center h-[40px] justify-between relative">

@@ -263,16 +263,6 @@ export function EarnContent({
           ...column,
         }))
     );
-    // if (wallet && currentChainId === selectedNetwork) {
-    // } else {
-    //   setVisibleColumns(
-    //     columns
-    //       .filter((column) => column.visible && column.id !== "actions")
-    //       .map((column) => ({
-    //         ...column,
-    //       }))
-    //   );
-    // }
   }, [wallet, columns, currentChainId, selectedNetwork]);
 
   useEffect(() => {
@@ -464,7 +454,12 @@ export function EarnContent({
                         tokenAddresses={[
                           "native", // show native chain balance
                           "0x833589fCD6eDb6E08f4c7C32D4f71b54bDa02913", // USDC on Base, for example
-                          "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", // DAI on Base (example)
+                          "0xcdce4c5ffd9cd0025d536dbc69a12cf7ada82193", // SYME 
+                          "0x0cee77782fa57cfb66403c94c08e2e3e376dc388", // SYL2
+                          "0x8a8cf8860f97d007fcf46ed790df794e008b3ce8", // SYAZ
+                          "0x700892f09f8f8589ff3e69341b806adb06bb67fd", // SYAI
+                          "0xbab03330d8b41b20eb540b6361ab30b59d8ee849", // SYDF
+                          "0x03a4Ba7e555330a0631F457BA55b751785DEe091", // SY100
                         ]}
                         prices={{
                           native: 3200, // optional USD price for gas token
@@ -475,8 +470,18 @@ export function EarnContent({
                           native: "/logos/ethereum.png",
                           "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913":
                             "/logos/usd-coin.png",
-                          "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca":
-                            "/logos/dai.png",
+                          "0xcdce4c5ffd9cd0025d536dbc69a12cf7ada82193":
+                            "/logos/ethereum.png",
+                          "0x0cee77782fa57cfb66403c94c08e2e3e376dc388":
+                            "/logos/ethereum.png",
+                          "0x8a8cf8860f97d007fcf46ed790df794e008b3ce8":
+                            "/logos/ethereum.png",
+                          "0x700892f09f8f8589ff3e69341b806adb06bb67fd":
+                            "/logos/ethereum.png",
+                          "0xbab03330d8b41b20eb540b6361ab30b59d8ee849":
+                            "/logos/ethereum.png",
+                          "0x03a4Ba7e555330a0631F457BA55b751785DEe091":
+                            "/logos/ethereum.png",
                         }}
                         explorerBaseUrl="https://basescan.org"
                       />
