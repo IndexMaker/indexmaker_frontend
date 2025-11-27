@@ -145,7 +145,9 @@ export async function fetchMintInvoices(
     const toStr = formatAPIDateUTC(toUTCStartOfDay(to), true);
 
     const url = `${API_BASE_URL}/mint_invoices/from/${fromStr}/to/${toStr}`;
+    console.log("Fetching mint invoices from:", fromStr, "to:", toStr);
     const response = await fetch(url, { cache: "no-store" });
+    console.log("Response:", response);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch mint invoices (${response.status})`);

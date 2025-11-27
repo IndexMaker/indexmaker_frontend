@@ -2,10 +2,13 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { ethers } from "ethers";
-import { useWallet } from "@/contexts/wallet-context"; // your WalletProvider above
+import { useWallet } from "@/contexts/wallet-context";
 import WalletHoldingsTable, { ITPBalance } from "./wallet-assets";
 import { fetchDepositTransactionData } from "@/server/indices";
 import { SupplyPosition } from "@/lib/data";
+// 1. Import Redux hooks
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
 
 /**
  * Minimal ERC20 ABI for balance/decimals/symbol/name
@@ -38,7 +41,7 @@ export interface ConnectedWalletBalancesProps {
 export default function ConnectedWalletBalances({
   tokenAddresses,
   logos = {},
-  prices = {},
+  prices: propPrices = {}, // Renamed to avoid confusion with Redux prices
   hideZeroBalances = true,
   pollInterval = 30_000,
   explorerBaseUrl = "https://basescan.org",
@@ -46,6 +49,11 @@ export default function ConnectedWalletBalances({
 }: ConnectedWalletBalancesProps) {
   const { wallet, address, isConnected } = useWallet();
   const [supplyPositions, setSupplyPositions] = useState<any[]>([]);
+
+  // 2. Select Prices from Redux
+  const { prices: reduxPrices } = useSelector(
+    (state: RootState) => state.marketData
+  );
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
@@ -68,10 +76,31 @@ export default function ConnectedWalletBalances({
     [tokenAddresses]
   );
 
+  // Helper to normalize tickers for lookup (remove special chars, uppercase)
+  const normalizeTicker = (s: string) =>
+    s.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+
+  // Helper to find price: Redux Ticker -> Redux Address -> Prop Address
+  const getPrice = useCallback(
+    (symbol: string, address: string) => {
+      // 1. Check Redux by Symbol/Ticker (most common for this app)
+      const tickerPrice = reduxPrices[symbol] ?? reduxPrices[normalizeTicker(symbol)];
+      if (tickerPrice !== undefined) return Number(tickerPrice);
+
+      // 2. Check Redux by Address (if stored by address)
+      const addrPrice = reduxPrices[address] ?? reduxPrices[address.toLowerCase()];
+      if (addrPrice !== undefined) return Number(addrPrice);
+
+      // 3. Fallback to Props
+      return propPrices[address.toLowerCase()] ?? propPrices[symbol];
+    },
+    [reduxPrices, propPrices]
+  );
+
   useEffect(() => {
     if (wallet?.accounts) {
       let intervalId: NodeJS.Timeout;
-      setSupplyPositions([])
+      setSupplyPositions([]);
       const _fetchDepositTransaction = async (_indexId: number) => {
         try {
           const response = await fetchDepositTransactionData(
@@ -126,6 +155,10 @@ export default function ConnectedWalletBalances({
           provider.getNetwork(),
         ]);
         const symbol = nativeSymbolFromChainId(Number(net.chainId));
+        
+        // Resolve Price for Native
+        const price = getPrice(symbol, "native");
+
         results.push({
           address: "native",
           symbol,
@@ -133,7 +166,7 @@ export default function ConnectedWalletBalances({
           logoUrl: logos["native"],
           balanceRaw: bal.toString(),
           decimals: 18,
-          usdPrice: prices["native"],
+          usdPrice: price,
         });
       }
 
@@ -149,6 +182,10 @@ export default function ConnectedWalletBalances({
             contract.name().catch(() => undefined),
           ]);
           const bal = await contract.balanceOf(address);
+          
+          // Resolve Price using Symbol or Address
+          const price = getPrice(symbol, addrLower);
+
           results.push({
             address: ethers.getAddress(addrLower),
             symbol,
@@ -156,7 +193,7 @@ export default function ConnectedWalletBalances({
             logoUrl: logos[addrLower],
             balanceRaw: bal.toString(),
             decimals: Number(decimals),
-            usdPrice: prices[addrLower],
+            usdPrice: price,
           });
         })
       );
@@ -168,15 +205,16 @@ export default function ConnectedWalletBalances({
     } finally {
       setLoading(false);
     }
-  }, [provider, address, normalized, logos, prices]);
+  }, [provider, address, normalized, logos, getPrice]); 
 
-  // initial + polling
+  // Initial + Polling
+  // Re-run if Redux prices change (via getPrice dependency)
   useEffect(() => {
     fetchBalances();
     if (!isConnected || !provider || !address) return;
     const id = setInterval(fetchBalances, pollInterval);
     return () => clearInterval(id);
-  }, []);
+  }, [fetchBalances, pollInterval, isConnected, provider, address]);
 
   return (
     <WalletHoldingsTable

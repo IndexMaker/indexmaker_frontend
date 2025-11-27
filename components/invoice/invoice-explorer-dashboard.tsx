@@ -13,8 +13,9 @@ import { Asset, MintInvoice } from "@/types";
 import {
   fetchAssets,
   fetchInventory,
-  fetchMintInvoices,
+  // fetchMintInvoices, // Import is already present below, removed duplicate
 } from "@/server/invoice";
+import { fetchMintInvoices } from "@/server/invoice"; // Explicitly imported for clarity
 import { useDispatch, useSelector } from "react-redux";
 import { setAssets } from "@/redux/assetSlice";
 import { RootState } from "@/redux/store";
@@ -26,6 +27,7 @@ import {
   setLoading,
 } from "@/redux/mintInvoicesSlice";
 import { useWallet } from "@/contexts/wallet-context";
+
 const now = new Date();
 
 // Default “from”: Jan 1, 2025 @ 00:00:00 UTC
@@ -43,6 +45,7 @@ const DEFAULT_TO = new Date(
     0
   )
 );
+
 export function InvoiceExplorerDashboard() {
   const [loadingAssets, setLoadingAssets] = useState(true);
   const [loadingInvoices, setLoadingInvoices] = useState(true);
@@ -294,9 +297,6 @@ export function InvoiceExplorerDashboard() {
               Track and analyze Index Mint Invoices and Inventory Audit
             </p>
           </div>
-          {/* <Badge variant="secondary" className="px-3 py-1">
-            Live Network
-          </Badge> */}
         </div>
 
         <AdvancedSearch
@@ -316,7 +316,8 @@ export function InvoiceExplorerDashboard() {
         onValueChange={setActiveTab}
         className="space-y-6 w-full"
       >
-        <TabsList className="grid grid-cols-2 w-full bg-foreground">
+        {/* CHANGED: grid-cols-2 to grid-cols-1 to accommodate the single remaining tab */}
+        <TabsList className="grid grid-cols-1 w-full bg-foreground">
           <TabsTrigger
             value="invoices"
             className="flex items-center gap-2 bg-foreground text-secondary"
@@ -324,13 +325,15 @@ export function InvoiceExplorerDashboard() {
             <FileText className="h-4 w-4" />
             Mint Invoices
           </TabsTrigger>
-          <TabsTrigger
+          
+          {/* TEMPORARILY COMMENTED OUT: Supply to Expected Inventory Trigger */}
+          {/* <TabsTrigger
             value="assets"
             className="flex items-center gap-2 bg-foreground text-secondary"
           >
             <Activity className="h-4 w-4" />
             Supply to Expected Inventory
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="invoices" className="space-y-4">
@@ -341,6 +344,10 @@ export function InvoiceExplorerDashboard() {
             </Badge>
           </div>
 
+          {/* Note: The USDC Amount 2 precision max must be implemented 
+              inside the InvoiceTable component, as it handles the rendering. 
+              The raw data is passed here to preserve sorting accuracy. 
+          */}
           <InvoiceTable invoices={filteredInvoices} />
 
           {filteredInvoices.length === 0 && (
@@ -352,7 +359,8 @@ export function InvoiceExplorerDashboard() {
           )}
         </TabsContent>
 
-        <TabsContent value="assets" className="space-y-4">
+        {/* TEMPORARILY COMMENTED OUT: Supply to Expected Inventory Content */}
+        {/* <TabsContent value="assets" className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-[20px] text-primary">
               Supply to Expected Inventory
@@ -371,7 +379,7 @@ export function InvoiceExplorerDashboard() {
               </p>
             </Card>
           )}
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
     </div>
   );

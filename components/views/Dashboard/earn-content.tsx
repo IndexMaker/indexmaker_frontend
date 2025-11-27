@@ -42,6 +42,7 @@ import Image from "next/image";
 import USDC from "../../../public/logos/usd-coin.png";
 import { Asset } from "@/types";
 import { fetchAssets, fetchInventory } from "@/server/invoice";
+
 type ColumnType = {
   id: string;
   title: string;
@@ -86,15 +87,22 @@ export function EarnContent({
   const [activeMyearnTab, setActiveMyearnTab] = useState<
     "position" | "historic"
   >("position");
-  // const storedWallet = useSelector((state: RootState) => state.wallet?.wallet);
+  
   const { selectedNetwork, currentChainId } = useSelector(
     (state: RootState) => state.network
   );
 
   const dispatch = useDispatch();
-  
-
   const { indexPrices } = useQuoteContext();
+
+  // --- REDUX SELECTORS ---
+  const storedIndexes = useSelector((state: RootState) => state.index.indices);
+  const totalManaged = useSelector((state: RootState) => state.index.totalManaged);
+  
+  // Get Live Prices and Supplies from the Market Data Slice
+  const { prices: reduxPrices, supplies: reduxSupplies } = useSelector(
+    (state: RootState) => state.marketData
+  );
 
   const formatUSDC = (n?: number) =>
     n == null || Number.isNaN(n)
@@ -107,21 +115,9 @@ export function EarnContent({
     useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [indexLists, setIndexLists] = useState<IndexListEntry[]>([]);
-  const [selectedIndexId, setSelectedIndexId] = useState<number | null>(null);
 
-  const storedIndexes = useSelector((state: RootState) => state.index.indices);
-
-  // ---- helper to get a live price for a ticker ----
+  // ---- helper to get a live price for a ticker (Redux Aware) ----
   const normalize = (s: string) => s.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-  const getLiveIndexPrice = (symbol?: string): number | undefined => {
-    if (!symbol || !indexPrices) return undefined;
-    if (indexPrices[symbol] != null) return Number(indexPrices[symbol]);
-    const norm = normalize(symbol);
-    for (const [k, v] of Object.entries(indexPrices)) {
-      if (normalize(k) === norm) return Number(v);
-    }
-    return undefined;
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -143,35 +139,48 @@ export function EarnContent({
     dispatch(clearSelectedVault());
   }, []);
 
-  // ---- compute & dispatch live total managed (AUM) whenever data or prices change ----
+  // ------------------------------------------------------------------
+  //  MODIFIED: Calculate Total Deposits (AUM) using Redux Market Data
+  // ------------------------------------------------------------------
   useEffect(() => {
-    // Prefer Redux indices; fall back to local state
+    // 1. Identify which list of indexes to use
     const indices: IndexListEntry[] =
       storedIndexes && storedIndexes.length > 0 ? storedIndexes : indexLists;
 
     if (!indices || indices.length === 0) return;
 
-    const liveAUM = indices.reduce((acc, idx) => {
-      const qty = Number(idx.totalSupply || 0); // minted quantity (index tokens)
-      const livePrice = getLiveIndexPrice(idx.ticker); // USDC per token
+    // 2. Sum up (Supply * Price) for every asset
+    const liveTotalAUM = indices.reduce((acc, idx) => {
+      const ticker = idx.ticker;
 
-      if (livePrice != null && Number.isFinite(livePrice)) {
-        return acc + qty * livePrice;
+      // Get Supply from Redux (Live on-chain data)
+      const supply = reduxSupplies[ticker] ?? 0;
+
+      // Get Price from Redux (Live feed)
+      let price = reduxPrices[ticker];
+
+      // Fallback: Fuzzy match price if exact ticker not found
+      if (price === undefined) {
+        const norm = normalize(ticker);
+        for (const [k, v] of Object.entries(reduxPrices)) {
+          if (normalize(k) === norm) {
+            price = v;
+            break;
+          }
+        }
       }
 
-      // Fallbacks:
-      // - backend-provided USD if available
-      if ((idx as any).totalSupplyUSD != null) {
-        return acc + Number((idx as any).totalSupplyUSD || 0);
-      }
-      // - last resort: treat totalSupply as USDC (legacy behavior)
-      return acc + Number(idx.totalSupply || 0);
+      // Calculate USD value for this asset
+      const assetValueUSD = supply * (price ?? 0);
+
+      return acc + assetValueUSD;
     }, 0);
 
-    dispatch(setTotalManaged(String(liveAUM)));
-  }, [indexPrices, storedIndexes, indexLists, dispatch]);
+    // 3. Update Redux with the new Total Managed value
+    dispatch(setTotalManaged(String(liveTotalAUM)));
+  }, [reduxPrices, reduxSupplies, storedIndexes, indexLists, dispatch]);
 
- 
+
   // Function to handle sorting
   const handleSort = (columnId: string, direction: "asc" | "desc") => {
     setSortColumn(columnId);
@@ -245,6 +254,7 @@ export function EarnContent({
       });
     else return filtered;
   }, [searchQuery, sortColumn, sortDirection, storedIndexes]);
+  
   // Function to handle column visibility changes
   const handleColumnVisibilityChange = (columnId: string, visible: boolean) => {
     setColumns(
@@ -265,6 +275,7 @@ export function EarnContent({
     );
   }, [wallet, columns, currentChainId, selectedNetwork]);
 
+  // Kept for inventory/assets logic, but decoupled from Total Deposits display
   useEffect(() => {
     const loadAssets = async () => {
       try {
@@ -306,12 +317,6 @@ export function EarnContent({
     return () => clearInterval(intervalId); // Cleanup on unmount
   }, []);
 
-
-  const totalVolume = assets.reduce(
-    (sum, asset) => sum + asset.expected_inventory,
-    0
-  );
-
   if (showHowEarnWorks) {
     return (
       <div className="bg-foreground border-none border-zinc-800 rounded-lg p-0 -mt-[60px] md:mt-0">
@@ -328,7 +333,7 @@ export function EarnContent({
             {t("common.index")}
           </h1>
           <div className="hidden gap-3 md:flex">
-            {/* <Link href={"./analytics"}> */}
+            {/* Total Deposits Card */}
             <Card className="bg-foreground gap-5 border-none cursor-pointer p-5 flex flex-col h-[98px] min-w-[194px] rounded-[12px]">
               <CardHeader className="flex flex-row items-center justify-between p-0 w-full">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -343,7 +348,8 @@ export function EarnContent({
               <CardContent className="p-0 h-[20px]">
                 <div className="flex items-center justify-between font-normal text-secondary text-[15px] pb-2">
                   <span>
-                    {totalVolume   ? formatUSDC(Number(totalVolume)) : 0}
+                     {/* Updated to use totalManaged from Redux instead of local totalVolume */}
+                    {totalManaged ? formatUSDC(Number(totalManaged)) : "0.00"}
                   </span>
                   <Image
                     src={USDC}
@@ -355,27 +361,6 @@ export function EarnContent({
                 </div>
               </CardContent>
             </Card>
-            {/* </Link> */}
-
-            {/* <Link href={"./analytics"}>
-              <Card className="bg-foreground gap-5 border-none cursor-pointer p-5 flex flex-col h-[98px] min-w-[194px] rounded-[12px]">
-                <CardHeader className="flex flex-row items-center justify-between p-0 w-full">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Borrow className="h-[14px] w-[14px]" />
-                      <div className="text-secondary text-[12px]">
-                        {t("common.totalBorrow")}
-                      </div>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0 h-[20px]">
-                  <div className="text-[15px] font-normal text-secondary mb-2">
-                    ${totalVolume ? totalVolume : 0}
-                  </div>
-                </CardContent>
-              </Card>
-            </Link> */}
           </div>
         </div>
 
@@ -453,7 +438,7 @@ export function EarnContent({
                       <ConnectedWalletBalances
                         tokenAddresses={[
                           "native", // show native chain balance
-                          "0x833589fCD6eDb6E08f4c7C32D4f71b54bDa02913", // USDC on Base, for example
+                          "0x833589fCD6eDb6E08f4c7C32D4f71b54bDa02913", // USDC on Base
                           "0xcdce4c5ffd9cd0025d536dbc69a12cf7ada82193", // SYME 
                           "0x0cee77782fa57cfb66403c94c08e2e3e376dc388", // SYL2
                           "0x8a8cf8860f97d007fcf46ed790df794e008b3ce8", // SYAZ
@@ -462,7 +447,7 @@ export function EarnContent({
                           "0x03a4Ba7e555330a0631F457BA55b751785DEe091", // SY100
                         ]}
                         prices={{
-                          native: 3200, // optional USD price for gas token
+                          native: 3200, 
                           "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": 1,
                           "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca": 1,
                         }}
@@ -504,7 +489,6 @@ export function EarnContent({
               <CustomButton
                 variant="secondary"
                 className="h-auto text-[11px] rounded-[2px]"
-                // onClick={() => setShowHowEarnWorks(true)}
               >
                 <Link
                   target="_blank"
