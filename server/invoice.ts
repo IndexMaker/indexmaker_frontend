@@ -1,7 +1,7 @@
 import { Asset, CollateralSide, InventoryResponse, Lot, MintInvoice, Position } from "@/types";
 
 const API_BASE_URL = "/api/issuer";
-const API_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API;
+const API_BACKEND_URL = process.env.NEXT_PUBLIC_INDEXMAKER_API;
 const toUTCStartOfDay = (d: Date) =>
   new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0)
