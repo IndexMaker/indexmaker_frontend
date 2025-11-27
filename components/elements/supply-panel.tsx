@@ -508,7 +508,8 @@ export function SupplyPanel({
             })}
           </div>
 
-          <div className="flex flex-col p-4 border-t border-accent">
+          {/* Previous Mint Invoices Section - Commented Out */}
+          {/* <div className="flex flex-col p-4 border-t border-accent">
             <h3 className="text-[14px] text-primary font-semibold mb-2">
               Previous Mint Invoices
             </h3>
@@ -525,7 +526,6 @@ export function SupplyPanel({
 
               return (
                 <div className="p-2 rounded-lg bg-accent border border-accent flex flex-col gap-1">
-                  {/* Header: time + status */}
                   <div className="flex items-center justify-between text-[12px]">
                     <span className="text-secondary">
                       {format(new Date(latest.timestamp), "MMM d, HH:mm:ss")}
@@ -535,7 +535,6 @@ export function SupplyPanel({
                     </span>
                   </div>
 
-                  {/* Amount + invoice ID in one block */}
                   <div className="flex items-center gap-2 text-[13px] text-primary">
                     <Image
                       src={USDC}
@@ -573,7 +572,6 @@ export function SupplyPanel({
                     </span>
                   </div>
 
-                  {/* Progress bar */}
                   <div className="relative h-4 bg-background rounded-full overflow-hidden mt-1">
                     <div
                       className="h-full bg-blue-500 transition-all"
@@ -583,10 +581,11 @@ export function SupplyPanel({
                       100%
                     </span>
                   </div>
-                </div>
+                </div> 
               );
             })()}
-          </div>
+          </div> */}
+
           {/* Footer */}
           {!wallet ? (
             <div className="p-4 flex flex-col gap-2 border-t border-accent bottom-[50px] absolute w-full">

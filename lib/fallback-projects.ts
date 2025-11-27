@@ -4,8 +4,8 @@ export const fallbackProjects: Project[] = [
   {
     id: 1,
     projectId: "symmio",
-    name: "Symmio Index",
-    description: "Indexes for onchain treasury management",
+    name: "Symmio",
+    description: "Derivatives Peer2Peer clearing infrastructure",
     icon: "aragon",
     websiteUrl: "https://symm.io",
     docsUrl: "https://docs.symmio.org",

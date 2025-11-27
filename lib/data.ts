@@ -272,9 +272,9 @@ export const projects: Project[] = [
   {
     id: 1,
     projectId: "symmio",
-    name: "Symmio Index",
+    name: "Symmio",
     description:
-      "Building full-stack onchain juridiction, enabling index providers to launch liquidity in minutes.",
+      "",
     icon: "aragon",
   },
   {

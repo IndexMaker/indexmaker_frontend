@@ -111,7 +111,7 @@ export const indexData: any = {
         imageClassName: "w-full h-[100px] object-cover",
         title: "Breakthrough biotechs with a bright future",
         description:
-          "Symmio Index's Founder considers SY100 as a way to replace Bitcoin in a portfolio to keep growth with smaller market caps while diversifying risk.",
+          "",
         isLink: true,
       },
       {
@@ -120,7 +120,7 @@ export const indexData: any = {
         imageClassName: "w-[135px] h-[135px] object-cover",
         title: "Finance Revolution  ",
         description:
-          "Symmio Index sees crypto large cap as the most compelling multiyear investment theme that is going to drive major disruption across a variety of businesses.",
+          "",
         isLink: true,
       },
     ],

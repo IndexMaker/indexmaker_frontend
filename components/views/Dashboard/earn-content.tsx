@@ -347,10 +347,12 @@ export function EarnContent({
               </CardHeader>
               <CardContent className="p-0 h-[20px]">
                 <div className="flex items-center justify-between font-normal text-secondary text-[15px] pb-2">
-                  <span>
-                     {/* Updated to use totalManaged from Redux instead of local totalVolume */}
-                    {totalManaged ? formatUSDC(Number(totalManaged)) : "0.00"}
-                  </span>
+                  {/* Updated Logic: Show loading if isLoading is true OR totalManaged is 0/undefined */}
+                  {isLoading || !totalManaged || Number(totalManaged) === 0 ? (
+                    <div className="h-5 w-24 bg-muted/50 animate-pulse rounded" />
+                  ) : (
+                    <span>{formatUSDC(Number(totalManaged))}</span>
+                  )}
                   <Image
                     src={USDC}
                     alt={"Total Supply"}
