@@ -1,7 +1,7 @@
 import { Asset, CollateralSide, InventoryResponse, Lot, MintInvoice, Position } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_INDEXMAKER_API;
-const API_BACKEND_URL = process.env.NEXT_PUBLIC_INDEXMAKER_API;
+const API_BASE_URL = "/api/issuer";
+const API_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API;
 const toUTCStartOfDay = (d: Date) =>
   new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0)
@@ -125,6 +125,7 @@ export async function fetchAssets(): Promise<Asset[]> {
 export async function fetchInventory(): Promise<InventoryResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/inventory/all`);
+    console.log("Fetching inventory from:", response);
 
     if (!response.ok) {
       throw new Error("Failed to fetch inventory");
@@ -145,9 +146,7 @@ export async function fetchMintInvoices(
     const toStr = formatAPIDateUTC(toUTCStartOfDay(to), true);
 
     const url = `${API_BASE_URL}/mint_invoices/from/${fromStr}/to/${toStr}`;
-    console.log("Fetching mint invoices from:", fromStr, "to:", toStr);
     const response = await fetch(url, { cache: "no-store" });
-    console.log("Response:", response);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch mint invoices (${response.status})`);
