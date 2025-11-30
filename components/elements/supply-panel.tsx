@@ -18,7 +18,7 @@ import {
 import { Copy, X } from "lucide-react";
 import Image from "next/image";
 import { selectLatestMintInvoice } from "@/redux/mintInvoicesSlice";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react"; // Added useRef
 import { useDispatch, useSelector } from "react-redux";
 import { useMediaQuery } from "react-responsive";
 import { formatEther, formatUnits } from "viem";
@@ -62,7 +62,9 @@ export function SupplyPanel({
   open,
   setOpen,
 }: SupplyPanelProps) {
-  const pollInterval = 60_000; // Increased to 60s to avoid rate limits
+  // OPTIMIZATION 1: Increased poll interval to 60 seconds to reduce load
+  const pollInterval = 60_000; 
+  
   const { wallet, isWhitelisted, connectWallet } = useWallet();
   const { indexPrices } = useQuoteContext();
   const [quantity, setQuantity] = useState<{ [key: string]: number }>({});
@@ -80,9 +82,8 @@ export function SupplyPanel({
     (state: RootState) => state.vault.selectedVault
   );
   const [balances, setBalances] = useState<{ [key: string]: number }>({});
-  const [loading, setLoading] = useState(false);
   
-  // Ref to prevent overlapping fetches
+  // OPTIMIZATION 2: Add a loading ref to prevent overlapping fetches
   const isFetchingRef = useRef(false);
 
   const dispatch = useDispatch();
@@ -118,12 +119,11 @@ export function SupplyPanel({
     return () => window.removeEventListener("resize", handleResize);
   }, [setOpen]);
 
-  // Optimized Fetch Logic
+  // OPTIMIZATION 3: Completely refactored fetchBalances to use Multicall
   useEffect(() => {
     const fetchBalances = async () => {
-      // 1. Initial Checks: We need a Chain ID and Metadata.
-      // We DO NOT check for 'wallet' here, so this runs even if disconnected.
-      if (!currentChainId || !TOKEN_METADATA[currentChainId] || isFetchingRef.current) {
+      // Prevent fetching if wallet is missing or already fetching
+      if (!wallet || !currentChainId || !TOKEN_METADATA[currentChainId] || isFetchingRef.current) {
         return;
       }
 
@@ -131,72 +131,60 @@ export function SupplyPanel({
 
       try {
         const client = getViemClient(currentChainId);
-        
-        // Safely access address (undefined if disconnected)
-        const address = wallet?.accounts?.[0]?.address as `0x${string}` | undefined;
-
+        const address = wallet.accounts[0].address as `0x${string}`;
         const newBalances: { [key: string]: number } = {};
         const tokens = TOKEN_METADATA[currentChainId];
-        const promises = [];
 
-        // --- PUBLIC DATA SECTION ---
-        // If you need to fetch data that doesn't require a wallet (e.g. Vault TVL),
-        // push those promises here.
+        // 1. Separate Native token from ERC20s
+        let nativeTokenKey: string | null = null;
+        const erc20Tokens: { key: string; address: string; decimals: number }[] = [];
 
-        // --- PRIVATE DATA SECTION (User Balances) ---
-        if (address) {
-            let nativeTokenKey: string | null = null;
-            const erc20Tokens: { key: string; address: string; decimals: number }[] = [];
-
-            // Sort tokens into Native vs ERC20
-            for (const [key, meta] of Object.entries(tokens)) {
-                if (meta.type === "native") {
-                    nativeTokenKey = key;
-                } else if (meta.type === "erc20" && meta.address) {
-                    erc20Tokens.push({ key, address: meta.address, decimals: meta.decimals });
-                }
-            }
-
-            // A. Fetch Native Balance
-            if (nativeTokenKey) {
-                promises.push(
-                    client.getBalance({ address })
-                        .then(b => ({ type: 'native', key: nativeTokenKey, val: b }))
-                        .catch(() => ({ type: 'native', key: nativeTokenKey, val: 0n }))
-                );
-            }
-
-            // B. Fetch ERC20 Balances via Multicall (Batching)
-            if (erc20Tokens.length > 0) {
-                const contractCalls = erc20Tokens.map(t => ({
-                    address: t.address as `0x${string}`,
-                    abi: ERC20_ABI,
-                    functionName: 'balanceOf',
-                    args: [address]
-                }));
-
-                // Using allowFailure: true ensures one error doesn't break the whole batch
-                promises.push(
-                    client.multicall({ contracts: contractCalls, allowFailure: true })
-                        .then(results => ({ type: 'multicall', results, tokenList: erc20Tokens }))
-                );
-            }
-        } else {
-            // Wallet disconnected: Reset balances
-            setBalances({});
+        for (const [key, meta] of Object.entries(tokens)) {
+          if (meta.type === "native") {
+            nativeTokenKey = key;
+          } else if (meta.type === "erc20" && meta.address) {
+            erc20Tokens.push({ key, address: meta.address, decimals: meta.decimals });
+          }
         }
 
-        // Execute all requests (Public + Private)
+        // 2. Create Promises array
+        // We will run the Native Balance call AND the ERC20 Multicall in parallel
+        const promises = [];
+
+        // A. Native Balance Request
+        if (nativeTokenKey) {
+          promises.push(
+            client.getBalance({ address })
+              .then(b => ({ type: 'native', key: nativeTokenKey, val: b }))
+              .catch(() => ({ type: 'native', key: nativeTokenKey, val: 0n }))
+          );
+        }
+
+        // B. ERC20 Multicall Request (Batches all ERC20s into 1 HTTP request)
+        if (erc20Tokens.length > 0) {
+            const contractCalls = erc20Tokens.map(t => ({
+                address: t.address as `0x${string}`,
+                abi: ERC20_ABI,
+                functionName: 'balanceOf',
+                args: [address]
+            }));
+
+            // Use allowFailure: true so one broken token doesn't crash the whole app
+            promises.push(
+                client.multicall({ contracts: contractCalls, allowFailure: true })
+                    .then(results => ({ type: 'multicall', results }))
+            );
+        }
+
         const responses = await Promise.all(promises);
 
-        // Process Results
+        // 3. Process Results
         responses.forEach((res: any) => {
             if (res.type === 'native' && res.key) {
                 newBalances[res.key] = Number.parseFloat(formatEther(res.val));
             } else if (res.type === 'multicall') {
-                const { results, tokenList } = res;
-                results.forEach((result: any, index: number) => {
-                    const tokenInfo = tokenList[index];
+                res.results.forEach((result: any, index: number) => {
+                    const tokenInfo = erc20Tokens[index];
                     if (result.status === 'success') {
                         newBalances[tokenInfo.key] = Number.parseFloat(
                             formatUnits(result.result as bigint, tokenInfo.decimals)
@@ -208,42 +196,26 @@ export function SupplyPanel({
             }
         });
 
-        // Only update state if we have new data
-        if (Object.keys(newBalances).length > 0) {
-            setBalances(prev => ({ ...prev, ...newBalances }));
-        }
+        setBalances(prev => ({ ...prev, ...newBalances }));
 
       } catch (error) {
-        console.error("Fetch error:", error);
+        console.error("Balance fetch error:", error);
       } finally {
         isFetchingRef.current = false;
       }
     };
 
-    // Run immediately
     fetchBalances();
 
-    // Run interval
-    const id = setInterval(fetchBalances, pollInterval); 
+    const id = setInterval(fetchBalances, pollInterval);
     return () => clearInterval(id);
   }, [wallet, currentChainId, pollInterval]);
 
   const handleSupply = () => {
-    // In a real app, this would handle the supply transaction
     setConfrimModalOpen(true);
   };
 
-  const viewFullInvoice = (
-    chain_id: string,
-    address: string,
-    client_order_id: string
-  ) => {
-    const invoiceUrl = `/invoices/${chain_id}/${address}/${client_order_id}`;
-    window.open(invoiceUrl, "_blank", "noopener,noreferrer");
-  };
-
   const setMaxAmount = (vaultId: string) => {
-    // Assuming vaultId is unique and corresponds to a vault with a token
     const vault = selectedVault.find((v) => v.name === vaultId);
     const maxBalance = vault ? balances["USDC"] || 0 : 0;
 
@@ -265,10 +237,8 @@ export function SupplyPanel({
 
   const handleAmountChange = useCallback(
     async (vaultId: string, value: string) => {
-      // Store value as-is
       dispatch(updateVaultAmount({ name: vaultId, amount: value }));
 
-      // Optional: parse number for validation purposes
       const amount = parseFloat(value);
       if (!isNaN(amount) && amount >= 0) {
         setQuantity((prev) => ({ ...prev, [vaultId]: 0 }));
@@ -284,7 +254,6 @@ export function SupplyPanel({
   );
 
   const onConfirmTransactionClose = () => {
-    // console.log(`Supplying ${amount} to vault ${vaultIds}`);
     setConfrimModalOpen(false);
   };
 
@@ -468,26 +437,10 @@ export function SupplyPanel({
                     {/* APY info */}
                     <div className="space-y-4 mb-6 pt-6">
                       <div className="flex items-center justify-between gap-4">
-                        {/*<div className="flex items-center gap-1">
-                          <span className="text-[12px] text-muted">
-                            {t("table.oneYearPerformance")}
-                          </span>
-                        </div>
-                         <div className="flex items-center gap-1">
-                          <span className="font-normal text-primary text-[12px]">
-                            {vault.performance?.oneYearReturn.toFixed(2) || "0"}{" "}
-                            %
-                          </span>
-                        </div> */}
                       </div>
 
                       {/* Collateral Exposure */}
                       <div className="flex items-center justify-between gap-4">
-                        {/* <div className="flex items-center gap-1">
-                          <span className="text-[12px] text-muted">
-                            {t("common.collateralExposure")}
-                          </span>
-                        </div>*/}
                         <div className="flex items-center gap-1">
                           {vault.collateral.length > 0 ? (
                             vault.collateral
