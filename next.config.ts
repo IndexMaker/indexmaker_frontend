@@ -19,6 +19,11 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Production optimizations
+  compress: true,
+  poweredByHeader: false,
+  reactStrictMode: true,
+  // swcMinify is enabled by default in Next.js 15+
 };
 
 export default nextConfig;

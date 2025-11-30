@@ -1,4 +1,4 @@
-export const runtime = "edge"; // or "nodejs"
+export const runtime = "nodejs"; // Changed from edge to nodejs for better compatibility
 export const dynamic = "force-dynamic"; // optional: avoid caching
 
 const UPSTREAM = process.env.NEXT_PUBLIC_INDEXMAKER_API || "https://issuer-network-1.indexmaker.global/api/v1";

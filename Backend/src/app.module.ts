@@ -16,6 +16,7 @@ import { ListingController } from './api/listing.controller';
 import { ListingModule } from './modules/scraper/scraper.module';
 import { PdfController } from './api/pdf.controller';
 import { PDFModule } from './modules/pdf/pdf.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
 
 @Module({
   imports: [
@@ -33,7 +34,8 @@ import { PDFModule } from './modules/pdf/pdf.module';
     StorageModule,
     ProjectsModule,
     ListingModule,
-    PDFModule
+    PDFModule,
+    InvoicesModule
   ],
   controllers: [IndexController, ProjectsController, ListingController, PdfController],
   providers: [DailyFetchJob],

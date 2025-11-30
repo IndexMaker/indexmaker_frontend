@@ -296,3 +296,36 @@ export const tempTop20Rebalances = pgTable(
     ),
   }),
 );
+
+export const mintInvoices = pgTable(
+  'mint_invoices',
+  {
+    id: serial('id').primaryKey(),
+    invoiceId: text('invoice_id').notNull().unique(), // payment_id or client_order_id
+    chainId: varchar('chain_id', { length: 20 }).notNull(),
+    address: varchar('address', { length: 66 }).notNull(),
+    clientOrderId: varchar('client_order_id', { length: 100 }).notNull(),
+    paymentId: varchar('payment_id', { length: 100 }),
+    symbol: varchar('symbol', { length: 50 }).notNull(),
+    amountPaid: numeric('amount_paid', { precision: 18, scale: 8 }).notNull(),
+    amountRemaining: numeric('amount_remaining', { precision: 18, scale: 8 }).notNull().default('0'),
+    exchangeFee: numeric('exchange_fee', { precision: 18, scale: 8 }).notNull().default('0'),
+    managementFee: numeric('management_fee', { precision: 18, scale: 8 }).notNull().default('0'),
+    assetsValue: numeric('assets_value', { precision: 18, scale: 8 }).notNull().default('0'),
+    filledQuantity: numeric('filled_quantity', { precision: 18, scale: 8 }).notNull().default('0'),
+    fillRate: numeric('fill_rate', { precision: 18, scale: 8 }).notNull().default('0'),
+    status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, completed, failed
+    timestamp: timestamp('timestamp', { withTimezone: true }).notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+    lots: jsonb('lots'), // Store lots as JSON
+    position: jsonb('position'), // Store position as JSON
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    uniqueClientOrderId: unique('unique_client_order_id').on(
+      table.chainId,
+      table.address,
+      table.clientOrderId,
+    ),
+  }),
+);
