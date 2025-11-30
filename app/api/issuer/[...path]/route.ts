@@ -1,7 +1,7 @@
 export const runtime = "nodejs"; // Changed from edge to nodejs for better compatibility
 export const dynamic = "force-dynamic"; // optional: avoid caching
 
-const UPSTREAM = process.env.NEXT_PUBLIC_INDEXMAKER_API || "https://issuer-network-1.indexmaker.global/api/v1";
+const UPSTREAM = process.env.NEXT_PUBLIC_INDEXMAKER_API || "https://www.indexmaker.global/api/v1";
 // In production, use production backend URL, fallback to localhost for development
 const LOCAL_BACKEND = process.env.NEXT_PUBLIC_BACKEND_API ||
   (process.env.NODE_ENV === 'production'
@@ -139,7 +139,7 @@ export async function POST(req: Request, context: any) {
       Authorization: req.headers.get("authorization") ?? "",
       // REMOVED: "x-api-key"
     },
-    body: await req.text(),
+    body: requestBody,
     cache: "no-store",
   });
 
