@@ -87,13 +87,36 @@ export async function GET(req: Request, context: { params: Promise<{ path: strin
   const localResponse = await tryLocalBackend(segments, search, "GET");
   if (localResponse) {
     const body = await localResponse.text();
-    // Filter out Set-Cookie and other potentially large headers
+    // Aggressively filter out Set-Cookie and other potentially large headers
     const responseHeaders = new Headers();
+
+    // Only copy safe, small headers - explicitly exclude all cookie-related headers
+    const safeHeaders = ['content-type', 'content-length', 'cache-control', 'expires', 'last-modified', 'etag'];
+    for (const [key, value] of localResponse.headers.entries()) {
+      const lowerKey = key.toLowerCase();
+      // Explicitly exclude all cookie-related and potentially large headers
+      if (
+        lowerKey === 'set-cookie' ||
+        lowerKey === 'cookie' ||
+        lowerKey.startsWith('x-') ||
+        lowerKey.includes('cookie') ||
+        value.length > 1000 // Skip any header value larger than 1KB
+      ) {
+        continue;
+      }
+      // Only include safe headers
+      if (safeHeaders.includes(lowerKey)) {
+        responseHeaders.set(key, value);
+      }
+    }
+
+    // Always set Content-Type if available
     const contentType = localResponse.headers.get("content-type");
-    if (contentType) {
+    if (contentType && !responseHeaders.has("content-type")) {
       responseHeaders.set("Content-Type", contentType);
     }
-    // Only add CORS headers, exclude Set-Cookie and other large headers
+
+    // Add CORS headers
     Object.entries(CORS_HEADERS).forEach(([key, value]) => {
       responseHeaders.set(key, value);
     });
@@ -121,13 +144,36 @@ export async function GET(req: Request, context: { params: Promise<{ path: strin
     credentials: "omit", // Prevent cookie forwarding to avoid header size issues
   });
 
-  // Filter out Set-Cookie and other potentially large headers from response
+  // Aggressively filter out Set-Cookie and other potentially large headers from response
   const responseHeaders = new Headers();
+
+  // Only copy safe, small headers - explicitly exclude all cookie-related headers
+  const safeHeaders = ['content-type', 'content-length', 'cache-control', 'expires', 'last-modified', 'etag'];
+  for (const [key, value] of r.headers.entries()) {
+    const lowerKey = key.toLowerCase();
+    // Explicitly exclude all cookie-related and potentially large headers
+    if (
+      lowerKey === 'set-cookie' ||
+      lowerKey === 'cookie' ||
+      lowerKey.startsWith('x-') ||
+      lowerKey.includes('cookie') ||
+      value.length > 1000 // Skip any header value larger than 1KB
+    ) {
+      continue;
+    }
+    // Only include safe headers
+    if (safeHeaders.includes(lowerKey)) {
+      responseHeaders.set(key, value);
+    }
+  }
+
+  // Always set Content-Type if available
   const contentType = r.headers.get("content-type");
-  if (contentType) {
+  if (contentType && !responseHeaders.has("content-type")) {
     responseHeaders.set("Content-Type", contentType);
   }
-  // Only add CORS headers, exclude Set-Cookie and other large headers
+
+  // Add CORS headers
   Object.entries(CORS_HEADERS).forEach(([key, value]) => {
     responseHeaders.set(key, value);
   });
@@ -153,13 +199,36 @@ export async function POST(req: Request, context: { params: Promise<{ path: stri
   const localResponse = await tryLocalBackend(segments, search, "POST", requestBody);
   if (localResponse) {
     const body = await localResponse.text();
-    // Filter out Set-Cookie and other potentially large headers
+    // Aggressively filter out Set-Cookie and other potentially large headers
     const responseHeaders = new Headers();
+
+    // Only copy safe, small headers - explicitly exclude all cookie-related headers
+    const safeHeaders = ['content-type', 'content-length', 'cache-control', 'expires', 'last-modified', 'etag'];
+    for (const [key, value] of localResponse.headers.entries()) {
+      const lowerKey = key.toLowerCase();
+      // Explicitly exclude all cookie-related and potentially large headers
+      if (
+        lowerKey === 'set-cookie' ||
+        lowerKey === 'cookie' ||
+        lowerKey.startsWith('x-') ||
+        lowerKey.includes('cookie') ||
+        value.length > 1000 // Skip any header value larger than 1KB
+      ) {
+        continue;
+      }
+      // Only include safe headers
+      if (safeHeaders.includes(lowerKey)) {
+        responseHeaders.set(key, value);
+      }
+    }
+
+    // Always set Content-Type if available
     const contentType = localResponse.headers.get("content-type");
-    if (contentType) {
+    if (contentType && !responseHeaders.has("content-type")) {
       responseHeaders.set("Content-Type", contentType);
     }
-    // Only add CORS headers, exclude Set-Cookie and other large headers
+
+    // Add CORS headers
     Object.entries(CORS_HEADERS).forEach(([key, value]) => {
       responseHeaders.set(key, value);
     });
@@ -191,13 +260,36 @@ export async function POST(req: Request, context: { params: Promise<{ path: stri
     credentials: "omit", // Prevent cookie forwarding to avoid header size issues
   });
 
-  // Filter out Set-Cookie and other potentially large headers from response
+  // Aggressively filter out Set-Cookie and other potentially large headers from response
   const responseHeaders = new Headers();
+
+  // Only copy safe, small headers - explicitly exclude all cookie-related headers
+  const safeHeaders = ['content-type', 'content-length', 'cache-control', 'expires', 'last-modified', 'etag'];
+  for (const [key, value] of r.headers.entries()) {
+    const lowerKey = key.toLowerCase();
+    // Explicitly exclude all cookie-related and potentially large headers
+    if (
+      lowerKey === 'set-cookie' ||
+      lowerKey === 'cookie' ||
+      lowerKey.startsWith('x-') ||
+      lowerKey.includes('cookie') ||
+      value.length > 1000 // Skip any header value larger than 1KB
+    ) {
+      continue;
+    }
+    // Only include safe headers
+    if (safeHeaders.includes(lowerKey)) {
+      responseHeaders.set(key, value);
+    }
+  }
+
+  // Always set Content-Type if available
   const contentType = r.headers.get("content-type");
-  if (contentType) {
+  if (contentType && !responseHeaders.has("content-type")) {
     responseHeaders.set("Content-Type", contentType);
   }
-  // Only add CORS headers, exclude Set-Cookie and other large headers
+
+  // Add CORS headers
   Object.entries(CORS_HEADERS).forEach(([key, value]) => {
     responseHeaders.set(key, value);
   });
