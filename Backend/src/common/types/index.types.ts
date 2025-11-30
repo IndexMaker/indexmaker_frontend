@@ -9,6 +9,51 @@ export interface RebalanceData {
   prices: Record<string, number>;
   timestamp: number;
 }
+export interface Lot {
+  lot_id: string;
+  symbol: string;
+  price: number;
+  assigned_quantity: number;
+  assigned_fee: number;
+  assigned_timestamp: string;
+  original_quantity: number;
+  remaining_quantity: number;
+  original_fee: number;
+  created_timestamp: string;
+}
+
+export type CollateralSide = {
+  unconfirmed_balance: number | string;
+  ready_balance: number | string;
+  preauth_balance: number | string;
+  spent_balance: number | string;
+  open_lots: CollateralLot[];
+  closed_lots: CollateralLot[];
+};
+
+export type CollateralLot = {
+  payment_id: string;
+  created_timestamp: number;
+  unconfirmed_amount: number | string;
+  ready_amount: number | string;
+  preauth_amount: number | string;
+  spent_amount: number | string;
+  spends: Array<{
+    timestamp: number;
+    payment_id: string;
+    client_order_id: string;
+    preauth_amount: number | string;
+    spent_amount: number | string;
+  }>;
+};
+
+export type Position = {
+  chain_id: number | string;
+  address: string;
+  side_dr: CollateralSide;
+  side_cr: CollateralSide;
+};
+
 export interface MintInvoice {
   id: string;
   chain_id: string;
@@ -26,6 +71,8 @@ export interface MintInvoice {
   status: 'pending' | 'completed' | 'failed';
   timestamp: string;
   updated_at: string;
+  lots?: Lot[];
+  position?: Position;
 }
 export interface IndexListEntry {
   indexId: number;
