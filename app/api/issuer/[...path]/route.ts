@@ -44,6 +44,7 @@ async function tryLocalBackend(
           "Content-Type": "application/json",
         },
         cache: "no-store",
+        credentials: "omit", // Prevent cookie forwarding to avoid header size issues
         // Add timeout - longer for production
         signal: AbortSignal.timeout(process.env.NODE_ENV === 'production' ? 10000 : 5000),
       };
@@ -73,20 +74,29 @@ export async function OPTIONS() {
 }
 
 // --- GET Handler ---
-export async function GET(req: Request, context: any) {
-  const raw = context?.params?.path;
+export async function GET(req: Request, context: { params: Promise<{ path: string | string[] }> }) {
+  const params = await context.params;
+  const raw = params?.path;
   const segments = Array.isArray(raw) ? raw : raw ? [raw] : [];
 
   // Try local backend first for mint_invoices
   const localResponse = await tryLocalBackend(segments, new URL(req.url).search, "GET");
   if (localResponse) {
     const body = await localResponse.text();
+    // Filter out Set-Cookie and other potentially large headers
+    const responseHeaders = new Headers();
+    const contentType = localResponse.headers.get("content-type");
+    if (contentType) {
+      responseHeaders.set("Content-Type", contentType);
+    }
+    // Only add CORS headers, exclude Set-Cookie and other large headers
+    Object.entries(CORS_HEADERS).forEach(([key, value]) => {
+      responseHeaders.set(key, value);
+    });
+
     return new Response(body, {
       status: localResponse.status,
-      headers: {
-        "Content-Type": localResponse.headers.get("content-type") ?? "application/json",
-        ...CORS_HEADERS,
-      },
+      headers: responseHeaders,
     });
   }
 
@@ -99,20 +109,30 @@ export async function GET(req: Request, context: any) {
       // REMOVED: "x-api-key"
     },
     cache: "no-store",
+    credentials: "omit", // Prevent cookie forwarding to avoid header size issues
+  });
+
+  // Filter out Set-Cookie and other potentially large headers from response
+  const responseHeaders = new Headers();
+  const contentType = r.headers.get("content-type");
+  if (contentType) {
+    responseHeaders.set("Content-Type", contentType);
+  }
+  // Only add CORS headers, exclude Set-Cookie and other large headers
+  Object.entries(CORS_HEADERS).forEach(([key, value]) => {
+    responseHeaders.set(key, value);
   });
 
   return new Response(r.body, {
     status: r.status,
-    headers: {
-      "Content-Type": r.headers.get("content-type") ?? "application/json",
-      ...CORS_HEADERS,
-    },
+    headers: responseHeaders,
   });
 }
 
 // --- POST Handler ---
-export async function POST(req: Request, context: any) {
-  const raw = context?.params?.path;
+export async function POST(req: Request, context: { params: Promise<{ path: string | string[] }> }) {
+  const params = await context.params;
+  const raw = params?.path;
   const segments = Array.isArray(raw) ? raw : raw ? [raw] : [];
   const requestBody = await req.text();
 
@@ -120,12 +140,20 @@ export async function POST(req: Request, context: any) {
   const localResponse = await tryLocalBackend(segments, new URL(req.url).search, "POST", requestBody);
   if (localResponse) {
     const body = await localResponse.text();
+    // Filter out Set-Cookie and other potentially large headers
+    const responseHeaders = new Headers();
+    const contentType = localResponse.headers.get("content-type");
+    if (contentType) {
+      responseHeaders.set("Content-Type", contentType);
+    }
+    // Only add CORS headers, exclude Set-Cookie and other large headers
+    Object.entries(CORS_HEADERS).forEach(([key, value]) => {
+      responseHeaders.set(key, value);
+    });
+
     return new Response(body, {
       status: localResponse.status,
-      headers: {
-        "Content-Type": localResponse.headers.get("content-type") ?? "application/json",
-        ...CORS_HEADERS,
-      },
+      headers: responseHeaders,
     });
   }
 
@@ -141,13 +169,22 @@ export async function POST(req: Request, context: any) {
     },
     body: requestBody,
     cache: "no-store",
+    credentials: "omit", // Prevent cookie forwarding to avoid header size issues
+  });
+
+  // Filter out Set-Cookie and other potentially large headers from response
+  const responseHeaders = new Headers();
+  const contentType = r.headers.get("content-type");
+  if (contentType) {
+    responseHeaders.set("Content-Type", contentType);
+  }
+  // Only add CORS headers, exclude Set-Cookie and other large headers
+  Object.entries(CORS_HEADERS).forEach(([key, value]) => {
+    responseHeaders.set(key, value);
   });
 
   return new Response(r.body, {
     status: r.status,
-    headers: {
-      "Content-Type": r.headers.get("content-type") ?? "application/json",
-      ...CORS_HEADERS,
-    },
+    headers: responseHeaders,
   });
 }
