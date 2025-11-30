@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env
+.env.local
+.env.production
+.env*.local
 
 # vercel
 .vercel
@@ -42,3 +45,9 @@ next-env.d.ts
 /Backend/artifacts
 /Backend/cache
 /Backend/typechain-types
+/Backend/dist
+/Backend/node_modules
+/Backend/output
+/Backend/.env
+/Backend/.env.local
+/Backend/.env.production

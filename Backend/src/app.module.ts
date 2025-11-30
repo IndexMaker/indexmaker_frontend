@@ -25,8 +25,10 @@ import { InvoicesModule } from './modules/invoices/invoices.module';
     CacheModule.register({
       isGlobal: true,
       store: redisStore,
-      host: 'redis',
-      port: 6379,
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+      // Make Redis optional - will fallback to in-memory cache if Redis is unavailable
+      ttl: 3600,
     }),
     DataFetcherModule,
     BlockchainModule,

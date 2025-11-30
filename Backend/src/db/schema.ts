@@ -277,8 +277,8 @@ export const indexEvents = pgTable(
 );
 
 // testing purpose
-export const tempTop20Rebalances = pgTable( 
-  'temp_top20_rebalances', 
+export const tempTop20Rebalances = pgTable(
+  'temp_top20_rebalances',
   {
     id: serial('id').primaryKey(),
     indexId: varchar('index_id', { length: 66 }).notNull(),

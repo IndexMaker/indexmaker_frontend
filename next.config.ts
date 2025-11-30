@@ -11,10 +11,14 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Rewrites are handled by API route for better control
+  // Keeping this as fallback for non-mint_invoices endpoints
   async rewrites() {
+    // Only use rewrites for non-invoice endpoints
+    // Invoice endpoints are handled by app/api/issuer/[...path]/route.ts
     return [
       {
-        source: "/api/issuer/:path*",
+        source: "/api/issuer/:path((?!mint_invoices).)*",
         destination: "https://issuer-network-1.indexmaker.global/api/v1/:path*",
       },
     ];
