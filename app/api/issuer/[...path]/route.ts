@@ -79,8 +79,12 @@ export async function GET(req: Request, context: { params: Promise<{ path: strin
   const raw = params?.path;
   const segments = Array.isArray(raw) ? raw : raw ? [raw] : [];
 
+  // Limit query string size to prevent header size issues
+  const url = new URL(req.url);
+  const search = url.search.length > 2000 ? "" : url.search; // Limit query string to 2000 chars
+
   // Try local backend first for mint_invoices
-  const localResponse = await tryLocalBackend(segments, new URL(req.url).search, "GET");
+  const localResponse = await tryLocalBackend(segments, search, "GET");
   if (localResponse) {
     const body = await localResponse.text();
     // Filter out Set-Cookie and other potentially large headers
@@ -100,14 +104,19 @@ export async function GET(req: Request, context: { params: Promise<{ path: strin
     });
   }
 
-  // Fallback to upstream
-  const upstreamUrl = toUpstream(segments, new URL(req.url).search);
+  // Fallback to upstream - use limited search to prevent header size issues
+  const upstreamUrl = toUpstream(segments, search);
+
+  // Build minimal headers - only include essential ones, exclude cookies and other large headers
+  const requestHeaders: HeadersInit = {};
+  const authHeader = req.headers.get("authorization");
+  if (authHeader) {
+    requestHeaders["Authorization"] = authHeader;
+  }
+  // Explicitly DO NOT forward: Cookie, Set-Cookie, or any other potentially large headers
 
   const r = await fetch(upstreamUrl, {
-    headers: {
-      Authorization: req.headers.get("authorization") ?? "",
-      // REMOVED: "x-api-key"
-    },
+    headers: requestHeaders,
     cache: "no-store",
     credentials: "omit", // Prevent cookie forwarding to avoid header size issues
   });
@@ -136,8 +145,12 @@ export async function POST(req: Request, context: { params: Promise<{ path: stri
   const segments = Array.isArray(raw) ? raw : raw ? [raw] : [];
   const requestBody = await req.text();
 
+  // Limit query string size to prevent header size issues
+  const url = new URL(req.url);
+  const search = url.search.length > 2000 ? "" : url.search; // Limit query string to 2000 chars
+
   // Try local backend first for mint_invoices
-  const localResponse = await tryLocalBackend(segments, new URL(req.url).search, "POST", requestBody);
+  const localResponse = await tryLocalBackend(segments, search, "POST", requestBody);
   if (localResponse) {
     const body = await localResponse.text();
     // Filter out Set-Cookie and other potentially large headers
@@ -157,16 +170,22 @@ export async function POST(req: Request, context: { params: Promise<{ path: stri
     });
   }
 
-  // Fallback to upstream
-  const upstreamUrl = toUpstream(segments, new URL(req.url).search);
+  // Fallback to upstream - use limited search to prevent header size issues
+  const upstreamUrl = toUpstream(segments, search);
+
+  // Build minimal headers - only include essential ones, exclude cookies and other large headers
+  const requestHeaders: HeadersInit = {
+    "content-type": req.headers.get("content-type") ?? "application/json",
+  };
+  const authHeader = req.headers.get("authorization");
+  if (authHeader) {
+    requestHeaders["Authorization"] = authHeader;
+  }
+  // Explicitly DO NOT forward: Cookie, Set-Cookie, or any other potentially large headers
 
   const r = await fetch(upstreamUrl, {
     method: "POST",
-    headers: {
-      "content-type": req.headers.get("content-type") ?? "application/json",
-      Authorization: req.headers.get("authorization") ?? "",
-      // REMOVED: "x-api-key"
-    },
+    headers: requestHeaders,
     body: requestBody,
     cache: "no-store",
     credentials: "omit", // Prevent cookie forwarding to avoid header size issues
