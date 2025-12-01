@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/issuer/:path((?!mint_invoices).)*",
-        destination: "https://issuer-network-1.indexmaker.global/api/v1/:path*",
+        destination: "https://www.indexmaker.global/api/v1/:path*",
       },
     ];
   },

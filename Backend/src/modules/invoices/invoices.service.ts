@@ -17,7 +17,7 @@ export class InvoicesService {
     try {
       const externalApiUrl =
         process.env.EXTERNAL_ISSUER_API ||
-        'https://issuer-network-1.indexmaker.global/api/v1';
+        'https://www.indexmaker.global/api/v1';
       const url = `${externalApiUrl}/mint_invoices/from/${from}/to/${to}`;
 
       this.logger.log(`Fetching invoices from external API: ${url}`);
