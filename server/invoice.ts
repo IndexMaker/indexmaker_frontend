@@ -6,7 +6,7 @@ const API_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API;
 // Issuer network API (used for mint_invoices to avoid Vercel cookie issues)
 const API_ISSUER_URL =
   process.env.NEXT_PUBLIC_INDEXMAKER_API ||
-  "https://issuer-network-1.indexmaker.global/api/v1";
+  "https://www.indexmaker.global/api/v1";
 const toUTCStartOfDay = (d: Date) =>
   new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0)
