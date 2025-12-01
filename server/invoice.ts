@@ -1,7 +1,12 @@
 import { Asset, CollateralSide, InventoryResponse, Lot, MintInvoice, Position } from "@/types";
 
+// Local/backend API (for inventory etc.)
 const API_BASE_URL = "/api/issuer";
 const API_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API;
+// Issuer network API (used for mint_invoices to avoid Vercel cookie issues)
+const API_ISSUER_URL =
+  process.env.NEXT_PUBLIC_INDEXMAKER_API ||
+  "https://issuer-network-1.indexmaker.global/api/v1";
 const toUTCStartOfDay = (d: Date) =>
   new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0)
@@ -145,13 +150,13 @@ export async function fetchMintInvoices(
     const fromStr = formatAPIDateUTC(toUTCStartOfDay(from), false);
     const toStr = formatAPIDateUTC(toUTCStartOfDay(to), true);
 
-    const url = `${API_BASE_URL}/mint_invoices/from/${fromStr}/to/${toStr}`;
-    // Important: avoid sending cookies with this request to prevent
-    // REQUEST_HEADER_TOO_LARGE on Vercel when cookies grow large.
+    // Call issuer network directly instead of going through /api/issuer
+    // This avoids sending Vercel/session cookies to the same-origin API route,
+    // which is what originally caused REQUEST_HEADER_TOO_LARGE.
+    const url = `${API_ISSUER_URL}/mint_invoices/from/${fromStr}/to/${toStr}`;
     const response = await fetch(url, {
       cache: "no-store",
-      // On the browser, this prevents cookies from being attached.
-      // On the server, cookies aren't sent by default, but this is safe.
+      // Cross-origin call; cookies for your app domain are not sent.
       credentials: "omit",
     });
 
@@ -174,11 +179,12 @@ export async function fetchMintInvoiceById(
   address: string
 ): Promise<MintInvoice | null> {
   try {
+    // Same as above: talk to issuer network directly to avoid Vercel cookie issues.
     const response = await fetch(
-      `${API_BASE_URL}/mint_invoices/invoice/${chain_id}/${address}/${client_order_id}`,
+      `${API_ISSUER_URL}/mint_invoices/invoice/${chain_id}/${address}/${client_order_id}`,
       {
         cache: "no-store",
-        credentials: "omit", // prevent cookies on this request as well
+        credentials: "omit",
       }
     );
     if (!response.ok) {
