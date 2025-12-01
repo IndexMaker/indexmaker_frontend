@@ -146,7 +146,14 @@ export async function fetchMintInvoices(
     const toStr = formatAPIDateUTC(toUTCStartOfDay(to), true);
 
     const url = `${API_BASE_URL}/mint_invoices/from/${fromStr}/to/${toStr}`;
-    const response = await fetch(url, { cache: "no-store" });
+    // Important: avoid sending cookies with this request to prevent
+    // REQUEST_HEADER_TOO_LARGE on Vercel when cookies grow large.
+    const response = await fetch(url, {
+      cache: "no-store",
+      // On the browser, this prevents cookies from being attached.
+      // On the server, cookies aren't sent by default, but this is safe.
+      credentials: "omit",
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch mint invoices (${response.status})`);
@@ -168,7 +175,11 @@ export async function fetchMintInvoiceById(
 ): Promise<MintInvoice | null> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/mint_invoices/invoice/${chain_id}/${address}/${client_order_id}`
+      `${API_BASE_URL}/mint_invoices/invoice/${chain_id}/${address}/${client_order_id}`,
+      {
+        cache: "no-store",
+        credentials: "omit", // prevent cookies on this request as well
+      }
     );
     if (!response.ok) {
       throw new Error("Failed to fetch mint invoice");
