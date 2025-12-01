@@ -79,6 +79,31 @@ export async function GET(req: Request, context: { params: Promise<{ path: strin
   const raw = params?.path;
   const segments = Array.isArray(raw) ? raw : raw ? [raw] : [];
 
+  // Check total header size to prevent REQUEST_HEADER_TOO_LARGE error
+  // Vercel's limit is typically 8-16KB for total request headers
+  let totalHeaderSize = 0;
+  for (const [key, value] of req.headers.entries()) {
+    totalHeaderSize += new TextEncoder().encode(key + value).length;
+  }
+
+  // If headers are too large, return error early with helpful message
+  if (totalHeaderSize > 12000) { // Leave buffer below 16KB limit
+    return new Response(
+      JSON.stringify({
+        error: 'Request headers too large',
+        message: 'The request contains too many or too large headers. Please clear your browser cookies and try again.',
+        headerSize: totalHeaderSize
+      }),
+      {
+        status: 431, // HTTP 431 Request Header Fields Too Large
+        headers: {
+          'Content-Type': 'application/json',
+          ...CORS_HEADERS,
+        }
+      }
+    );
+  }
+
   // Limit query string size to prevent header size issues
   const url = new URL(req.url);
   const search = url.search.length > 2000 ? "" : url.search; // Limit query string to 2000 chars
