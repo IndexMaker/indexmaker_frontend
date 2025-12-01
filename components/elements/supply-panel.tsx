@@ -18,7 +18,7 @@ import {
 import { Copy, X } from "lucide-react";
 import Image from "next/image";
 import { selectLatestMintInvoice } from "@/redux/mintInvoicesSlice";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useMediaQuery } from "react-responsive";
 import { formatEther, formatUnits } from "viem";
@@ -62,7 +62,7 @@ export function SupplyPanel({
   open,
   setOpen,
 }: SupplyPanelProps) {
-  const pollInterval = 30_000;
+  const pollInterval = 60_000; // Increased to 60s to avoid rate limits
   const { wallet, isWhitelisted, connectWallet } = useWallet();
   const { indexPrices } = useQuoteContext();
   const [quantity, setQuantity] = useState<{ [key: string]: number }>({});
@@ -75,13 +75,15 @@ export function SupplyPanel({
   const isSmallWindow = useMediaQuery({ maxWidth: 1024 });
   const [maxpopoverOpen, setMaxPopoverOpen] = useState(false);
   const [insufficientValue, setInsufficientValue] = useState(false);
-  // const storedWallet = useSelector((state: RootState) => state.wallet.wallet);
   const { currentChainId } = useSelector((state: RootState) => state.network);
   const selectedVault = useSelector(
     (state: RootState) => state.vault.selectedVault
   );
   const [balances, setBalances] = useState<{ [key: string]: number }>({});
   const [loading, setLoading] = useState(false);
+  
+  // Ref to prevent overlapping fetches
+  const isFetchingRef = useRef(false);
 
   const dispatch = useDispatch();
 
@@ -108,8 +110,6 @@ export function SupplyPanel({
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
         setOpen(false);
-      } else {
-        // setOpen(false)
       }
     };
 
@@ -118,53 +118,113 @@ export function SupplyPanel({
     return () => window.removeEventListener("resize", handleResize);
   }, [setOpen]);
 
+  // Optimized Fetch Logic
   useEffect(() => {
     const fetchBalances = async () => {
-      if (!wallet || !currentChainId || !TOKEN_METADATA[currentChainId]) {
-        setBalances({});
+      // 1. Initial Checks: We need a Chain ID and Metadata.
+      // We DO NOT check for 'wallet' here, so this runs even if disconnected.
+      if (!currentChainId || !TOKEN_METADATA[currentChainId] || isFetchingRef.current) {
         return;
       }
 
+      isFetchingRef.current = true;
+
       try {
         const client = getViemClient(currentChainId);
-        const address = wallet.accounts[0].address as `0x${string}`;
+        
+        // Safely access address (undefined if disconnected)
+        const address = wallet?.accounts?.[0]?.address as `0x${string}` | undefined;
+
         const newBalances: { [key: string]: number } = {};
         const tokens = TOKEN_METADATA[currentChainId];
+        const promises = [];
 
-        for (const [token, meta] of Object.entries(tokens)) {
-          if (meta.type === "native") {
-            const balanceWei = await client.getBalance({ address });
-            newBalances[token] = Number.parseFloat(formatEther(balanceWei));
-          } else if (meta.type === "erc20" && meta.address) {
-            try {
-              const balanceRaw = await client.readContract({
-                address: meta.address as `0x${string}`,
-                abi: ERC20_ABI,
-                functionName: "balanceOf",
-                args: [address],
-              });
-              newBalances[token] = Number.parseFloat(
-                formatUnits(balanceRaw as bigint, meta.decimals)
-              );
-            } catch (contractError) {
-              newBalances[token] = 0;
+        // --- PUBLIC DATA SECTION ---
+        // If you need to fetch data that doesn't require a wallet (e.g. Vault TVL),
+        // push those promises here.
+
+        // --- PRIVATE DATA SECTION (User Balances) ---
+        if (address) {
+            let nativeTokenKey: string | null = null;
+            const erc20Tokens: { key: string; address: string; decimals: number }[] = [];
+
+            // Sort tokens into Native vs ERC20
+            for (const [key, meta] of Object.entries(tokens)) {
+                if (meta.type === "native") {
+                    nativeTokenKey = key;
+                } else if (meta.type === "erc20" && meta.address) {
+                    erc20Tokens.push({ key, address: meta.address, decimals: meta.decimals });
+                }
             }
-          }
+
+            // A. Fetch Native Balance
+            if (nativeTokenKey) {
+                promises.push(
+                    client.getBalance({ address })
+                        .then(b => ({ type: 'native', key: nativeTokenKey, val: b }))
+                        .catch(() => ({ type: 'native', key: nativeTokenKey, val: 0n }))
+                );
+            }
+
+            // B. Fetch ERC20 Balances via Multicall (Batching)
+            if (erc20Tokens.length > 0) {
+                const contractCalls = erc20Tokens.map(t => ({
+                    address: t.address as `0x${string}`,
+                    abi: ERC20_ABI,
+                    functionName: 'balanceOf',
+                    args: [address]
+                }));
+
+                // Using allowFailure: true ensures one error doesn't break the whole batch
+                promises.push(
+                    client.multicall({ contracts: contractCalls, allowFailure: true })
+                        .then(results => ({ type: 'multicall', results, tokenList: erc20Tokens }))
+                );
+            }
+        } else {
+            // Wallet disconnected: Reset balances
+            setBalances({});
         }
 
-        setBalances(newBalances);
+        // Execute all requests (Public + Private)
+        const responses = await Promise.all(promises);
+
+        // Process Results
+        responses.forEach((res: any) => {
+            if (res.type === 'native' && res.key) {
+                newBalances[res.key] = Number.parseFloat(formatEther(res.val));
+            } else if (res.type === 'multicall') {
+                const { results, tokenList } = res;
+                results.forEach((result: any, index: number) => {
+                    const tokenInfo = tokenList[index];
+                    if (result.status === 'success') {
+                        newBalances[tokenInfo.key] = Number.parseFloat(
+                            formatUnits(result.result as bigint, tokenInfo.decimals)
+                        );
+                    } else {
+                        newBalances[tokenInfo.key] = 0;
+                    }
+                });
+            }
+        });
+
+        // Only update state if we have new data
+        if (Object.keys(newBalances).length > 0) {
+            setBalances(prev => ({ ...prev, ...newBalances }));
+        }
+
       } catch (error) {
-        setBalances({});
+        console.error("Fetch error:", error);
       } finally {
+        isFetchingRef.current = false;
       }
     };
 
-    // run immediately
+    // Run immediately
     fetchBalances();
 
-    if (!wallet || !currentChainId) return;
-
-    const id = setInterval(fetchBalances, pollInterval); // <- same pattern as your top code
+    // Run interval
+    const id = setInterval(fetchBalances, pollInterval); 
     return () => clearInterval(id);
   }, [wallet, currentChainId, pollInterval]);
 
@@ -408,26 +468,26 @@ export function SupplyPanel({
                     {/* APY info */}
                     <div className="space-y-4 mb-6 pt-6">
                       <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-1">
+                        {/*<div className="flex items-center gap-1">
                           <span className="text-[12px] text-muted">
                             {t("table.oneYearPerformance")}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1">
+                         <div className="flex items-center gap-1">
                           <span className="font-normal text-primary text-[12px]">
                             {vault.performance?.oneYearReturn.toFixed(2) || "0"}{" "}
                             %
                           </span>
-                        </div>
+                        </div> */}
                       </div>
 
                       {/* Collateral Exposure */}
                       <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-1">
+                        {/* <div className="flex items-center gap-1">
                           <span className="text-[12px] text-muted">
                             {t("common.collateralExposure")}
                           </span>
-                        </div>
+                        </div>*/}
                         <div className="flex items-center gap-1">
                           {vault.collateral.length > 0 ? (
                             vault.collateral
@@ -508,85 +568,6 @@ export function SupplyPanel({
             })}
           </div>
 
-          <div className="flex flex-col p-4 border-t border-accent">
-            <h3 className="text-[14px] text-primary font-semibold mb-2">
-              Previous Mint Invoices
-            </h3>
-
-            {(() => {
-              const latest = useSelector(selectLatestMintInvoice);
-              if (!latest) {
-                return (
-                  <p className="text-[13px] pt-4 text-secondary">
-                    There is no previous Mint Invoice for your connected wallet!
-                  </p>
-                );
-              }
-
-              return (
-                <div className="p-2 rounded-lg bg-accent border border-accent flex flex-col gap-1">
-                  {/* Header: time + status */}
-                  <div className="flex items-center justify-between text-[12px]">
-                    <span className="text-secondary">
-                      {format(new Date(latest.timestamp), "MMM d, HH:mm:ss")}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-500">
-                      {latest.status.charAt(0).toUpperCase() + latest.status.slice(1)}
-                    </span>
-                  </div>
-
-                  {/* Amount + invoice ID in one block */}
-                  <div className="flex items-center gap-2 text-[13px] text-primary">
-                    <Image
-                      src={USDC}
-                      alt="USDC"
-                      width={18}
-                      height={18}
-                      className="rounded-full"
-                    />
-                    <span className="font-medium">
-                      {Number(latest.amount_paid).toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      USDC →
-                    </span>
-                    <IndexMaker className="text-muted w-[18px] h-[18px]" />
-                    <span className="font-medium">
-                      {Number(latest.filled_quantity).toExponential(2)}{" "}
-                      {latest.symbol}
-                    </span>
-                  </div>
-
-                  <div className="text-[11px] text-blue-400">
-                    Invoice #
-                    <span
-                      className="pl-1 underline cursor-pointer"
-                      onClick={() =>
-                        viewFullInvoice(
-                          latest.chain_id,
-                          latest.address,
-                          latest.client_order_id
-                        )
-                      }
-                    >
-                      {latest.payment_id}
-                    </span>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className="relative h-4 bg-background rounded-full overflow-hidden mt-1">
-                    <div
-                      className="h-full bg-blue-500 transition-all"
-                      style={{ width: "100%" }}
-                    />
-                    <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white">
-                      100%
-                    </span>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
           {/* Footer */}
           {!wallet ? (
             <div className="p-4 flex flex-col gap-2 border-t border-accent bottom-[50px] absolute w-full">
@@ -605,7 +586,7 @@ export function SupplyPanel({
                   ⚠️Withdraw and Invest are pause until DAO is formed.
                 </span>
                 <div className="w-full text-[13px] text-secondary text-right">
-                  Estimated Fill Time : ~15 Minutes
+                  Estimated Fill Time : ~5 seconds
                 </div>
               </div>
               <div className="flex gap-10 lg:gap-10 items-center h-[40px] justify-between relative">

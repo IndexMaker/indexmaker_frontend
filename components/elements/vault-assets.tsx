@@ -126,6 +126,8 @@ export function VaultAssets({
     }
   };
 
+  const visibleColumnCount = visibleColumns.filter((c) => c.visible).length;
+
   return (
     <>
       <Card className="bg-foreground border-none rounded-[8px] mt-4 py-0 rouneded-[8px]">
@@ -167,74 +169,90 @@ export function VaultAssets({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading
-                ? Array.from({ length: 10 }).map((_, index) => (
-                    <TableRow
-                      key={`skeleton-${index}`}
-                      className="h-[54px] border-accent"
-                    >
-                      {visibleColumns
-                        .filter((col) => col.visible)
-                        .map((col) => (
-                          <TableCell
-                            key={`skeleton-${col.id}-${index}`}
-                            className={cn(
-                              "py-2 px-5",
-                              col.id === "actions" &&
-                                "sticky right-0 bg-foreground"
+              {isLoading ? (
+                Array.from({ length: 10 }).map((_, index) => (
+                  <TableRow
+                    key={`skeleton-${index}`}
+                    className="h-[54px] border-accent"
+                  >
+                    {visibleColumns
+                      .filter((col) => col.visible)
+                      .map((col) => (
+                        <TableCell
+                          key={`skeleton-${col.id}-${index}`}
+                          className={cn(
+                            "py-2 px-5",
+                            col.id === "actions" &&
+                              "sticky right-0 bg-foreground"
+                          )}
+                        >
+                          <div className="flex items-center">
+                            {col.id === "actions" ? (
+                              <div className="h-8 w-20 rounded bg-accent animate-pulse" />
+                            ) : (
+                              <div className="h-4 w-3/4 rounded bg-accent animate-pulse" />
                             )}
-                          >
-                            <div className="flex items-center">
-                              {col.id === "actions" ? (
-                                <div className="h-8 w-20 rounded bg-accent animate-pulse" />
-                              ) : (
-                                <div className="h-4 w-3/4 rounded bg-accent animate-pulse" />
-                              )}
-                            </div>
-                          </TableCell>
-                        ))}
-                    </TableRow>
-                  ))
-                : currentAssets.map((asset) => (
-                    <TableRow
-                      key={asset.id}
-                      className="border-[#afafaf1a] hover:bg-foreground/50 h-[54px] text-[13px]"
-                    >
-                      {visibleColumns
-                        .filter((column) => column.visible)
-                        .map((column, index) => (
-                          <TableCell
-                            className="pl-[20px] text-card pr-18"
-                            key={`${asset.id}-${index}`}
-                          >
-                            {renderCellContent(asset, column.id)}
-                          </TableCell>
-                        ))}
-                    </TableRow>
-                  ))}
+                          </div>
+                        </TableCell>
+                      ))}
+                  </TableRow>
+                ))
+              ) : currentAssets.length === 0 ? (
+                <TableRow className="hover:bg-transparent border-[#afafaf1a]">
+                  <TableCell
+                    colSpan={visibleColumnCount}
+                    className="h-[150px] text-center"
+                  >
+                    <div className="flex flex-col items-center justify-center h-full text-muted text-[13px]">
+                      Data Coming in v0.8
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                currentAssets.map((asset) => (
+                  <TableRow
+                    key={asset.id}
+                    className="border-[#afafaf1a] hover:bg-foreground/50 h-[54px] text-[13px]"
+                  >
+                    {visibleColumns
+                      .filter((column) => column.visible)
+                      .map((column, index) => (
+                        <TableCell
+                          className="pl-[20px] text-card pr-18"
+                          key={`${asset.id}-${index}`}
+                        >
+                          {renderCellContent(asset, column.id)}
+                        </TableCell>
+                      ))}
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
-      <div className="flex justify-center items-center mt-4 text-primary text-sx">
-        <Button
-          className="text-[11px] text-muted bg-background p-0 h-4"
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage(currentPage - 1)}
-        >
-          <LeftArrow className="w-4 h-4" />
-        </Button>
-        <span className="text-[11px] text-muted">
-          {t("common.page")} {currentPage} {t("common.of")} {totalPages}
-        </span>
-        <Button
-          className="text-[11px] text-muted bg-background p-0 h-4"
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage(currentPage + 1)}
-        >
-          <RightArrow className="w-[8px] h-[8px] rotate-180 " />
-        </Button>
-      </div>
+      
+      {!isLoading && assets.length > 0 && (
+        <div className="flex justify-center items-center mt-4 text-primary text-sx">
+          <Button
+            className="text-[11px] text-muted bg-background p-0 h-4"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(currentPage - 1)}
+          >
+            <LeftArrow className="w-4 h-4" />
+          </Button>
+          <span className="text-[11px] text-muted">
+            {t("common.page")} {currentPage} {t("common.of")} {totalPages}
+          </span>
+          <Button
+            className="text-[11px] text-muted bg-background p-0 h-4"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(currentPage + 1)}
+          >
+            <RightArrow className="w-[8px] h-[8px] rotate-180 " />
+          </Button>
+        </div>
+      )}
     </>
   );
 }

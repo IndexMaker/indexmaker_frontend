@@ -30,6 +30,7 @@ const allReAllocationColumns = [
   { id: "hash", name: "Hash", visible: true },
   { id: "type", name: "Type", visible: true },
 ];
+
 export function VaultReAllocation({
   reallocations,
   visibleColumns,
@@ -69,7 +70,10 @@ export function VaultReAllocation({
         );
       case "hash":
         return (
-          <Link href={`https://basescan.org/tx/${allocation.hash}`} target="_blank">
+          <Link
+            href={`https://basescan.org/tx/${allocation.hash}`}
+            target="_blank"
+          >
             <div className="flex items-center gap-2">
               {shortenAddress(allocation.hash)}
               <RightArrow
@@ -109,6 +113,16 @@ export function VaultReAllocation({
         return "—";
     }
   };
+
+  // Calculate colSpan dynamically based on your visible logic
+  const columnCount = allReAllocationColumns.filter((column) => {
+    return (
+      visibleColumns.filter(
+        (_column) => _column.id === column.id && _column.visible
+      ).length > 0 ||
+      (column.id !== "timestamp" && column.id !== "market")
+    );
+  }).length;
 
   return (
     <>
@@ -156,51 +170,67 @@ export function VaultReAllocation({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentVaults.map((allocation) => (
-                <TableRow
-                  key={allocation.id}
-                  className="border-[#afafaf1a] hover:bg-foreground/50 h-[54px] text-[13px]"
-                >
-                  {allReAllocationColumns.map((column, index) => {
-                    return visibleColumns.filter(
-                      (_column) => _column.id === column.id && _column.visible
-                    ).length > 0 ||
-                      (column.id !== "timestamp" && column.id !== "market") ? (
-                      <TableCell
-                        className="pl-[20px] text-card pr-18"
-                        key={`${allocation.id}-${index}`}
-                      >
-                        {renderCellContent(allocation, column.id)}
-                      </TableCell>
-                    ) : (
-                      <></>
-                    );
-                  })}
+              {currentVaults.length === 0 ? (
+                <TableRow className="hover:bg-transparent border-[#afafaf1a]">
+                  <TableCell
+                    colSpan={columnCount}
+                    className="h-[150px] text-center"
+                  >
+                    <div className="flex flex-col items-center justify-center h-full text-muted text-[13px]">
+                      Data Coming in v0.8
+                    </div>
+                  </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                currentVaults.map((allocation) => (
+                  <TableRow
+                    key={allocation.id}
+                    className="border-[#afafaf1a] hover:bg-foreground/50 h-[54px] text-[13px]"
+                  >
+                    {allReAllocationColumns.map((column, index) => {
+                      return visibleColumns.filter(
+                        (_column) => _column.id === column.id && _column.visible
+                      ).length > 0 ||
+                        (column.id !== "timestamp" &&
+                          column.id !== "market") ? (
+                        <TableCell
+                          className="pl-[20px] text-card pr-18"
+                          key={`${allocation.id}-${index}`}
+                        >
+                          {renderCellContent(allocation, column.id)}
+                        </TableCell>
+                      ) : (
+                        <></>
+                      );
+                    })}
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
-      <div className="flex justify-center items-center mt-4 text-primary text-sx">
-        <Button
-          className="text-[11px] text-muted bg-background p-0 h-4"
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage(currentPage - 1)}
-        >
-          <LeftArrow className="w-4 h-4" />
-        </Button>
-        <span className="text-[11px] text-muted">
-          {t("common.page")} {currentPage} {t("common.of")} {totalPages}
-        </span>
-        <Button
-          className="text-[11px] text-muted bg-background p-0 h-4"
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage(currentPage + 1)}
-        >
-          <RightArrow className="w-[8px] h-[8px] rotate-180 " />
-        </Button>
-      </div>
+      {reallocations.length > 0 && (
+        <div className="flex justify-center items-center mt-4 text-primary text-sx">
+          <Button
+            className="text-[11px] text-muted bg-background p-0 h-4"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(currentPage - 1)}
+          >
+            <LeftArrow className="w-4 h-4" />
+          </Button>
+          <span className="text-[11px] text-muted">
+            {t("common.page")} {currentPage} {t("common.of")} {totalPages}
+          </span>
+          <Button
+            className="text-[11px] text-muted bg-background p-0 h-4"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(currentPage + 1)}
+          >
+            <RightArrow className="w-[8px] h-[8px] rotate-180 " />
+          </Button>
+        </div>
+      )}
     </>
   );
 }

@@ -5,7 +5,6 @@ import { Sidebar } from "@/components/layouts/sidebar";
 import { Header } from "@/components/layouts/header";
 import { EarnContent } from "./earn-content";
 import { SupplyPanel } from "@/components/elements/supply-panel";
-import { mockup_vaults } from "@/lib/data";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { addSelectedVault, clearSelectedVault } from "@/redux/vaultSlice";

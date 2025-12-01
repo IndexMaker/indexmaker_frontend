@@ -57,11 +57,12 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
             className="rounded-full bg-accent hover:bg-[#2470ff] cursor-pointer w-[31px] h-[31px]"
             asChild
           >
+            
             <Link 
-              href={`/ecosystem/${project.projectId || project.id}`} 
+              href={`${project.websiteUrl}`} 
               className="block group"
               aria-label={`View ${project.name} details`}
-            >
+            > 
               <External className="h-[2px] w-[2px] text-primary" width="6px" />
             </Link>
           </Button>

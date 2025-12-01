@@ -44,7 +44,7 @@ import {
   mockup_vaults,
 } from "@/lib/data";
 import { getIndexData } from "@/lib/IndexMockupData";
-import { cn, getERC20AddressForIndex, shortenAddress } from "@/lib/utils";
+import { cn, shortenAddress } from "@/lib/utils";
 import { RootState } from "@/redux/store";
 import { addSelectedVault } from "@/redux/vaultSlice";
 import { IndexListEntry } from "@/types/index";
@@ -441,6 +441,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
 
                     {/* Properties Text */}
                     <div className="flex flex-row items-end gap-4 text-secondary -mt-[30px] text-[11px]">
+                      {/*
                       <Link href={"#"}>
                         <div className="flex flex-col items-center justify-center hover:text-[#2470ff]">
                           <FileText className="w-4" />
@@ -469,6 +470,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                           </Link>
                         </div>
                       </Link>
+                
                       <Link
                         href={`${
                           process.env.NEXT_PUBLIC_BACKEND_API
@@ -491,6 +493,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                           </Link>
                         </div>
                       </Link>
+                      */}
                     </div>
                   </div>
                 </div>
@@ -539,9 +542,9 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                         <TokenInfo token={vault.token} />
                       </InfoMobileCard>
 
-                      <InfoMobileCard title={t("table.totalSupply")}>
+                      {/* <InfoMobileCard title={t("table.totalSupply")}>
                         <TokenValue token={vault.token} value={IndexPrice} />
-                      </InfoMobileCard>
+                      </InfoMobileCard> 
 
                       <InfoMobileCard title={t("table.oneYearPerformance")}>
                         <div className="text-sm text-secondary">
@@ -559,13 +562,13 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                         <AddressInfo address={index.address || ""} />
                       </InfoMobileCard>
 
-                      <InfoMobileCard title={t("table.liquidity")}>
+                      {/* <InfoMobileCard title={t("table.liquidity")}>
                         <TokenValue token={vault.token} value={IndexPrice} />
-                      </InfoMobileCard>
+                      </InfoMobileCard> */}
 
-                      <InfoMobileCard title={t("table.guardianAddress")}>
+                      {/* <InfoMobileCard title={t("table.guardianAddress")}>
                         <AddressInfo address={vault.guardianAddress || ""} />
-                      </InfoMobileCard>
+                      </InfoMobileCard> */}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -582,9 +585,9 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                         isSmallWindow ? "flex-col" : "flex-wrap flex-responsive"
                       )}
                     >
-                      <FundDetail indexId={index.ticker} />
+                      {/*<FundDetail indexId={index.ticker} />*/}
                       <FundOverview indexId={index.ticker} />
-                      <EquityStyleMap indexId={index.ticker} />
+                      <EquityStyleMap indexId={index.ticker} /> 
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -834,7 +837,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                         </div>
                       </InfoCard>
 
-                      {/* Total Supply */}
+                      {/* Total Supply 
                       <InfoCard title={t("table.totalSupply")}>
                         <div className="flex items-center gap-2">
                           <div className="flex items-center gap-2">
@@ -853,16 +856,15 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                           </div>
                           {/* <div className="text-[13px] text-secondary px-[2px] bg-accent">
                             {index.totalSupply}
-                          </div> */}
+                          </div> *
                         </div>
-                      </InfoCard>
+                      </InfoCard> */}
 
-                      {/* Instant APY */}
-                      <InfoCard title={t("table.oneYearPerformance")}>
+                      {/* Instant APY                       <InfoCard title={t("table.oneYearPerformance")}>
                         <div className="text-[14px] text-secondary font-normal">
                           {index.performance?.oneYearReturn.toFixed(2) || "0"} %
                         </div>
-                      </InfoCard>
+                      </InfoCard>*/}
 
                       {/* Performance Fee */}
                       <InfoCard
@@ -893,7 +895,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                         </div>
                       </InfoCard>
 
-                      {/* liquidity */}
+                      {/* liquidity 
                       <InfoCard
                         title={t("table.liquidity")}
                         tooltip="The amount of tokens available for borrowing"
@@ -915,11 +917,11 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                           </div>
                           {/* <div className="text-[13px] text-secondary px-[2px] bg-[#fafafa1a]">
                             {index.totalSupply}
-                          </div> */}
                         </div>
-                      </InfoCard>
+                      </InfoCard> 
+                      */}
 
-                      {/* Guardian Address */}
+                      {/* Guardian Address 
                       <InfoCard
                         title={t("table.guardianAddress")}
                         tooltip="The blockchain address of the vault guardian"
@@ -942,7 +944,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                             <Copy className="h-3 w-3 text-secondary" />
                           </Button>
                         </div>
-                      </InfoCard>
+                      </InfoCard>*/}
                     </div>
                   )}
                 </div>
@@ -958,14 +960,14 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                       isSmallWindow ? "flex-col" : "flex-wrap flex-responsive"
                     )}
                   >
-                    <FundDetail indexId={index.ticker} />
-                    {/* {!isSmallWindow && <FundManager indexId={index.ticker} />} */}
+                    {/*<FundDetail indexId={index.ticker} />
+                     {!isSmallWindow && <FundManager indexId={index.ticker} />} */}
                     <FundOverview indexId={index.ticker} />
                     {/* {!isSmallWindow && (
                       <PortfolioManagerInsights indexId={index.ticker} />
                     )} */}
                     <EquityStyleMap indexId={index.ticker} />
-                    {!isSmallWindow && <Risk indexId={index.ticker} />}
+                    {/*{!isSmallWindow && <Risk indexId={index.ticker} />}*/}
                   </div>
                 </div>
 
@@ -1294,96 +1296,18 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
                   </h4>
 
                   <p className="text-[13px] mb-0 pb-4 text-secondary">
-                    The index is described in a Key Information Document (KID),
-                    or Key Investor Information Document (KIID) for investors,
-                    and prospectus. The Funds KID, or KIID, must be made
-                    available to potential subscribers prior to subscription.
+                  IndexMaker is currently operating in testnet/beta phase. All indexes, products, and services are provided exclusively for testing and evaluation purposes only, even where real funds are used. Nothing on this website or in any related materials constitutes an offer, invitation, recommendation, investment advice, or solicitation to buy, sell, or hold any tokens, indexes, or financial instruments. IndexMaker indexes are on-chain, decentralized products. They are not Exchange-Traded Funds (ETFs), are not registered with any financial regulatory authority, and are not subject to the same regulatory requirements or investor protections as traditional regulated investment products (including but not limited to ETFs, UCITS, mutual funds, etc.). No regulatory protections apply. There is no capital guarantee. You may lose your entire investment. No compensation scheme applies.
                   </p>
                   <p className="text-[13px] mb-0 pb-4 text-secondary">
-                    The Funds reference material (KIID, prospectus, annual and
-                    semi-annual reports) can be obtained from IndexMaker on
-                    request, or obtained via the indexmaker.global website.{" "}
-                    <br></br>
-                    For Professional Clients only. This website is addressed
-                    only to those persons in the UK falling within one or more
-                    of the following exemptions from the restrictions in Section
-                    238 FSMA:<br></br>- Authorised firms under FSMA and certain
-                    other investment professionals falling within article 14 of
-                    the FSMA (Promotion of Collective Investment Schemes)
-                    (Exemptions) Order 2001, as amended (the "CIS Order") and
-                    their directors, officers and employees acting for such
-                    entities in relation to investment.<br></br>- High value
-                    entities falling within article 22 CIS Order and their
-                    directors, officers and employees acting for such entities
-                    in relation to investment;<br></br>- Other persons who are
-                    in accordance with the Rules of the FCA prior to 1 November
-                    2007 classified as Intermediate Customers or Market
-                    Counterparties or on or thereafter classified as
-                    Professional Clients or Eligible Counterparties.<br></br>
-                    The distribution of this website's information to any person
-                    in the UK not falling within one of the above categories is
-                    not permitted by IndexMkaer Limited and may contravene FSMA.
-                    No person in the UK falling outside those categories should
-                    rely or act on it for any purposes whatsoever. <br></br>
-                    This website's information is only directed at persons who
-                    are Professional Clients (as defined in the FCA's Handbook
-                    of Rules and Guidance), must not be distributed to the
-                    public and must not be relied or acted upon by any other
-                    persons for any purposes whatsoever. <br></br>
-                    Potential investors in the UK should be aware that none of
-                    the protections afforded by the UK regulatory system will
-                    apply to an investment in an Index and that compensation
-                    will not be available under the UK Financial Services
-                    Compensation Scheme. <br></br>
+                  Before interacting with any IndexMaker index, carefully consider the investment objectives, risks, charges, and expenses. On-chain indexes carry significant risks including but not limited to complete loss of principal, smart contract vulnerabilities and exploits, extreme volatility, liquidity risks, regulatory and legal uncertainty, counterparty and oracle risks, impermanent loss (where applicable), and network congestion and high gas fees. Full technical documentation and risk disclosures are available at indexmaker.global or upon request from IndexMaker Labs LTD. You must read these documents carefully before any interaction.
                   </p>
                   <p className="text-[13px] mb-0 pb-4 text-secondary">
-                    Regarding Index admitted on a regulated market, the listing
-                    is subject to a volatility control mechanisms to ensure that
-                    the Index price does not deviate significantly from a
-                    reference price set by the listing rules of the relevant
-                    regulated market, notably through the implementation of a
-                    trading halt mechanism in case of significant deviation from
-                    this reference price.
+                  Full portfolio composition, weights, and real-time data are published on-chain and available at indexmaker.global. Unless otherwise stated, all data is sourced from IndexMaker Labs LTD or on-chain oracles.
                   </p>
                   <p className="text-[13px] mb-0 pb-4 text-secondary">
-                    The Index offers no capital guarantee. Investors may not get
-                    back the full amount of their initial investment,
-                    particularly in the event that the benchmark index falls.
-                    Potential investors are advised to read the Funds risk
-                    profile, which is described in detail in the prospectus. The
-                    amount that is reasonable to invest in the Fund will depend
-                    on the personal circumstances of each investor. To determine
-                    this amount, investors should take into account their
-                    financial situation, personal assets, and current and future
-                    requirements, as well as considering their willingness to
-                    accept risks or conversely their preference to invest
-                    cautiously. Investors are also strongly recommended to
-                    sufficiently diversify their investments so as to avoid
-                    being exposed solely to the risks of this Fund. Investors
-                    should therefore seek advice in this regard from their usual
-                    advisors (legal, tax, financial and/or accounting) before
-                    purchasing any units of the Fund.
+                  By continuing to use this website or any IndexMaker product, you confirm that you have read, understood, and accept the above terms, and that you are not located in, resident in, or a citizen of any Prohibited Jurisdiction.
                   </p>
-                  <p className="text-[13px] mb-0 pb-4 text-secondary">
-                    The source of the data contained in this document is
-                    IndexMaker unless otherwise stated.
-                  </p>
-                  <p className="text-[13px] mb-0 pb-4 font-bold text-secondary">
-                    Policy regarding portfolio transparency and warning on
-                    secondary market
-                  </p>
-                  <p className="text-[13px] mb-0 pb-4 text-secondary">
-                    The policy regarding portfolio transparency and information
-                    on the funds assets are available on indexmaker.global.
-                    Indicative net asset value is published by stock exchanges.
-                    Shares purchased on the secondary market cannot usually be
-                    sold directly back to the fund. Investors must buy and sell
-                    shares on a secondary market with the assistance of an
-                    intermediary (e.g. a broker) and may incur fees for doing
-                    so. Investors may pay more than the current net asset value
-                    when buying shares and may receive less than the current net
-                    asset value when selling them.
-                  </p>
+                  
                 </div>
               </div>
             </div>
