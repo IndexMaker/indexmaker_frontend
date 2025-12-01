@@ -3257,6 +3257,7 @@ export class EtfPriceService {
       const toStr = this.formatAPIDateUTC(this.toUTCStartOfDay(to), true);
 
       const url = `${'https://www.indexmaker.global/api/v1'}/mint_invoices/from/${fromStr}/to/${toStr}`;
+
       const response = await fetch(url, { cache: 'no-store' });
 
       if (!response.ok) {
