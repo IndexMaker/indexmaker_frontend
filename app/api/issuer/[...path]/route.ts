@@ -55,11 +55,26 @@ async function tryLocalBackend(
 
       const response = await fetch(localUrl, fetchOptions);
 
+      // Return response even if not ok, so we can see the actual error
+      // The caller will handle non-ok responses appropriately
+      if (response.status === 401 || response.status === 403) {
+        // If we get auth errors from local backend, log but don't fall through to upstream
+        // (upstream might also require auth we don't have)
+        console.error(`Local backend returned ${response.status} for ${localUrl}`);
+        return null; // Return null to prevent fallback to upstream
+      }
+
       if (response.ok) {
         return response;
       }
+
+      // For other errors (500, 404, etc), still return null to try upstream
+      // But log in development
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Local backend returned ${response.status} for ${localUrl}, trying upstream`);
+      }
     } catch (error) {
-      // Local backend not available, fall through to upstream
+      // Local backend not available (network error, timeout, etc), fall through to upstream
       // Only log in development to avoid noise in production
       if (process.env.NODE_ENV !== 'production') {
         console.log("Local backend not available, using upstream:", error);
@@ -111,6 +126,18 @@ export async function GET(req: Request, context: { params: Promise<{ path: strin
   // Try local backend first for mint_invoices
   const localResponse = await tryLocalBackend(segments, search, "GET");
   if (localResponse) {
+    // If local backend returned an error status, return it directly instead of falling back
+    if (!localResponse.ok) {
+      const errorBody = await localResponse.text();
+      return new Response(errorBody, {
+        status: localResponse.status,
+        headers: {
+          "Content-Type": localResponse.headers.get("content-type") ?? "application/json",
+          ...CORS_HEADERS,
+        },
+      });
+    }
+
     const body = await localResponse.text();
     // Aggressively filter out Set-Cookie and other potentially large headers
     const responseHeaders = new Headers();
@@ -223,6 +250,18 @@ export async function POST(req: Request, context: { params: Promise<{ path: stri
   // Try local backend first for mint_invoices
   const localResponse = await tryLocalBackend(segments, search, "POST", requestBody);
   if (localResponse) {
+    // If local backend returned an error status, return it directly instead of falling back
+    if (!localResponse.ok) {
+      const errorBody = await localResponse.text();
+      return new Response(errorBody, {
+        status: localResponse.status,
+        headers: {
+          "Content-Type": localResponse.headers.get("content-type") ?? "application/json",
+          ...CORS_HEADERS,
+        },
+      });
+    }
+
     const body = await localResponse.text();
     // Aggressively filter out Set-Cookie and other potentially large headers
     const responseHeaders = new Headers();
