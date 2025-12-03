@@ -1,32 +1,4 @@
-# IndexMaker Frontend
-
-This is a [Next.js](https://nextjs.org) project for IndexMaker platform.
-
-## Production Deployment
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for production deployment instructions.
-
-## Environment Variables
-
-Set these in Vercel Dashboard (Settings → Environment Variables):
-
-- `NEXT_PUBLIC_BACKEND_API` - Backend API URL
-- `NEXT_PUBLIC_INDEXMAKER_API` - External API fallback
-- `NEXT_PUBLIC_DAPP_URL` - Frontend URL
-
-## Development
-
-```bash
-npm install
-npm run dev
-```
-
-## Build
-
-```bash
-npm run build
-npm start
-```
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
 

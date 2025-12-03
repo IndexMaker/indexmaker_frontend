@@ -78,7 +78,6 @@ import FundOverview from "./fund-overview";
 import Risk from "./fund-risk";
 import EquityStyleMap from "./fund-style-map";
 import IndexBalance from "./index-balance";
-import PortfolioManagerInsights from "./portfolio-manager-insignts";
 import { VaultLiteratureSection } from "./vault-literature";
 interface VaultDetailPageProps {
   index: IndexListEntry | null;

@@ -16,7 +16,6 @@ import { ListingController } from './api/listing.controller';
 import { ListingModule } from './modules/scraper/scraper.module';
 import { PdfController } from './api/pdf.controller';
 import { PDFModule } from './modules/pdf/pdf.module';
-import { InvoicesModule } from './modules/invoices/invoices.module';
 
 @Module({
   imports: [
@@ -25,10 +24,8 @@ import { InvoicesModule } from './modules/invoices/invoices.module';
     CacheModule.register({
       isGlobal: true,
       store: redisStore,
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      // Make Redis optional - will fallback to in-memory cache if Redis is unavailable
-      ttl: 3600,
+      host: 'redis',
+      port: 6379,
     }),
     DataFetcherModule,
     BlockchainModule,
@@ -36,8 +33,7 @@ import { InvoicesModule } from './modules/invoices/invoices.module';
     StorageModule,
     ProjectsModule,
     ListingModule,
-    PDFModule,
-    InvoicesModule
+    PDFModule
   ],
   controllers: [IndexController, ProjectsController, ListingController, PdfController],
   providers: [DailyFetchJob],

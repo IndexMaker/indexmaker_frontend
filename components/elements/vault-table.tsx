@@ -18,15 +18,14 @@ import {
 import { useLanguage } from "@/contexts/language-context";
 import { useQuoteContext } from "@/contexts/quote-context";
 import { cn } from "@/lib/utils";
-// Make sure to import the actions we just created
 import { setBatchPrices, setTokenSupply } from "@/redux/market-data-slice";
 import { RootState } from "@/redux/store";
 import { IndexListEntry } from "@/types/index";
 import { ethers } from "ethers";
-import { ArrowDown, ArrowUp, Copy, Info } from "lucide-react";
+import { ArrowDown, ArrowUp, Info } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useWallet } from "../../contexts/wallet-context";
 import USDC from "../../public/logos/usd-coin.png";
@@ -34,12 +33,23 @@ import IndexMaker from "../icons/indexmaker";
 import LeftArrow from "../icons/left-arrow";
 import RightArrow from "../icons/right-arrow";
 import AnimatedPrice from "./animate-price";
-import CustomTooltip from "./custom-tooltip";
 
 const ERC20_ABI = [
   "function totalSupply() view returns (uint256)",
   "function decimals() view returns (uint8)",
 ];
+
+// --- DEFAULT VALUES ---
+// These populate immediately if no wallet is connected.
+// Check your console when connected to update these with real values.
+const DEFAULT_SUPPLIES: Record<string, number> = {
+  "SY100": 0.000058536080258111,
+  "SYAZ": 0.00003233497370741,
+  "SYL2": 0.000002460884913229,
+  "SYAI": 0.000113742974796965,
+  "SYME": 0.000001181856051783,
+  "SYDF": 0.001055210060904233,
+};
 
 interface VaultTableProps {
   visibleColumns: { id: string; title: string; visible: boolean }[];
@@ -65,10 +75,12 @@ export function VaultTable({
   const router = useRouter();
   const dispatch = useDispatch();
   
+  // Ref to ensure we only log the JSON for copying once per session
+  const hasLoggedDefaults = useRef(false);
+  
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  // --- REDUX SELECTORS ---
   const selectedVault = useSelector(
     (state: RootState) => state.vault.selectedVault
   );
@@ -76,7 +88,6 @@ export function VaultTable({
     (state: RootState) => state.network
   );
   
-  // Select Prices and Supplies from Redux
   const { prices: reduxPrices, supplies: reduxSupplies } = useSelector(
     (state: RootState) => state.marketData
   );
@@ -99,12 +110,8 @@ export function VaultTable({
 
   const normalize = (s: string) => s.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
 
-  // Helper to get price from Redux (fallback to helper logic if needed)
   const getLiveIndexPrice = (symbol: string): number | undefined => {
-    // 1. Check Redux
     if (reduxPrices[symbol] != null) return reduxPrices[symbol];
-
-    // 2. Fuzzy match in Redux
     const norm = normalize(symbol);
     for (const [k, v] of Object.entries(reduxPrices)) {
       if (normalize(k) === norm) return v;
@@ -117,27 +124,40 @@ export function VaultTable({
       ? "0.00"
       : new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(n);
 
-  // --- SYNC EFFECT: Context Prices -> Redux ---
   useEffect(() => {
     if (indexPrices) {
       dispatch(setBatchPrices(indexPrices));
     }
   }, [indexPrices, dispatch]);
 
-  // --- ASYNC EFFECT: Fetch On-Chain Supply -> Redux ---
+  // --- SUPPLY FETCH LOGIC ---
   useEffect(() => {
     let isMounted = true;
+    const provider = wallet?.provider;
 
-    const fetchAllSuppliesStaggered = () => {
-      const provider = wallet?.provider;
-      if (!provider) return;
+    // SCENARIO 1: No Wallet Provider (User not connected)
+    // Directly load defaults into Redux. Do not attempt fetch.
+    if (!provider) {
+      for (let i = 0; i < tokenAddressesRaw.length; i += 2) {
+        const ticker = tokenAddressesRaw[i];
+        const defaultVal = DEFAULT_SUPPLIES[ticker] ?? 0;
+        
+        dispatch(setTokenSupply({ ticker, supply: defaultVal }));
+      }
+      return; 
+    }
+
+    // SCENARIO 2: Wallet Connected. Fetch from Chain & Log for Devs
+    const fetchAllSuppliesStaggered = async () => {
+      const collectedSupplies: Record<string, number> = {};
+      const promises = [];
 
       for (let i = 0; i < tokenAddressesRaw.length; i += 2) {
         const ticker = tokenAddressesRaw[i];
         const address = tokenAddressesRaw[i + 1];
 
         const fetchSingle = async () => {
-          // Visual stagger
+          // Visual stagger to prevent all loading spinners flickering at once
           const randomDelay = Math.random() * 2000;
           await new Promise((resolve) => setTimeout(resolve, randomDelay));
 
@@ -154,19 +174,34 @@ export function VaultTable({
               ethers.formatUnits(supplyRaw, decimals)
             );
 
-            // Dispatch to Redux instead of local state
+            // Collect for logging
+            collectedSupplies[ticker] = formattedSupply;
+
             if (isMounted) {
               dispatch(setTokenSupply({ ticker, supply: formattedSupply }));
             }
           } catch (error) {
-            console.error(`Failed to fetch supply for ${ticker}`, error);
+            console.warn(`Failed to fetch supply for ${ticker}, using default.`);
+            
+            // Fallback to default
+            const defaultVal = DEFAULT_SUPPLIES[ticker] ?? 0;
+            collectedSupplies[ticker] = defaultVal;
+
             if (isMounted) {
-               dispatch(setTokenSupply({ ticker, supply: 0 }));
+               dispatch(setTokenSupply({ ticker, supply: defaultVal }));
             }
           }
         };
 
-        fetchSingle();
+        promises.push(fetchSingle());
+      }
+
+      // Wait for all requests to finish, then log once
+      await Promise.all(promises);
+
+      if (!hasLoggedDefaults.current && isMounted) {
+        console.log("📋 COPY/PASTE THESE DEFAULTS:", JSON.stringify(collectedSupplies, null, 2));
+        hasLoggedDefaults.current = true;
       }
     };
 
@@ -177,9 +212,9 @@ export function VaultTable({
       isMounted = false;
       clearInterval(interval);
     };
-  }, [wallet?.provider, dispatch]); // Added dispatch to dependency array
+  }, [wallet?.provider, dispatch]); 
 
-  // --- MEMO: Calculate AUM based on Redux Data ---
+  // --- MEMO: Calculate AUM ---
   const liveTotalSupplyUSDByTicker = useMemo(() => {
     const map: Record<string, number> = {};
 
@@ -195,7 +230,7 @@ export function VaultTable({
       map[v.ticker] = usd;
     }
     return map;
-  }, [vaults, reduxPrices, reduxSupplies]); // Depend on Redux state
+  }, [vaults, reduxPrices, reduxSupplies]);
 
   const handleSort = (columnId: string) => {
     if (!onSort) return;
@@ -311,7 +346,7 @@ export function VaultTable({
                   const liveSupplyUSD =
                     liveTotalSupplyUSDByTicker[vault.ticker] ?? 0;
 
-                  // Loading states
+                  // If default supply is used (no wallet), these will be true immediately
                   const isPriceLoaded = unitPrice !== undefined;
                   const isSupplyLoaded = rawSupply !== undefined;
                   const isAumLoaded = isPriceLoaded && isSupplyLoaded;
@@ -364,7 +399,6 @@ export function VaultTable({
                                   <span className="text-card">
                                     {vault.ticker}
                                   </span>
-                                  {/* Price Loading State */}
                                   <span className="text-[10px] text-muted-foreground flex items-center h-[16px]">
                                     {isPriceLoaded ? (
                                       <AnimatedPrice
@@ -391,7 +425,6 @@ export function VaultTable({
                                       height={12}
                                       className="object-cover w-[12px] h-[12px]"
                                     />
-                                    {/* AUM Loading State */}
                                     {isAumLoaded ? (
                                       <span className="animate-in fade-in zoom-in duration-300">
                                         {formatUSD(liveSupplyUSD)} USDC
@@ -411,8 +444,6 @@ export function VaultTable({
                                   %
                                 </div>
                               )}
-                              
-                              {/* ... (Remaining Columns kept exactly as they were) ... */}
 
                               {col.id === "assetClass" && (
                                 <div>{vault.assetClass}</div>

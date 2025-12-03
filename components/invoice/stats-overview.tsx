@@ -16,11 +16,9 @@ interface StatsOverviewProps {
 
 export function StatsOverview({ invoices, assets }: StatsOverviewProps) {
   // --- REDUX SELECTORS ---
-  // Get Market Data (Prices & Supplies)
   const { prices: reduxPrices, supplies: reduxSupplies } = useSelector(
     (state: RootState) => state.marketData
   );
-  // Get List of Indexes to iterate over
   const storedIndexes = useSelector((state: RootState) => state.index.indices);
 
   // --- AUM CALCULATION LOGIC ---
@@ -31,11 +29,7 @@ export function StatsOverview({ invoices, assets }: StatsOverviewProps) {
 
     return storedIndexes.reduce((acc, idx) => {
       const ticker = idx.ticker;
-
-      // 1. Get Supply from Redux
       const supply = reduxSupplies[ticker] ?? 0;
-
-      // 2. Get Price from Redux (with fuzzy fallback)
       let price = reduxPrices[ticker];
       
       if (price === undefined) {
@@ -48,7 +42,6 @@ export function StatsOverview({ invoices, assets }: StatsOverviewProps) {
         }
       }
 
-      // 3. Sum (Supply * Price)
       return acc + (supply * (price ?? 0));
     }, 0);
   }, [storedIndexes, reduxPrices, reduxSupplies]);
@@ -57,26 +50,11 @@ export function StatsOverview({ invoices, assets }: StatsOverviewProps) {
   const totalInvoices = invoices.length
   const completedInvoices = invoices.filter((inv) => inv.status === "completed").length
   
-  // Replaced manual invoice sum with the calculated AUM
   const totalValue = totalAUM; 
 
   const averageFillRate = 1 || invoices.reduce((sum, inv) => sum + inv.fill_rate, 0) / invoices.length || 0
   
-  // Note: formatting helpers kept as is
-  const formatLargeNumber = (num: number) => {
-    if (num >= 1e12) {
-      return `${(num / 1e12).toFixed(1)}T`
-    }
-    if (num >= 1e9) {
-      return `${(num / 1e9).toFixed(1)}B`
-    }
-    if (num >= 1e6) {
-      return `${(num / 1e6).toFixed(1)}M`
-    }
-    return num
-  }
-
-  const stats = [
+  const allStats = [
     {
       title: "Total Invoices",
       value: totalInvoices.toString(),
@@ -86,7 +64,6 @@ export function StatsOverview({ invoices, assets }: StatsOverviewProps) {
     },
     {
       title: "Total Value",
-      // Updated to display the calculated AUM
       value: (totalValue.toFixed(2)) + ' USDC', 
       subtitle: "Assets under management",
       icon: DollarSign,
@@ -108,9 +85,23 @@ export function StatsOverview({ invoices, assets }: StatsOverviewProps) {
     },
   ]
 
+  // Filter out the Total Value card if the value is 0
+  const displayedStats = allStats.filter((stat) => {
+    if (stat.title === "Total Value" && totalValue === 0) {
+      return false
+    }
+    return true
+  })
+
+  // Dynamic grid class based on item count
+  const gridColsClass = displayedStats.length === 3 
+    ? "lg:grid-cols-3" 
+    : "lg:grid-cols-4";
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {stats.map((stat, index) => {
+    // Applied dynamic variable here
+    <div className={`grid grid-cols-1 md:grid-cols-2 ${gridColsClass} gap-4`}>
+      {displayedStats.map((stat, index) => {
         const Icon = stat.icon
         return (
           <Card key={index} className="border-border bg-foreground">
@@ -143,4 +134,4 @@ export function StatsOverview({ invoices, assets }: StatsOverviewProps) {
       })}
     </div>
   )
-}
+} 

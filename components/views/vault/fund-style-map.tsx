@@ -119,9 +119,7 @@ export default function EquityStyleMap({
         {/* Category Info */}
         <div className="space-y-2">
           <h3 className="text-[14px] font-semibold">{equityData.category}</h3>
-          <p className="text-[12px] text-gray-600">
-            ~{equityData.fundAssetsCovered} Fund Assets Covered
-          </p>
+      
           <p className="text-[12px] leading-relaxed">
             {equityData.description}
           </p>

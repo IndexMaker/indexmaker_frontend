@@ -155,13 +155,6 @@
       "when": 1753168981885,
       "tag": "0021_rainy_vindicator",
       "breakpoints": true
-    },
-    {
-      "idx": 22,
-      "version": "7",
-      "when": 1764527633441,
-      "tag": "0022_closed_junta",
-      "breakpoints": true
     }
   ]
 }

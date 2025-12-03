@@ -1,11 +1,7 @@
 import { Asset, CollateralSide, InventoryResponse, Lot, MintInvoice, Position } from "@/types";
 
-// Local/backend API (for inventory etc.)
 const API_BASE_URL = "/api/issuer";
 const API_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API;
-// Issuer network API (used for mint_invoices to avoid Vercel cookie issues)
-const API_ISSUER_URL =
-  process.env.NEXT_PUBLIC_INDEXMAKER_API || "https://www.indexmaker.global/api/v1";
 const toUTCStartOfDay = (d: Date) =>
   new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0)
@@ -149,15 +145,8 @@ export async function fetchMintInvoices(
     const fromStr = formatAPIDateUTC(toUTCStartOfDay(from), false);
     const toStr = formatAPIDateUTC(toUTCStartOfDay(to), true);
 
-    // Call issuer network directly instead of going through /api/issuer
-    // This avoids sending Vercel/session cookies to the same-origin API route,
-    // which is what originally caused REQUEST_HEADER_TOO_LARGE.
-    const url = `${API_ISSUER_URL}/mint_invoices/from/${fromStr}/to/${toStr}`;
-    const response = await fetch(url, {
-      cache: "no-store",
-      // Cross-origin call; cookies for your app domain are not sent.
-      credentials: "omit",
-    });
+    const url = `${API_BASE_URL}/mint_invoices/from/${fromStr}/to/${toStr}`;
+    const response = await fetch(url, { cache: "no-store" });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch mint invoices (${response.status})`);
@@ -178,13 +167,8 @@ export async function fetchMintInvoiceById(
   address: string
 ): Promise<MintInvoice | null> {
   try {
-    // Same as above: talk to issuer network directly to avoid Vercel cookie issues.
     const response = await fetch(
-      `${API_ISSUER_URL}/mint_invoices/invoice/${chain_id}/${address}/${client_order_id}`,
-      {
-        cache: "no-store",
-        credentials: "omit",
-      }
+      `${API_BASE_URL}/mint_invoices/invoice/${chain_id}/${address}/${client_order_id}`
     );
     if (!response.ok) {
       throw new Error("Failed to fetch mint invoice");

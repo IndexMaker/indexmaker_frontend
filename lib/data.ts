@@ -403,37 +403,37 @@ export const TOKEN_LIST = [
   {
     symbol: 'SYDF',
     type: 'erc20',
-    address: '0xcdce4c5ffd9cd0025d536dbc69a12cf7ada82193',
+    address: '0xcdce4c5ffd9cd0025d536dbc69a12cf7ada82193', 
     decimals: 18,
   },
   {
     symbol: 'SYME',
     type: 'erc20',
-    address: '0xbab03330d8b41b20eb540b6361ab30b59d8ee849',
+    address: '0xbab03330d8b41b20eb540b6361ab30b59d8ee849', 
     decimals: 18,
   },
   {
     symbol: 'SYAI',
     type: 'erc20',
-    address: '0x700892f09f8f8589ff3e69341b806adb06bb67fd',
+    address: '0x700892f09f8f8589ff3e69341b806adb06bb67fd', 
     decimals: 18,
   },
   {
     symbol: 'SYL2',
     type: 'erc20',
-    address: '0x0cee77782fa57cfb66403c94c08e2e3e376dc388',
+    address: '0x0cee77782fa57cfb66403c94c08e2e3e376dc388', 
     decimals: 18,
   },
   {
     symbol: 'SYAZ',
     type: 'erc20',
-    address: '0x8a8cf8860f97d007fcf46ed790df794e008b3ce8',
+    address: '0x8a8cf8860f97d007fcf46ed790df794e008b3ce8', 
     decimals: 18,
   },
   {
     symbol: 'SY100',
     type: 'erc20',
-    address: '0x1a64a446e31f19172c6eb3197a1e85ff664af380',
+    address: '0x1a64a446e31f19172c6eb3197a1e85ff664af380', 
     decimals: 18,
   },
 ];
@@ -471,32 +471,32 @@ export const TOKEN_METADATA: {
     },
     SYDF: {
       type: 'erc20',
-      address: '0xcdce4c5ffd9cd0025d536dbc69a12cf7ada82193',
+      address: '0xcdce4c5ffd9cd0025d536dbc69a12cf7ada82193', 
       decimals: 18,
     },
     SYME: {
       type: 'erc20',
-      address: '0xbab03330d8b41b20eb540b6361ab30b59d8ee849',
+      address: '0xbab03330d8b41b20eb540b6361ab30b59d8ee849', 
       decimals: 18,
     },
     SYAI: {
       type: 'erc20',
-      address: '0x700892f09f8f8589ff3e69341b806adb06bb67fd',
+      address: '0x700892f09f8f8589ff3e69341b806adb06bb67fd', 
       decimals: 18,
     },
     SYL2: {
       type: 'erc20',
-      address: '0x0cee77782fa57cfb66403c94c08e2e3e376dc388',
+      address: '0x0cee77782fa57cfb66403c94c08e2e3e376dc388', 
       decimals: 18,
     },
     SYAZ: {
       type: 'erc20',
-      address: '0x8a8cf8860f97d007fcf46ed790df794e008b3ce8',
+      address: '0x8a8cf8860f97d007fcf46ed790df794e008b3ce8', 
       decimals: 18,
     },
-    SY100: {
+    SY100: {      
       type: 'erc20',
-      address: '0x1a64a446e31f19172c6eb3197a1e85ff664af380',
+      address: '0x1a64a446e31f19172c6eb3197a1e85ff664af380', 
       decimals: 18,
     },
     // USDT: {
@@ -507,13 +507,13 @@ export const TOKEN_METADATA: {
   },
 };
 
-// ABI for ERC-20 balanceOf function (viem-compatible format)
+// ABI for ERC-20 balanceOf function
 export const ERC20_ABI = [
   {
+    constant: true,
     inputs: [{ name: '_owner', type: 'address' }],
     name: 'balanceOf',
     outputs: [{ name: 'balance', type: 'uint256' }],
-    stateMutability: 'view',
     type: 'function',
   },
-] as const;
+];

@@ -9,8 +9,11 @@ interface MarketDataState {
 
 const initialState: MarketDataState = {
   prices: {},
-  supplies: {},
-};
+ 
+    supplies: {
+    },
+  };
+
 
 const marketDataSlice = createSlice({
   name: "marketData",

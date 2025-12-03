@@ -28,7 +28,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "IndexMaker",
-  description: "IndexMaker MVP",
+  description: "IndexMaker App",
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },

@@ -7,21 +7,13 @@ export default function FundOverview({
   indexId: string;
 }) {
   const {
-    asOfDate,
-    topSector,
-    topCountry,
     objective,
     strategy,
     risk,
     disclosures,
   } = getIndexData(indexId).fundOverviewData || [];
 
-  // Get icon components
-  const SectorIcon =
-    iconComponents[topSector.iconName as keyof typeof iconComponents];
-  const CountryIcon =
-    iconComponents[topCountry.iconName as keyof typeof iconComponents];
-
+ 
   return (
     <Card className="w-full min-w-[350px] h-[430px] border-none bg-foreground flex flex-1 p-2 gap-2">
       {/* Header */}

@@ -718,15 +718,15 @@ export function TransactionConfirmModal({
                     </div>
                   </div>
 
-                  {/* <div className="flex justify-between items-center text-[12px]">
+                  <div className="flex justify-between items-center text-[12px]">
                     <span className="text-secondary">Year to Date</span>
                     <div className="flex items-center gap-1">
                       <span className="font-medium">{t.apy}</span>
                       <Sparkles className="w-4 h-4 text-blue-400" />
                     </div>
-                  </div> */}
+                  </div>
 
-                  {/* <div className="flex justify-between items-center text-[12px]">
+                  <div className="flex justify-between items-center text-[12px]">
                     <span className="text-secondary">Collateral</span>
                     <div className="flex items-center gap-1">
                       {t.collateral.slice(0, 5).map((c, i) => (
@@ -792,7 +792,7 @@ export function TransactionConfirmModal({
                         </CustomTooltip>
                       )}
                     </div>
-                  </div> */}
+                  </div>
                 </div>
 
                 {idx < transactions.length - 1 && (
