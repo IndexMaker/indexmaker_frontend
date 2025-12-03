@@ -6,7 +6,7 @@ const UPSTREAM = process.env.NEXT_PUBLIC_INDEXMAKER_API || "https://issuer-netwo
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization", // Removed x-api-key
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 function toUpstream(segments: string[], search: string) {
@@ -21,15 +21,17 @@ export async function OPTIONS() {
 }
 
 // --- GET Handler ---
-export async function GET(req: Request, context: any) {
-  const raw = context?.params?.path;
+export async function GET(req: Request, context: { params: Promise<{ path: string[] }> }) {
+  // Await params before accessing properties (Next.js 15 requirement)
+  const params = await context.params;
+  const raw = params?.path;
+  
   const segments = Array.isArray(raw) ? raw : raw ? [raw] : [];
   const upstreamUrl = toUpstream(segments, new URL(req.url).search);
 
   const r = await fetch(upstreamUrl, {
     headers: {
       Authorization: req.headers.get("authorization") ?? "",
-      // REMOVED: "x-api-key"
     },
     cache: "no-store",
   });
@@ -44,8 +46,11 @@ export async function GET(req: Request, context: any) {
 }
 
 // --- POST Handler ---
-export async function POST(req: Request, context: any) {
-  const raw = context?.params?.path;
+export async function POST(req: Request, context: { params: Promise<{ path: string[] }> }) {
+  // Await params before accessing properties (Next.js 15 requirement)
+  const params = await context.params;
+  const raw = params?.path;
+
   const segments = Array.isArray(raw) ? raw : raw ? [raw] : [];
   const upstreamUrl = toUpstream(segments, new URL(req.url).search);
 
@@ -54,7 +59,6 @@ export async function POST(req: Request, context: any) {
     headers: {
       "content-type": req.headers.get("content-type") ?? "application/json",
       Authorization: req.headers.get("authorization") ?? "",
-      // REMOVED: "x-api-key"
     },
     body: await req.text(),
     cache: "no-store",
