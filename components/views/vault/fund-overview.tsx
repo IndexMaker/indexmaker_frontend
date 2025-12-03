@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { getIndexData, iconComponents } from "@/lib/IndexMockupData";
+import { getIndexData } from "@/lib/IndexMockupData";
 
 export default function FundOverview({
   indexId = "SY100",
