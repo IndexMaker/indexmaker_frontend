@@ -48,6 +48,7 @@ export function VaultAssets({
 
   // Format market cap to human-readable format
   const formatMarketCap = (value: number) => {
+    if (value === undefined || value === null || isNaN(value)) return "—";
     if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
     if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
     if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
@@ -56,6 +57,7 @@ export function VaultAssets({
 
   // Format weights to percentage
   const formatWeights = (value: number) => {
+    if (value === undefined || value === null || isNaN(value)) return "—";
     return `${value}%`;
   };
 
@@ -91,7 +93,7 @@ export function VaultAssets({
           <TooltipProvider>
             <div className="flex items-center gap-2">
               <div>{formatWeights(asset.weights)}</div>
-              {asset.weights < 0.01 && (
+              {asset.weights !== undefined && asset.weights !== null && asset.weights < 0.01 && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button

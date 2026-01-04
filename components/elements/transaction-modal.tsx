@@ -762,7 +762,7 @@ export function TransactionConfirmModal({
                         >
                           <div className="flex items-center gap-1 hover:px-1 hover:transition-all">
                             <Image
-                              src={c.logo ?? USDC}
+                              src={c.logo && c.logo !== "" ? c.logo : USDC}
                               alt={c.name}
                               width={17}
                               height={17}

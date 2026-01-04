@@ -465,7 +465,7 @@ export function SupplyPanel({
                                 >
                                   <div className="flex items-center gap-1 hover:px-1 hover:transition-all">
                                     <Image
-                                      src={collateral.logo ?? USDC}
+                                      src={collateral.logo && collateral.logo !== "" ? collateral.logo : USDC}
                                       alt={collateral.name}
                                       width={17}
                                       height={17}

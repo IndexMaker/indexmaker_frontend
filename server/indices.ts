@@ -54,6 +54,17 @@ export const fetchCurrentRebalanceById = async (indexId: number): Promise<any[]>
   return response.json();
 };
 
+export const fetchCurrentIndexWeight = async (indexId: number): Promise<any> => {
+  const response = await fetch(`${API_BASE_URL}/current-index-weight/${indexId}`);
+
+  if (!response.ok) {
+    log.error("Failed to fetch current index weight", { status: response.status, statusText: response.statusText, indexId });
+    return null;
+  }
+
+  return response.json();
+};
+
 export const fetchIndexByTicker = async (
   ticker: string
 ): Promise<IndexListEntry> => {
@@ -72,19 +83,21 @@ export const fetchIndexByTicker = async (
 
 export const fetchBtcHistoricalData = async (): Promise<any[]> => {
   const response = await fetch(
-    `${API_BASE_URL}/fetch-coin-historical-data/bitcoin`
+    `https://api2.indexmaker.global/fetch-coin-historical-data/bitcoin`
   );
 
   if (!response.ok) {
     log.error("Failed to fetch BTC historical data", { status: response.status, statusText: response.statusText });
+    return [];
   }
 
-  return response.json();
+  const result = await response.json();
+  return result.data || [];
 };
 
 export const fetchEthHistoricalData = async (): Promise<any[]> => {
   const response = await fetch(
-    `${API_BASE_URL}/fetch-coin-historical-data/ethereum`
+    `https://api2.indexmaker.global/fetch-coin-historical-data/ethereum`
   );
 
   if (!response.ok) {
@@ -92,7 +105,8 @@ export const fetchEthHistoricalData = async (): Promise<any[]> => {
     return [];
   }
 
-  return response.json();
+  const result = await response.json();
+  return result.data || [];
 };
 
 export const fetchVaultAssets = async (indexId: number): Promise<any[]> => {

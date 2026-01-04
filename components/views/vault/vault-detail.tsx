@@ -7,6 +7,7 @@ import {
   fetchHistoricalData,
   fetchUserTransactionData,
   fetchVaultAssets,
+  fetchCurrentIndexWeight,
 } from "@/server/indices";
 import { PerformanceChart } from "@/components/elements/performance-chart";
 import { TimePeriodSelector } from "@/components/elements/time-period";
@@ -118,6 +119,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
   const [showComparison, setShowComparison] = useState(false);
   const [showETHComparison, setShowETHComparison] = useState(false);
   const [indexAssets, setIndexAssets] = useState<VaultAsset[]>([]);
+  const [currentIndexWeight, setCurrentIndexWeight] = useState<any>(null);
   const [supplyPositions, setSupplyPositions] = useState<SupplyPosition[]>([]);
   const [userActivities, setUserActivities] = useState<Activity[]>([]);
 
@@ -165,10 +167,11 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
     const _fetchBtcHistoricalData = async () => {
       try {
         const response = await fetchBtcHistoricalData();
-        const data = response;
+        const data = Array.isArray(response) ? response : [];
         setBtcData(data);
       } catch (error) {
         console.error("Error fetching btc data:", error);
+        setBtcData([]);
       } finally {
       }
     };
@@ -177,10 +180,11 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
     const _fetchEthHistoricalData = async () => {
       try {
         const response = await fetchEthHistoricalData();
-        const data = response;
+        const data = Array.isArray(response) ? response : [];
         setEthData(data);
       } catch (error) {
         console.error("Error fetching eth data:", error);
+        setEthData([]);
       } finally {
       }
     };
@@ -189,11 +193,45 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
     const _fetchVaultAssets = async (_indexId: number) => {
       setAssetLoading(true);
       try {
-        const response = await fetchVaultAssets(_indexId);
-        const data = response;
-        setIndexAssets(data);
+        // Fetch both vault assets and current index weight data
+        const [assetsResponse, weightResponse] = await Promise.all([
+          fetchVaultAssets(_indexId),
+          fetchCurrentIndexWeight(_indexId)
+        ]);
+        
+        setCurrentIndexWeight(weightResponse);
+        
+        // Merge weight data with asset data if available
+        if (weightResponse && weightResponse.constituents && Array.isArray(weightResponse.constituents)) {
+          const mergedAssets = assetsResponse.map((asset: VaultAsset) => {
+            const constituent = weightResponse.constituents.find(
+              (c: any) => c.symbol?.toUpperCase() === asset.ticker?.toUpperCase()
+            );
+            
+            if (constituent) {
+              return {
+                ...asset,
+                currentWeight: constituent.weightPercentage || parseFloat(constituent.weight) || asset.weights,
+                currentQuantity: constituent.quantity,
+                currentPrice: constituent.price,
+                currentValue: constituent.value
+              };
+            }
+            return asset;
+          });
+          setIndexAssets(mergedAssets);
+        } else {
+          setIndexAssets(assetsResponse);
+        }
       } catch (error) {
-        console.error("Error Index asset data:", error);
+        console.error("Error fetching vault asset data:", error);
+        // Fall back to just asset data if weight fetch fails
+        try {
+          const response = await fetchVaultAssets(_indexId);
+          setIndexAssets(response);
+        } catch (fallbackError) {
+          console.error("Error in fallback asset fetch:", fallbackError);
+        }
       } finally {
         setAssetLoading(false);
       }

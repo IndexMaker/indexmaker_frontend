@@ -1,0 +1,129 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [active]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - navigation [ref=e7]:
+            - button "previous" [disabled] [ref=e8]:
+              - img "previous" [ref=e9]
+            - generic [ref=e11]:
+              - generic [ref=e12]: 1/
+              - text: "5"
+            - button "next" [ref=e13] [cursor=pointer]:
+              - img "next" [ref=e14]
+          - img
+        - generic [ref=e16]:
+          - link "Next.js 15.5.6 (outdated) Webpack" [ref=e17] [cursor=pointer]:
+            - /url: https://nextjs.org/docs/messages/version-staleness
+            - img [ref=e18]
+            - generic "An outdated version detected (latest is 16.1.1), upgrade is highly recommended!" [ref=e20]: Next.js 15.5.6 (outdated)
+            - generic [ref=e21]: Webpack
+          - img
+      - generic [ref=e22]:
+        - dialog "Console Error" [ref=e23]:
+          - generic [ref=e26]:
+            - generic [ref=e27]:
+              - generic [ref=e28]:
+                - generic [ref=e30]: Console Error
+                - generic [ref=e31]:
+                  - button "Copy Error Info" [ref=e32] [cursor=pointer]:
+                    - img [ref=e33]
+                  - link "Go to related documentation" [ref=e35] [cursor=pointer]:
+                    - /url: https://nextjs.org/docs/messages/react-hydration-error
+                    - img [ref=e36]
+                  - link "Learn more about enabling Node.js inspector for server code with Chrome DevTools" [ref=e38] [cursor=pointer]:
+                    - /url: https://nextjs.org/docs/app/building-your-application/configuring/debugging#server-side-code
+                    - img [ref=e39]
+              - paragraph [ref=e48]: "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:"
+            - generic [ref=e49]:
+              - generic [ref=e50]:
+                - paragraph [ref=e51]: "- A server/client branch `if (typeof window !== 'undefined')`. - Variable input such as `Date.now()` or `Math.random()` which changes each time it's called. - Date formatting in a user's locale which doesn't match the server. - External changing data without sending a snapshot of it along with the HTML. - Invalid HTML tag nesting. It can also happen if the client has a browser extension installed which messes with the HTML before React loaded."
+                - paragraph [ref=e52]:
+                  - text: "See more info here:"
+                  - link "https://nextjs.org/docs/messages/react-hydration-error" [ref=e53] [cursor=pointer]:
+                    - /url: https://nextjs.org/docs/messages/react-hydration-error
+              - generic [ref=e54]:
+                - button "complete Component Stack" [ref=e55] [cursor=pointer]:
+                  - img [ref=e56]
+                - code [ref=e59]:
+                  - generic [ref=e60]: ...
+                  - generic [ref=e61]: "<HotReload assetPrefix=\"\" globalError={[...]}>"
+                  - generic [ref=e62]: "<AppDevOverlayErrorBoundary globalError={[...]}>"
+                  - generic [ref=e63]: <ReplaySsrOnlyErrors>
+                  - generic [ref=e64]: <DevRootHTTPAccessFallbackBoundary>
+                  - generic [ref=e65]: "<HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>"
+                  - generic [ref=e66]: "<HTTPAccessFallbackErrorBoundary pathname=\"/vault/SY100\" notFound={<NotAllowedRootHTTPFallbackError>} ...>"
+                  - generic [ref=e67]: <RedirectBoundary>
+                  - generic [ref=e68]: "<RedirectErrorBoundary router={{...}}>"
+                  - generic [ref=e69]: <Head>
+                  - generic [ref=e70]: <__next_root_layout_boundary__>
+                  - generic [ref=e71]: <SegmentViewNode type="layout" pagePath="layout.tsx">
+                  - generic [ref=e72]: <SegmentTrieNode>
+                  - generic [ref=e73]: <link>
+                  - generic [ref=e74]: <RootLayout>
+                  - generic [ref=e75]: <html
+                  - generic [ref=e77]: + lang="en"
+                  - generic [ref=e79]: "- lang=\"en-US\""
+                  - generic [ref=e80]: ">"
+                  - generic [ref=e81]: ...
+              - generic [ref=e82]:
+                - paragraph [ref=e84]:
+                  - img [ref=e86]
+                  - generic [ref=e89]: app/layout.tsx (43:5) @ RootLayout
+                  - button "Open in editor" [ref=e90] [cursor=pointer]:
+                    - img [ref=e92]
+                - generic [ref=e95]:
+                  - generic [ref=e96]: "41 | }>) {"
+                  - generic [ref=e97]: 42 | return (
+                  - generic [ref=e98]: "> 43 | <html lang=\"en\">"
+                  - generic [ref=e99]: "| ^"
+                  - generic [ref=e100]: 44 | <head>
+                  - generic [ref=e101]: 45 | <script
+                  - generic [ref=e102]: 46 | src="https://assets.calendly.com/assets/external/widget.js"
+              - generic [ref=e103]:
+                - generic [ref=e104]:
+                  - paragraph [ref=e105]:
+                    - text: Call Stack
+                    - generic [ref=e106]: "18"
+                  - button "Show 16 ignore-listed frame(s)" [ref=e107] [cursor=pointer]:
+                    - text: Show 16 ignore-listed frame(s)
+                    - img [ref=e108]
+                - generic [ref=e110]:
+                  - generic [ref=e111]: html
+                  - text: <anonymous>
+                - generic [ref=e112]:
+                  - generic [ref=e113]:
+                    - text: RootLayout
+                    - button "Open RootLayout in editor" [ref=e114] [cursor=pointer]:
+                      - img [ref=e115]
+                  - text: app/layout.tsx (43:5)
+          - generic [ref=e117]:
+            - generic [ref=e118]: "1"
+            - generic [ref=e119]: "2"
+        - contentinfo [ref=e120]:
+          - region "Error feedback" [ref=e121]:
+            - paragraph [ref=e122]:
+              - link "Was this helpful?" [ref=e123] [cursor=pointer]:
+                - /url: https://nextjs.org/telemetry#error-feedback
+            - button "Mark as helpful" [ref=e124] [cursor=pointer]:
+              - img [ref=e125]
+            - button "Mark as not helpful" [ref=e128] [cursor=pointer]:
+              - img [ref=e129]
+    - generic [ref=e135] [cursor=pointer]:
+      - button "Open Next.js Dev Tools" [ref=e136]:
+        - img [ref=e137]
+      - generic [ref=e140]:
+        - button "Open issues overlay" [ref=e141]:
+          - generic [ref=e142]:
+            - generic [ref=e143]: "4"
+            - generic [ref=e144]: "5"
+          - generic [ref=e145]:
+            - text: Issue
+            - generic [ref=e146]: s
+        - button "Collapse issues badge" [ref=e147]:
+          - img [ref=e148]
+  - 'heading "Application error: a client-side exception has occurred while loading localhost (see the browser console for more information)." [level=2] [ref=e152]'
+```

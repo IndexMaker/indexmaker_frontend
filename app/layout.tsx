@@ -40,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           src="https://assets.calendly.com/assets/external/widget.js"
@@ -49,6 +49,7 @@ export default function RootLayout({
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} h-[calc(100vh-46px)] antialiased bg-foreground`}
+        suppressHydrationWarning
       >
         <WalletProvider>
           <PHProvider>
