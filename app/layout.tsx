@@ -42,6 +42,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Preconnect to external resources */}
+        <link rel="preconnect" href="https://assets.calendly.com" />
+        <link rel="dns-prefetch" href="https://assets.calendly.com" />
+        
+        {/* Preload critical splash screen images */}
+        <link rel="preload" href="/frames/frame53.svg" as="image" type="image/svg+xml" />
+        <link rel="preload" href="/frames/frame52.svg" as="image" type="image/svg+xml" />
+        <link rel="preload" href="/frames/1.svg" as="image" type="image/svg+xml" />
+        <link rel="preload" href="/frames/2.svg" as="image" type="image/svg+xml" />
+        <link rel="preload" href="/frames/3.svg" as="image" type="image/svg+xml" />
+        
         <script
           src="https://assets.calendly.com/assets/external/widget.js"
           async
