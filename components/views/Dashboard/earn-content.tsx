@@ -124,17 +124,19 @@ export function EarnContent({
       setIsLoading(true);
       try {
         const data = await fetchAllIndices();
+        console.log("✅ Fetched indices:", data);
         setIndexLists(data || []);
         dispatch(setIndices(data || []));
         localStorage.setItem("storedVaults", JSON.stringify(data));
       } catch (error) {
-        console.error("Error fetching performance data:", error);
+        console.error("❌ Error fetching indices:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (storedIndexes.length === 0) fetchData();
+    // Always fetch on mount to ensure we have fresh data
+    fetchData();
 
     dispatch(clearSelectedVault());
   }, []);

@@ -7,14 +7,15 @@ import axios from "axios";
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API;
 
 export const fetchAllIndicesProd = async (): Promise<IndexListEntry[]> => {
-  const response = await fetch(`${API_BASE_URL}/indices/getIndexLists`);
+  const response = await fetch(`${API_BASE_URL}/indexes`);
 
   if (!response.ok) {
     log.error("Failed to fetch indices", { status: response.status, statusText: response.statusText });
     return []
   }
 
-  return response.json();
+  const data = await response.json();
+  return data.indexes || [];
 }
 
 
@@ -32,7 +33,7 @@ export const deposit = async (address: string, amount: string): Promise<any> => 
 };
 
 export const fetchRebalancesById = async (indexId: number): Promise<any[]> => {
-  const response = await fetch(`${API_BASE_URL}/indices/getCalculatedRebalances/${indexId}`);
+  const response = await fetch(`${API_BASE_URL}/current-index-weight/${indexId}`);
 
   if (!response.ok) {
     log.error("Failed to fetch rebalances", { status: response.status, statusText: response.statusText });
@@ -43,7 +44,7 @@ export const fetchRebalancesById = async (indexId: number): Promise<any[]> => {
 };
 
 export const fetchCurrentRebalanceById = async (indexId: number): Promise<any[]> => {
-  const response = await fetch(`${API_BASE_URL}/indices/fetchCurrentRebalanceById/${indexId}`);
+  const response = await fetch(`${API_BASE_URL}/current-index-weight/${indexId}`);
 
   if (!response.ok) {
     log.error("Failed to fetch rebalances", { status: response.status, statusText: response.statusText });
@@ -71,7 +72,7 @@ export const fetchIndexByTicker = async (
 
 export const fetchBtcHistoricalData = async (): Promise<any[]> => {
   const response = await fetch(
-    `${API_BASE_URL}/indices/fetchBtcHistoricalData`
+    `${API_BASE_URL}/fetch-coin-historical-data/bitcoin`
   );
 
   if (!response.ok) {
@@ -83,7 +84,7 @@ export const fetchBtcHistoricalData = async (): Promise<any[]> => {
 
 export const fetchEthHistoricalData = async (): Promise<any[]> => {
   const response = await fetch(
-    `${API_BASE_URL}/indices/fetchEthHistoricalData`
+    `${API_BASE_URL}/fetch-coin-historical-data/ethereum`
   );
 
   if (!response.ok) {
@@ -96,7 +97,7 @@ export const fetchEthHistoricalData = async (): Promise<any[]> => {
 
 export const fetchVaultAssets = async (indexId: number): Promise<any[]> => {
   const response = await fetch(
-    `${API_BASE_URL}/indices/fetchVaultAssets/${indexId}`
+    `${API_BASE_URL}/fetch-vault-assets/${indexId}`
   );
 
   if (!response.ok) {
@@ -111,7 +112,7 @@ export const fetchHistoricalData = async (
   indexId: string | number
 ): Promise<any> => {
   const response = await fetch(
-    `${API_BASE_URL}/indices/getHistoricalData/${indexId}`
+    `${API_BASE_URL}/fetch-index-historical-data/${indexId}`
   );
 
   if (!response.ok) {
@@ -125,7 +126,7 @@ export const fetchHistoricalData = async (
 
 export const getIndexMakerInfo = async () => {
   const response = await fetch(
-    `${API_BASE_URL}/indices/getIndexMakerInfo`
+    `${API_BASE_URL}/get-index-maker-info`
   );
 
   if (!response.ok) {
@@ -141,7 +142,7 @@ export const fetchDepositTransactionData = async (
   address?: string
 ): Promise<SupplyPosition[]> => {
   const response = await fetch(
-    `${API_BASE_URL}/indices/getDepositTransactionData/${indexId}/${address}`
+    `${API_BASE_URL}/get-deposit-transaction-data/${indexId}/${address}`
   );
 
   if (!response.ok) {
@@ -156,7 +157,7 @@ export const fetchUserTransactionData = async (
   indexId: string | number
 ): Promise<Activity[]> => {
   const response = await fetch(
-    `${API_BASE_URL}/indices/getUserTransactionData/${indexId}`
+    `${API_BASE_URL}/indexes/${indexId}/transactions`
   );
 
   if (!response.ok) {
@@ -173,7 +174,7 @@ export const downloadRebalanceData = async (
 ): Promise<void> => {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/indices/downloadRebalanceData/${indexId}`,
+      `${API_BASE_URL}/current-index-weight/${indexId}`,
       {
         responseType: "blob", // Important for file downloads
       }
@@ -201,7 +202,7 @@ export const downloadDailyPriceData = async (
 ): Promise<void> => {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/indices/downloadDailyPriceData/${indexId}`,
+      `${API_BASE_URL}/download-daily-price-data/${indexId}`,
       {
         responseType: "blob", // Important for file downloads
       }
@@ -227,7 +228,7 @@ export const sendMintInvoiceToBackend = async (
   payload: any
 ): Promise<void> => {
   try {
-    await axios.post(`${API_BASE_URL}/indices/deposit_transaction`, payload);
+    await axios.post(`${API_BASE_URL}/save-blockchain-event`, payload);
   } catch (error) {
     log.error("Failed to create deposit transaction", {
       error: axios.isAxiosError(error) ? error.message : "Failed to send mint invoice"
@@ -239,7 +240,7 @@ export const subscribeEmail = async (
   payload: any
 ): Promise<void> => {
   try {
-    await axios.post(`${API_BASE_URL}/indices/subscribe`, payload);
+    await axios.post(`${API_BASE_URL}/subscribe`, payload);
   } catch (error) {
     log.error("Failed to subscribe to index", {
       error: axios.isAxiosError(error) ? error.message : "Failed to send email"

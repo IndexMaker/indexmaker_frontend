@@ -109,7 +109,7 @@ const mockInvoices: MintInvoice[] = [
 
 export async function fetchAssets(): Promise<Asset[]> {
   try {
-    const response = await fetch(`${API_BACKEND_URL}/indices/fetchAllAssets`);
+    const response = await fetch(`${API_BACKEND_URL}/fetch-all-assets`);
     // const response = await fetch(`${API_BASE_URL}/inventory/all`);
 
     if (!response.ok) {
