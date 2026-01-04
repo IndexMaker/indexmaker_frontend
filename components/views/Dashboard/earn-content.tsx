@@ -66,16 +66,14 @@ const initialColumns: ColumnType[] = [
 
 interface EarnContentProps {
   onSupplyClick?: (vaultId: string, token: string) => void;
-  showHowEarnWorks: boolean;
-  setShowHowEarnWorks: (showHowEarnWorks: boolean) => void;
+  onShowVideoPopup: () => void;
 }
 
 export function EarnContent({
   onSupplyClick,
-  showHowEarnWorks,
-  setShowHowEarnWorks,
+  onShowVideoPopup,
 }: EarnContentProps) {
-  const { wallet } = useWallet();
+  const { wallet, isConnected } = useWallet();
   const { t } = useLanguage();
   const [columns, setColumns] = useState(initialColumns);
   const [searchQuery, setSearchQuery] = useState("");
@@ -83,6 +81,7 @@ export function EarnContent({
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterMyIndex, setFilterMyIndex] = useState(false);
 
   const [activeMyearnTab, setActiveMyearnTab] = useState<
     "position" | "historic"
@@ -195,10 +194,18 @@ export function EarnContent({
     let filtered = storedIndexes;
     if (!filtered) return [];
 
+    // Filter by "My Index" if enabled
+    if (filterMyIndex && wallet?.accounts?.[0]?.address) {
+      const walletAddress = wallet.accounts[0].address.toLowerCase();
+      filtered = filtered.filter((vault) => 
+        vault.curator.toLowerCase() === walletAddress
+      );
+    }
+
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
 
-      filtered = storedIndexes.filter((vault) => {
+      filtered = filtered.filter((vault) => {
         // Search in multiple fields
         return (
           vault.name.toLowerCase().includes(query) ||
@@ -255,7 +262,7 @@ export function EarnContent({
         return 0;
       });
     else return filtered;
-  }, [searchQuery, sortColumn, sortDirection, storedIndexes]);
+  }, [searchQuery, sortColumn, sortDirection, storedIndexes, filterMyIndex, wallet]);
   
   // Function to handle column visibility changes
   const handleColumnVisibilityChange = (columnId: string, visible: boolean) => {
@@ -318,14 +325,6 @@ export function EarnContent({
 
     return () => clearInterval(intervalId); // Cleanup on unmount
   }, []);
-
-  if (showHowEarnWorks) {
-    return (
-      <div className="bg-foreground border-none border-zinc-800 rounded-lg p-0 -mt-[60px] md:mt-0">
-        <HowEarnWorks onClose={() => setShowHowEarnWorks(false)} />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 relative flex h-auto">
@@ -492,18 +491,43 @@ export function EarnContent({
               </h2>
               <CustomButton
                 variant="secondary"
-                className="h-auto text-[11px] rounded-[2px]"
+                className="h-auto text-[11px] rounded-[2px] cursor-pointer"
+                onClick={onShowVideoPopup}
               >
-                <Link
-                  target="_blank"
-                  href={"https://psymm.gitbook.io/indexmaker"}
-                >
-                  {t("common.howDoesItWork")}
-                </Link>
+                {t("common.howDoesItWork")}
               </CustomButton>
             </div>
 
             <div className="flex items-center gap-2 justify-between">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <CustomButton
+                      variant="secondary"
+                      className={cn(
+                        "h-[32px] text-[11px] rounded-[3px]",
+                        filterMyIndex ? "bg-accent" : "",
+                        !isConnected ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                      )}
+                      onClick={() => {
+                        if (isConnected) {
+                          setFilterMyIndex(!filterMyIndex);
+                        }
+                      }}
+                      disabled={!isConnected}
+                    >
+                      My Index
+                    </CustomButton>
+                  </div>
+                </TooltipTrigger>
+                {!isConnected && (
+                  <TooltipContent>
+                    <span className="text-foreground text-[12px]">
+                      {t("common.connectWallet")} to filter your indexes
+                    </span>
+                  </TooltipContent>
+                )}
+              </Tooltip>
               <ColumnVisibilityPopover
                 columns={columns.filter((col) => col.id !== "actions")}
                 onColumnVisibilityChange={handleColumnVisibilityChange}
@@ -532,6 +556,33 @@ export function EarnContent({
             sortDirection={sortDirection}
             onSupplyClick={onSupplyClick}
           />
+          
+          {/* Create Index Button */}
+          <div className="flex justify-end pt-6">
+            <Link href="/create-index">
+              <CustomButton
+                className="bg-[#2470ff] hover:bg-blue-700 text-[11px] rounded-[3px] cursor-pointer flex items-center gap-2"
+              >
+                Start issuing an index
+                <svg 
+                  width="12" 
+                  height="12" 
+                  viewBox="0 0 12 12" 
+                  fill="none" 
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="inline-block"
+                >
+                  <path 
+                    d="M2 6H10M10 6L6 2M10 6L6 10" 
+                    stroke="currentColor" 
+                    strokeWidth="1.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </CustomButton>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/layouts/sidebar";
 import { Header } from "@/components/layouts/header";
 import { EarnContent } from "./earn-content";
 import { SupplyPanel } from "@/components/elements/supply-panel";
+import { HowItWorksPopup } from "@/components/elements/how-it-works-popup";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { addSelectedVault, clearSelectedVault } from "@/redux/vaultSlice";
@@ -18,14 +19,38 @@ export default function Dashboard({
   children,
   _sidebarOpen = false,
 }: DashboardProps) {
-  const { wallet } = useWallet();
+  const { wallet, isConnected } = useWallet();
   const pathname = usePathname();
   const isVaultPage = pathname?.startsWith("/vault/");
   const [sidebarOpen, setSidebarOpen] = useState(_sidebarOpen);
-  const [showHowEarnWorks, setShowHowEarnWorks] = useState(false);
+  const [showVideoPopup, setShowVideoPopup] = useState(false);
+
   useEffect(() => {
     setSidebarOpen(_sidebarOpen);
   }, [_sidebarOpen]);
+
+  // Show popup when wallet is not connected
+  useEffect(() => {
+    // Only show on the main page (not on vault pages)
+    const isMainPage = pathname === "/";
+    
+    if (isMainPage && !isConnected) {
+      // Show popup after a short delay (to let the page load)
+      const timer = setTimeout(() => {
+        setShowVideoPopup(true);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    } else {
+      // Hide popup when wallet connects or navigating away
+      setShowVideoPopup(false);
+    }
+  }, [isConnected, pathname]);
+
+  // Handle closing the video popup
+  const handleCloseVideoPopup = () => {
+    setShowVideoPopup(false);
+  };
   const [rightbarOpen, setRightbarOpen] = useState(false);
   const selectedVault = useSelector(
     (state: RootState) => state.vault.selectedVault
@@ -83,16 +108,15 @@ export default function Dashboard({
           setSidebarOpen={setSidebarOpen}
           rightbarOpen={rightbarOpen}
           setRightbarOpen={setRightbarOpen}
-          showHowEarnWorks={showHowEarnWorks}
-          setShowHowEarnWorks={setShowHowEarnWorks}
+          showHowEarnWorks={false}
+          setShowHowEarnWorks={() => {}}
         />
         <div className="flex flex-row h-full">
           <main className="flex-1 overflow-y-auto px-[10px] py-20 md:px-10 md:py-20 custom-3xl-padding bg-background">
             {children || (
               <EarnContent
                 onSupplyClick={handleSupplyClick}
-                showHowEarnWorks={showHowEarnWorks}
-                setShowHowEarnWorks={setShowHowEarnWorks}
+                onShowVideoPopup={() => setShowVideoPopup(true)}
               />
             )}
           </main>
@@ -116,6 +140,12 @@ export default function Dashboard({
           <Footer />
         </div> */}
       </div>
+
+      {/* How It Works Video Popup */}
+      <HowItWorksPopup 
+        open={showVideoPopup} 
+        onClose={handleCloseVideoPopup} 
+      />
     </div>
   );
 }
