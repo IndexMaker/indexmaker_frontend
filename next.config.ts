@@ -16,8 +16,6 @@ const nextConfig: NextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
-  // Enable SWC minification for better performance
-  swcMinify: true,
   // Optimize React in production
   reactStrictMode: true,
   // Compress responses
