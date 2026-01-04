@@ -324,7 +324,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
 
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
-    toast(type + " copied to clipboard.", {
+    toast(t("common.copiedToClipboard").replace("{type}", type), {
       position: "top-right",
       icon: <CheckCircle />,
     });
@@ -1326,23 +1326,20 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
               <div className="grid grid-cols-1">
                 <div className="col-span-1">
                   <h4 className="text-[13px] pb-2 pt-3 font-bold text-primary">
-                    Before investing, consider the index' investment objectives,
-                    risks, charges and expenses. Contact your investment
-                    professional or visit indexmaker.global for a prospectus
-                    containing this information. Read it carefully.
+                    {t("common.beforeInvesting")}
                   </h4>
 
                   <p className="text-[13px] mb-0 pb-4 text-secondary">
-                  IndexMaker is currently operating in testnet/beta phase. All indexes, products, and services are provided exclusively for testing and evaluation purposes only, even where real funds are used. Nothing on this website or in any related materials constitutes an offer, invitation, recommendation, investment advice, or solicitation to buy, sell, or hold any tokens, indexes, or financial instruments. IndexMaker indexes are on-chain, decentralized products. They are not Exchange-Traded Funds (ETFs), are not registered with any financial regulatory authority, and are not subject to the same regulatory requirements or investor protections as traditional regulated investment products (including but not limited to ETFs, UCITS, mutual funds, etc.). No regulatory protections apply. There is no capital guarantee. You may lose your entire investment. No compensation scheme applies.
+                    {t("common.testnetDisclaimer")}
                   </p>
                   <p className="text-[13px] mb-0 pb-4 text-secondary">
-                  Before interacting with any IndexMaker index, carefully consider the investment objectives, risks, charges, and expenses. On-chain indexes carry significant risks including but not limited to complete loss of principal, smart contract vulnerabilities and exploits, extreme volatility, liquidity risks, regulatory and legal uncertainty, counterparty and oracle risks, impermanent loss (where applicable), and network congestion and high gas fees. Full technical documentation and risk disclosures are available at indexmaker.global or upon request from IndexMaker Labs LTD. You must read these documents carefully before any interaction.
+                    {t("common.riskDisclosure")}
                   </p>
                   <p className="text-[13px] mb-0 pb-4 text-secondary">
-                  Full portfolio composition, weights, and real-time data are published on-chain and available at indexmaker.global. Unless otherwise stated, all data is sourced from IndexMaker Labs LTD or on-chain oracles.
+                    {t("common.dataDisclosure")}
                   </p>
                   <p className="text-[13px] mb-0 pb-4 text-secondary">
-                  By continuing to use this website or any IndexMaker product, you confirm that you have read, understood, and accept the above terms, and that you are not located in, resident in, or a citizen of any Prohibited Jurisdiction.
+                    {t("common.termsAcceptance")}
                   </p>
                   
                 </div>

@@ -8,9 +8,11 @@ import { IndexListEntry } from "@/types/index";
 import { notFound, redirect, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useLanguage } from "@/contexts/language-context";
 
 export default function VaultPage() {
   const params = useParams();
+  const { t } = useLanguage();
   const indexTicker = params.id?.toString();
   const [vault, setVault] = useState<IndexListEntry | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,7 +22,7 @@ export default function VaultPage() {
 
   useEffect(() => {
     if (!indexTicker) {
-      log.error("No index ticker provided in URL");
+      log.error(t("common.noIndexTicker"));
       notFound();
       return;
     }
@@ -57,7 +59,7 @@ export default function VaultPage() {
         
         if (!data || data.length === 0) {
           log.error("No indices returned from API");
-          setError("Unable to load indices. Please try again later.");
+          setError(t("common.unableToLoadIndices"));
           setLoading(false);
           return;
         }
@@ -86,34 +88,34 @@ export default function VaultPage() {
             requestedTicker: indexTicker,
             availableTickers: data.map(i => i.ticker).join(", ")
           });
-          setError(`Index "${indexTicker}" not found. Please check the URL.`);
+          setError(t("common.indexNotFound").replace("{ticker}", indexTicker));
         }
       } catch (error) {
         log.error("Error fetching indices from API", { 
           error: error instanceof Error ? error.message : String(error), 
           indexTicker 
         });
-        setError("Failed to load index data. Please try again later.");
+        setError(t("common.failedToLoadIndexData"));
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [indexTicker, dispatch]);
+  }, [indexTicker, dispatch, t]);
 
   // Show error state if there's an error
   if (error && !loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-500 mb-4">Error Loading Index</h1>
+          <h1 className="text-2xl font-bold text-red-500 mb-4">{t("common.errorLoadingIndex")}</h1>
           <p className="text-secondary mb-4">{error}</p>
           <button 
             onClick={() => window.location.href = "/"}
             className="px-4 py-2 bg-primary text-white rounded"
           >
-            Return to Home
+            {t("common.returnToHome")}
           </button>
         </div>
       </div>
