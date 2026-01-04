@@ -222,7 +222,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
               </NavItem>
 
               <NavItem
-                href="https://psymm.gitbook.io/indexmaker"
+                href="https://docs.indexmaker.global/why"
                 icon={IndexMaker}
                 external
                 className="text-muted h-[28px] px-[6px] py-[2px]"
