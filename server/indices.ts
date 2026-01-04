@@ -119,7 +119,14 @@ export const fetchVaultAssets = async (indexId: number): Promise<any[]> => {
     return [];
   }
 
-  return response.json();
+  const data = await response.json();
+  
+  // Transform API response to match VaultAsset interface (marketCap -> market_cap)
+  return data.map((asset: any) => ({
+    ...asset,
+    market_cap: asset.marketCap,
+    weights: parseFloat(asset.weights) || 0,
+  }));
 };
 
 export const fetchHistoricalData = async (
