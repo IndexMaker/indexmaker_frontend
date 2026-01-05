@@ -73,14 +73,14 @@ export default function CreateIndexPage() {
         category: "Structure",
         label: "Jurisdictions",
         instant: "Global (Permissionless)*",
-        legal: "Compliant (KYC/RWA)",
+        legal: "Global (Permissionless)",
         tidal: "Restricted (Region Specific)",
       },
       {
         category: "Structure",
         label: "Legal Wrapper",
         instant: "None (Tech Sandbox)",
-        legal: "Included (RWA Structure)",
+        legal: "DAO Registered (Series LLC)",
         tidal: "SEC Registered (Series Trust)",
       },
       {
@@ -166,14 +166,14 @@ export default function CreateIndexPage() {
           badge: "bg-blue-500/20 text-blue-400",
           hover: "hover:bg-blue-500/5",
         };
-      case "orange": // The new FFA300 Theme
+      case "orange": // The Professional Blue Theme
         return {
-          bg: "bg-[#FFA300]/10",
-          text: "text-[#FFA300]",
-          border: "border-[#FFA300]/20",
-          btn: "bg-[#FFA300] hover:bg-[#FFB700] text-black font-semibold border-0",
-          badge: "bg-[#FFA300]/20 text-[#FFA300]",
-          hover: "hover:bg-[#FFA300]/5",
+          bg: "bg-[#2470ff]/10",
+          text: "text-[#2470ff]",
+          border: "border-[#2470ff]/20",
+          btn: "bg-[#2470ff] hover:bg-[#1a5acc] text-white font-semibold border-0",
+          badge: "bg-[#2470ff]/20 text-[#2470ff]",
+          hover: "hover:bg-[#2470ff]/5",
         };
       default: // Gray/Tidal
         return {
@@ -191,22 +191,20 @@ export default function CreateIndexPage() {
 
   return (
     <Dashboard>
-      <div className="max-w-7xl mx-auto space-y-12 pb-20">
+      <div className="max-w-7xl mx-auto pb-20">
         
-        {/* Header - Technical / Minimal */}
-        <div className="pt-10 pb-6 text-center border-b border-border/10">
-          <h1 className="text-3xl md:text-5xl font-bold text-primary tracking-tight">
+        {/* Header - Minimal, matching ecosystem style */}
+        <div className="flex flex-col gap-4 pt-6 pb-10">
+          <h1 className="text-[38px] font-normal text-primary h-[44px] items-center flex">
             {pageContent.hero.title}
           </h1>
-          <p className="mt-4 text-secondary/60 text-lg font-light max-w-2xl mx-auto">
+          <p className="text-secondary text-[14px]">
             {pageContent.hero.subtitle}
           </p>
         </div>
 
-        {/* ==================================================================================
-            MOBILE VIEW: Stacked Modular Cards
-           ================================================================================== */}
-        <div className="flex flex-col gap-6 md:hidden">
+        {/* Mobile View: Stacked Cards */}
+        <div className="flex flex-col gap-4 md:hidden pb-10">
           {Object.entries(pageContent.offerings).map(([key, offer]) => {
             const styles = getThemeColors(offer.theme);
             const dataKey = key as "instant" | "legal" | "tidal";
@@ -214,27 +212,27 @@ export default function CreateIndexPage() {
             return (
               <div
                 key={key}
-                className={`rounded-lg overflow-hidden border ${styles.border} bg-background`}
+                className="rounded-lg overflow-hidden border border-border bg-foreground"
               >
                 {/* Header */}
-                <div className={`p-6 border-b border-border/10 ${styles.bg}`}>
-                  <div className="flex justify-between items-start mb-4">
+                <div className="p-6 border-b border-border">
+                  <div className="flex justify-between items-start mb-6">
                     <div className="flex items-center gap-3">
                       <offer.icon className={`w-5 h-5 ${styles.text}`} />
-                      <h2 className="text-lg font-bold text-primary tracking-tight">
+                      <h2 className="text-[20px] font-medium text-primary">
                         {offer.title}
                       </h2>
                     </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-mono ${styles.badge}`}>
+                    <span className={`text-[10px] px-2 py-1 rounded uppercase font-mono ${styles.badge}`}>
                       {offer.badge}
                     </span>
                   </div>
                   
-                  <div className="space-y-2 mb-6">
+                  <div className="space-y-3 mb-6">
                     {offer.features.map((feature, idx) => (
-                      <div key={idx} className="flex gap-3 items-start">
-                         <Check className={`h-4 w-4 ${styles.text} flex-shrink-0 mt-0.5`} />
-                         <p className="text-sm text-secondary/80 font-light">{feature}</p>
+                      <div key={idx} className="flex gap-3 items-center">
+                         <Check className={`h-4 w-4 ${styles.text} flex-shrink-0`} />
+                         <p className="text-[13px] text-secondary">{feature}</p>
                       </div>
                     ))}
                   </div>
@@ -256,13 +254,13 @@ export default function CreateIndexPage() {
                 </div>
 
                 {/* Data Rows */}
-                <div className="divide-y divide-border/10">
+                <div className="divide-y divide-border">
                   {pageContent.comparisonRows.map((row, idx) => (
-                    <div key={idx} className="grid grid-cols-2 p-4 text-sm">
-                      <span className="text-secondary/50 font-medium text-xs uppercase tracking-wide">
+                    <div key={idx} className="grid grid-cols-2 p-4">
+                      <span className="text-secondary text-[13px]">
                         {row.label}
                       </span>
-                      <span className={`text-right font-mono ${key === 'legal' ? 'text-[#FFA300]' : 'text-primary'}`}>
+                      <span className={`text-right text-[13px] font-mono ${key === 'legal' ? 'text-[#2470ff]' : 'text-primary'}`}>
                         {row[dataKey]}
                       </span>
                     </div>
@@ -273,119 +271,116 @@ export default function CreateIndexPage() {
           })}
         </div>
 
-        {/* ==================================================================================
-            DESKTOP VIEW: Technical Grid
-           ================================================================================== */}
-        <div className="hidden md:block bg-background rounded-lg border border-border/20 shadow-sm overflow-hidden">
+        {/* Desktop View: Comparison Table */}
+        <div className="hidden md:block bg-foreground rounded-lg border border-border overflow-hidden">
           
-          {/* Main Grid Header */}
-          <div className="grid grid-cols-10 border-b border-border/20">
+          {/* Header Row */}
+          <div className="grid grid-cols-10 border-b border-border">
             {/* Legend Column */}
-            <div className="col-span-2 p-6 border-r border-border/20 flex flex-col justify-end bg-accent/5">
-              <span className="text-xs font-mono text-secondary/40 uppercase tracking-widest">
+            <div className="col-span-2 p-6 border-r border-border flex flex-col justify-end">
+              <span className="text-[13px] text-secondary uppercase">
                 Metric
               </span>
             </div>
 
             {/* Instant Column Header */}
-            <div className="col-span-3 p-6 border-r border-border/20 bg-blue-500/[0.02]">
+            <div className="col-span-3 p-6 border-r border-border">
               <div className="flex items-center justify-between mb-4">
-                 <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
+                 <h2 className="text-[18px] font-medium text-primary flex items-center gap-2">
                    <Zap className="w-4 h-4 text-blue-500" /> Instant
                  </h2>
-                 <span className="text-[10px] font-mono bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded">BETA</span>
+                 <span className="text-[10px] font-mono bg-blue-500/10 text-blue-500 px-2 py-1 rounded">BETA</span>
               </div>
-              <div className="space-y-1.5 mb-6 min-h-[80px]">
+              <div className="space-y-2 mb-6 min-h-[80px]">
                 {pageContent.offerings.instant.features.map((f, i) => (
                   <div key={i} className="flex gap-2 items-center">
-                    <Check className="h-3 w-3 text-blue-500" />
-                    <p className="text-xs text-secondary/70">{f}</p>
+                    <Check className="h-3.5 w-3.5 text-blue-500" />
+                    <p className="text-[13px] text-secondary">{f}</p>
                   </div>
                 ))}
               </div>
               <Link href={pageContent.offerings.instant.buttonLink}>
-                <CustomButton className="w-full bg-blue-600 hover:bg-blue-500 text-white h-9 text-xs font-mono rounded">
-                    DEPLOY INSTANT
+                <CustomButton className="w-full bg-blue-600 hover:bg-blue-500 text-white h-9 text-[13px] rounded">
+                    Deploy Instant
                 </CustomButton>
               </Link>
             </div>
 
             {/* Legal Column Header */}
-            <div className="col-span-3 p-6 border-r border-border/20 bg-[#FFA300]/[0.02] relative overflow-hidden">
-              <div className="absolute top-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#FFA300]/50 to-transparent opacity-50"></div>
+            <div className="col-span-3 p-6 border-r border-border">
               <div className="flex items-center justify-between mb-4">
-                 <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
-                   <Globe className="w-4 h-4 text-[#FFA300]" /> Legal
+                 <h2 className="text-[18px] font-medium text-primary flex items-center gap-2">
+                   <Globe className="w-4 h-4 text-[#2470ff]" /> Legal
                  </h2>
-                 <span className="text-[10px] font-mono bg-[#FFA300]/10 text-[#FFA300] px-2 py-0.5 rounded">PRO</span>
+                 <span className="text-[10px] font-mono bg-[#2470ff]/10 text-[#2470ff] px-2 py-1 rounded">PRO</span>
               </div>
-              <div className="space-y-1.5 mb-6 min-h-[80px]">
+              <div className="space-y-2 mb-6 min-h-[80px]">
                 {pageContent.offerings.legal.features.map((f, i) => (
                    <div key={i} className="flex gap-2 items-center">
-                     <Check className="h-3 w-3 text-[#FFA300]" />
-                     <p className="text-xs text-secondary/70">{f}</p>
+                     <Check className="h-3.5 w-3.5 text-[#2470ff]" />
+                     <p className="text-[13px] text-secondary">{f}</p>
                    </div>
                 ))}
               </div>
               <a href={pageContent.offerings.legal.buttonLink} target="_blank" rel="noreferrer">
-                <CustomButton className="w-full bg-[#FFA300] hover:bg-[#FFB700] text-black h-9 text-xs font-mono font-bold rounded">
-                    EARLY ACCESS
+                <CustomButton className="w-full bg-[#2470ff] hover:bg-[#1a5acc] text-white h-9 text-[13px] rounded">
+                    Early Access
                 </CustomButton>
               </a>
             </div>
 
             {/* Tidal Column Header */}
-            <div className="col-span-2 p-6 bg-zinc-500/[0.02] grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition-all duration-300">
+            <div className="col-span-2 p-6 opacity-60 hover:opacity-100 transition-opacity">
               <div className="flex items-center justify-between mb-4">
-                 <h2 className="text-lg font-semibold text-secondary flex items-center gap-2">
+                 <h2 className="text-[18px] font-medium text-secondary flex items-center gap-2">
                    <Building2 className="w-4 h-4" /> Traditional
                  </h2>
               </div>
-              <div className="space-y-1.5 mb-6 min-h-[80px]">
+              <div className="space-y-2 mb-6 min-h-[80px]">
                 {pageContent.offerings.tidal.features.map((f, i) => (
                    <div key={i} className="flex gap-2 items-center">
-                     <X className="h-3 w-3 text-red-400/70" />
-                     <p className="text-xs text-secondary/50">{f}</p>
+                     <X className="h-3.5 w-3.5 text-red-400/70" />
+                     <p className="text-[13px] text-secondary/70">{f}</p>
                    </div>
                 ))}
               </div>
               <a href={pageContent.offerings.tidal.buttonLink} target="_blank" rel="noreferrer">
-                <CustomButton className="w-full bg-transparent border border-border/40 text-secondary hover:bg-accent h-9 text-[10px] px-1 font-mono rounded">
-                    VIEW EXTERNAL
+                <CustomButton className="w-full bg-transparent border border-border text-secondary hover:bg-accent h-9 text-[13px] rounded">
+                    View External
                 </CustomButton>
               </a>
             </div>
           </div>
 
           {/* Data Rows */}
-          <div className="divide-y divide-border/10">
+          <div className="divide-y divide-border">
             {pageContent.comparisonRows.map((item, index) => {
               const showCategoryHeader = item.category !== lastCategory;
               lastCategory = item.category;
               return (
                 <div key={index}>
                   {showCategoryHeader && (
-                    <div className="bg-accent/5 px-6 py-1.5 border-y border-border/10">
-                      <h3 className="text-[10px] font-mono font-bold text-secondary/40 uppercase tracking-widest">
+                    <div className="bg-background px-6 py-2 border-y border-border">
+                      <h3 className="text-[11px] font-medium text-secondary uppercase">
                         {item.category}
                       </h3>
                     </div>
                   )}
-                  <div className="grid grid-cols-10 hover:bg-accent/5 transition-colors group">
+                  <div className="grid grid-cols-10 hover:bg-background transition-colors">
                     {/* Label */}
-                    <div className="col-span-2 p-4 border-r border-border/10 text-secondary/70 text-xs font-medium flex items-center">
+                    <div className="col-span-2 p-4 border-r border-border text-secondary text-[13px] flex items-center">
                       {item.label}
                     </div>
                     {/* Instant Value */}
-                    <div className="col-span-3 p-4 border-r border-border/10 text-primary text-sm font-mono flex items-center">
+                    <div className="col-span-3 p-4 border-r border-border text-primary text-[13px] font-mono flex items-center">
                       {item.instant}
                     </div>
                     {/* Legal Value */}
-                    <div className="col-span-3 p-4 border-r border-border/10 bg-[#FFA300]/[0.01] text-[#FFA300] text-sm font-mono flex items-center">
+                    <div className="col-span-3 p-4 border-r border-border text-[#2470ff] text-[13px] font-mono flex items-center">
                       {item.legal}
                     </div>
                     {/* Tidal Value */}
-                    <div className="col-span-2 p-4 text-secondary/40 text-sm font-mono flex items-center group-hover:text-secondary/70 transition-colors">
+                    <div className="col-span-2 p-4 text-secondary text-[13px] font-mono flex items-center">
                       {item.tidal}
                     </div>
                   </div>
@@ -394,29 +389,29 @@ export default function CreateIndexPage() {
             })}
           </div>
           
-          <div className="p-3 bg-accent/5 border-t border-border/10 text-center">
-            <p className="text-[10px] text-secondary/40 font-mono">
+          <div className="p-4 bg-background border-t border-border text-center">
+            <p className="text-[11px] text-secondary">
               {pageContent.disclaimer}
             </p>
           </div>
         </div>
 
         {/* FAQ Section */}
-        <div className="space-y-6 pt-10">
-          <h2 className="text-xl md:text-2xl font-bold text-primary tracking-tight">
+        <div className="flex flex-col gap-4 pt-16">
+          <h2 className="text-[20px] font-medium text-primary">
             Common Questions
           </h2>
-          <Accordion type="single" collapsible className="space-y-3">
+          <Accordion type="single" collapsible className="space-y-2">
             {pageContent.faqs.map((faq, index) => (
               <AccordionItem
                 key={index}
                 value={`item-${index}`}
-                className="bg-background border border-border/20 rounded px-6 data-[state=open]:border-border/40"
+                className="bg-foreground border border-border rounded-lg px-6"
               >
-                <AccordionTrigger className="text-primary hover:no-underline py-4 text-sm font-medium">
+                <AccordionTrigger className="text-primary hover:no-underline py-4 text-[14px]">
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-secondary/70 pb-4 text-sm">
+                <AccordionContent className="text-secondary pb-4 text-[13px]">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
