@@ -291,7 +291,7 @@ export function CreateVaultForm({ initialIndexId, walletAddress, isLoading: page
         <div className="mb-6 md:mb-10 flex items-center justify-between md:block">
           <div>
             <h1 className="text-xl md:text-2xl font-bold tracking-tight text-primary">
-              Create <span className="text-[#2470ff]">Vault</span>
+              Create <span className="text-[#2470ff]">ITP Index</span>
             </h1>
             <p className="text-xs text-secondary mt-1 md:mt-2">
               Configure your index parameters.
@@ -668,15 +668,15 @@ export function CreateVaultForm({ initialIndexId, walletAddress, isLoading: page
           )}
 
           {/* NAVIGATION FOOTER */}
-          <div className="flex justify-between pt-8 border-t border-border">
+          <div className="flex justify-between items-center pt-8 border-t border-border gap-4">
              <CustomButton
                variant="outline"
                onClick={handleBack}
                disabled={currentStep === 0 || isSubmitting}
-               className="border-border text-primary hover:bg-accent hover:text-primary bg-foreground"
+               className="border-border text-primary hover:bg-accent hover:text-primary bg-foreground h-11 px-6 flex items-center justify-center gap-2 font-medium"
              >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                Back
+                <ChevronLeft className="w-4 h-4" />
+                <span>Back</span>
              </CustomButton>
 
              {currentStep < STEPS.length - 1 ? (
@@ -684,22 +684,29 @@ export function CreateVaultForm({ initialIndexId, walletAddress, isLoading: page
                 onClick={handleNext}  
                 disabled={isSubmitting || !canProceed}
                 className={cn(
-                  "text-white transition-all",
+                  "text-white transition-all h-11 px-6 flex items-center justify-center gap-2 font-medium",
                   canProceed 
                     ? "bg-[#2470ff] hover:bg-[#1a5acc] cursor-pointer" 
                     : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
                 )}
                >
-                 Next Step
-                 <ChevronRight className="w-4 h-4 ml-2" />
+                 <span>Next Step</span>
+                 <ChevronRight className="w-4 h-4" />
                </CustomButton>
              ) : (
                <CustomButton 
                 onClick={handleSubmit} 
                 disabled={isSubmitting}
-                className="bg-[#2470ff] text-white hover:bg-[#1a5acc] min-w-[140px]"
+                className="bg-[#2470ff] text-white hover:bg-[#1a5acc] h-11 px-6 min-w-[140px] flex items-center justify-center gap-2 font-medium"
                >
-                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Deploy Vault"}
+                 {isSubmitting ? (
+                   <>
+                     <Loader2 className="w-4 h-4 animate-spin" />
+                     <span>Deploying...</span>
+                   </>
+                 ) : (
+                   <span>Deploy Index</span>
+                 )}
                </CustomButton>
              )}
           </div>
