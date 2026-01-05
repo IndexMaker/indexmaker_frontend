@@ -7,7 +7,7 @@ export default function EquityStyleMap({
 }: {
   indexId: string;
 }) {
-  const equityData = getIndexData(indexId).equityStyleMap || {};
+  const equityData = (getIndexData(indexId) || getIndexData("SY100"))?.equityStyleMap || {};
 
   const styleLabels = ["Value", "Blend", "Growth"];
   const capLabels = ["LG", "MD", "SM"];

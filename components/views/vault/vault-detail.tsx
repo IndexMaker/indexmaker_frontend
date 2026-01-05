@@ -268,7 +268,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
 
     index &&
       index.ticker &&
-      setIndexDescription(getIndexData(index.ticker).description);
+      setIndexDescription((getIndexData(index.ticker) || getIndexData("SY100"))?.description);
 
     index &&
       dispatch(addSelectedVault({ name: index.name, ticker: index.ticker }));

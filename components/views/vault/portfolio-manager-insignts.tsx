@@ -3,7 +3,7 @@ import { getIndexData } from "@/lib/IndexMockupData";
 import Image from 'next/image';
 import Chri_Lin_Bio from "../../../public/images/Chris Lin biotech.jpg";
 export default function PortfolioManagerInsights({indexId = 'SY100'}: {indexId: string}) {
-  const portfolioManagerInsights = getIndexData(indexId).portfolioManagerInsights || []
+  const portfolioManagerInsights = (getIndexData(indexId) || getIndexData("SY100"))?.portfolioManagerInsights || []
   return (
     <Card className="w-full min-w-[350px] h-[430px] border-none bg-foreground overflow-auto p-2 gap-2 flex-1">
       <div className="px-3 pb-1 border-b border-gray-200">

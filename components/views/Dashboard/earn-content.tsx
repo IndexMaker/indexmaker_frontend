@@ -194,12 +194,18 @@ export function EarnContent({
     let filtered = storedIndexes;
     if (!filtered) return [];
 
-    // Filter by "My Index" if enabled
+    // Filter logic based on "My Index" toggle
     if (filterMyIndex && wallet?.accounts?.[0]?.address) {
+      // When "My Index" is enabled: Show all indexes created by connected wallet
+      // Check both 'address' field (new) and 'curator' field (fallback for old data)
       const walletAddress = wallet.accounts[0].address.toLowerCase();
       filtered = filtered.filter((vault) => 
-        vault.curator.toLowerCase() === walletAddress
+        vault.address?.toLowerCase() === walletAddress ||
+        vault.curator?.toLowerCase() === walletAddress
       );
+    } else {
+      // When "My Index" is disabled: Show only whitelisted indexes (id 21)
+      filtered = filtered.filter((vault) => vault.indexId === 21);
     }
 
     if (searchQuery.trim()) {

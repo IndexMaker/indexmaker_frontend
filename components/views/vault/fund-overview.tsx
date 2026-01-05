@@ -11,7 +11,7 @@ export default function FundOverview({
     strategy,
     risk,
     disclosures,
-  } = getIndexData(indexId).fundOverviewData || [];
+  } = (getIndexData(indexId) || getIndexData("SY100"))?.fundOverviewData || {};
 
  
   return (

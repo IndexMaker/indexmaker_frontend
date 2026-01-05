@@ -3,7 +3,7 @@ import { getIndexData } from "@/lib/IndexMockupData";
 import { Info } from "lucide-react";
 
 export default function FundDetail({ indexId = "SY100" }: { indexId: string }) {
-  const fundDetails = getIndexData(indexId).fundDetails || [];
+  const fundDetails = (getIndexData(indexId) || getIndexData("SY100"))?.fundDetails || [];
 
   return (
     <Card className="w-full min-w-[350px] h-[440px] border-none bg-foreground overflow-auto p-2 gap-2 flex-1">

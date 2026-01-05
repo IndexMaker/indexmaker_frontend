@@ -3,7 +3,7 @@ import { getIndexData } from "@/lib/IndexMockupData";
 import { Info, MoreVertical } from "lucide-react"
 
 export default function FundManager({indexId = 'SY100'}: {indexId: string}) {
-  const { manager, managedFunds, commentaryLinks } = getIndexData(indexId).fundManagerData || [];
+  const { manager, managedFunds, commentaryLinks } = (getIndexData(indexId) || getIndexData("SY100"))?.fundManagerData || {};
 
   return (
     <Card className="w-full min-w-[350px] h-[440px] border-none bg-foreground overflow-auto flex flex-1 p-2 gap-2">

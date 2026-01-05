@@ -247,7 +247,7 @@ export default function CreatePage() {
       const payload = {
         ...formData,
         rebalancePeriod: parseInt(formData.rebalancePeriod),
-        address: "0x9080dd35d88b7de97afd0498fc309784ef7ebc49",
+        address: formData.address, // Use connected wallet address
         // Ensure coingeckoCategory is null string if empty
         coingeckoCategory: formData.coingeckoCategory || "null",
       };
