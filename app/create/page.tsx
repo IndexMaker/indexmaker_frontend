@@ -63,7 +63,7 @@ export default function CreatePage() {
     <Dashboard>
       <CreateVaultForm 
         initialIndexId={nextIndexId}
-        walletAddress={address}
+        walletAddress={address || undefined}
         isLoading={loading}
       />
     </Dashboard>
