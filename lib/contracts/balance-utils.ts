@@ -5,9 +5,11 @@
  * Used by buy/sell flows to validate user has sufficient funds before transactions.
  */
 
-import { formatUnits, type PublicClient } from 'viem';
+import { formatUnits, createPublicClient, http, type PublicClient } from 'viem';
+import { arbitrum } from 'viem/chains';
 import { erc20Abi } from './abis/erc20';
-import { USDC_ADDRESS } from './addresses';
+import { USDC_ADDRESS, ORBIT_RPC_URL } from './addresses';
+import { orbitChain } from './orbit-config';
 
 // Use a flexible type for PublicClient to handle viem version differences
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -218,5 +220,132 @@ export async function hasSufficientItpBalance(
     balance,
     isSufficient,
     shortfall,
+  };
+}
+
+// =============================================================================
+// DUAL-CHAIN BALANCE UTILITIES
+// =============================================================================
+
+/**
+ * Result of a dual-chain balance query
+ */
+export interface DualChainBalanceResult {
+  /** Balance on Arbitrum (bridged ITP) */
+  arbitrum: BalanceResult;
+  /** Balance on Orbit (native ITP) */
+  orbit: BalanceResult;
+  /** Combined total balance */
+  total: BalanceResult;
+}
+
+/**
+ * Create a public client for Orbit chain queries
+ */
+export function createOrbitClient(): FlexiblePublicClient {
+  return createPublicClient({
+    chain: orbitChain,
+    transport: http(ORBIT_RPC_URL),
+  });
+}
+
+/**
+ * Create a public client for Arbitrum chain queries
+ */
+export function createArbitrumClient(): FlexiblePublicClient {
+  return createPublicClient({
+    chain: arbitrum,
+    transport: http(),
+  });
+}
+
+/**
+ * Check ITP token balance on Orbit chain (native ITP).
+ *
+ * @param address - The wallet address to check
+ * @param itpAddress - The ITP token contract address on Orbit
+ * @returns Balance result with raw and formatted values
+ * @throws Error if contract read fails
+ */
+export async function checkOrbitItpBalance(
+  address: `0x${string}` | string,
+  itpAddress: `0x${string}` | string
+): Promise<BalanceResult> {
+  const orbitClient = createOrbitClient();
+  try {
+    const balanceRaw = await orbitClient.readContract({
+      address: itpAddress as `0x${string}`,
+      abi: erc20Abi,
+      functionName: 'balanceOf',
+      args: [address as `0x${string}`],
+    });
+
+    return {
+      raw: balanceRaw,
+      formatted: formatUnits(balanceRaw, ITP_DECIMALS),
+      decimals: ITP_DECIMALS,
+    };
+  } catch (error) {
+    throw new Error(
+      `Failed to check Orbit ITP balance: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
+
+/**
+ * Check ITP token balance on Arbitrum (bridged ITP).
+ * This is an alias for checkItpBalance with explicit naming.
+ *
+ * @param publicClient - Viem public client configured for Arbitrum
+ * @param address - The wallet address to check
+ * @param itpAddress - The bridged ITP token contract address on Arbitrum
+ * @returns Balance result with raw and formatted values
+ */
+export async function checkArbitrumBridgedItpBalance(
+  publicClient: FlexiblePublicClient,
+  address: `0x${string}` | string,
+  itpAddress: `0x${string}` | string
+): Promise<BalanceResult> {
+  return checkItpBalance(publicClient, address, itpAddress);
+}
+
+/**
+ * Fetch balances for an ITP on both Arbitrum and Orbit chains in parallel.
+ *
+ * @param address - The wallet address to check
+ * @param arbitrumItpAddress - The bridged ITP address on Arbitrum
+ * @param orbitItpAddress - The native ITP address on Orbit
+ * @param arbitrumClient - Optional pre-created Arbitrum client
+ * @returns Combined balance result for both chains
+ */
+export async function fetchDualChainBalances(
+  address: `0x${string}` | string,
+  arbitrumItpAddress: `0x${string}` | string,
+  orbitItpAddress: `0x${string}` | string,
+  arbitrumClient?: FlexiblePublicClient
+): Promise<DualChainBalanceResult> {
+  const arbClient = arbitrumClient || createArbitrumClient();
+
+  // Query both chains in parallel
+  const [arbitrumBalance, orbitBalance] = await Promise.all([
+    checkArbitrumBridgedItpBalance(arbClient, address, arbitrumItpAddress).catch(
+      (): BalanceResult => ({ raw: 0n, formatted: '0', decimals: ITP_DECIMALS })
+    ),
+    checkOrbitItpBalance(address, orbitItpAddress).catch(
+      (): BalanceResult => ({ raw: 0n, formatted: '0', decimals: ITP_DECIMALS })
+    ),
+  ]);
+
+  // Calculate total
+  const totalRaw = arbitrumBalance.raw + orbitBalance.raw;
+
+  return {
+    arbitrum: arbitrumBalance,
+    orbit: orbitBalance,
+    total: {
+      raw: totalRaw,
+      formatted: formatUnits(totalRaw, ITP_DECIMALS),
+      decimals: ITP_DECIMALS,
+    },
   };
 }

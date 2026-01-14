@@ -7,6 +7,7 @@ import { SupplyPosition } from "@/lib/data";
 import { IndexListEntry } from "@/types/index";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface IndexBalanceProps {
   className?: string;
@@ -16,6 +17,39 @@ interface IndexBalanceProps {
   instantAPY?: string;
   supplyPositions: SupplyPosition[];
   onSupplyClick?: (indexId: string, token: string) => void;
+  /** Balance on Arbitrum (bridged) - optional for dual-chain display */
+  arbitrumBalance?: string;
+  /** Balance on Orbit (native) - optional for dual-chain display */
+  orbitBalance?: string;
+}
+
+/**
+ * Chain badge for balance display
+ */
+function ChainBalanceBadge({
+  chain,
+  balance,
+}: {
+  chain: 'arbitrum' | 'orbit';
+  balance?: string;
+}) {
+  const isArbitrum = chain === 'arbitrum';
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span
+        className={cn(
+          "px-1.5 py-0.5 rounded text-[10px] font-medium",
+          isArbitrum
+            ? "bg-blue-500/20 text-blue-400"
+            : "bg-purple-500/20 text-purple-400"
+        )}
+      >
+        {isArbitrum ? "Arb" : "Orbit"}
+      </span>
+      <span className="text-secondary text-[12px]">{balance ?? "-"}</span>
+    </div>
+  );
 }
 
 export default function IndexBalance({
@@ -26,6 +60,8 @@ export default function IndexBalance({
   instantAPY = "24.79",
   supplyPositions,
   onSupplyClick,
+  arbitrumBalance,
+  orbitBalance,
 }: IndexBalanceProps) {
   const { wallet, address, connectWallet } = useWallet();
   const onClickBuyButton = useCallback(async () => {
@@ -38,6 +74,10 @@ export default function IndexBalance({
 
     onSupplyClick && onSupplyClick(index.name, index.ticker);
   }, [wallet]);
+
+  // Determine if we have dual-chain data
+  const hasDualChainData = arbitrumBalance !== undefined || orbitBalance !== undefined;
+
   return (
     <div className={`w-full bg-foreground rounded-lg shadow ${className}`}>
       <div className="p-0">
@@ -84,9 +124,22 @@ export default function IndexBalance({
                 </td>
                 <td className="py-4 px-4">
                   <div className="flex flex-col gap-2 items-start">
-                    <span className="font-medium text-secondary">
-                      {indexBalance}
-                    </span>
+                    {hasDualChainData ? (
+                      <>
+                        {/* Show dual-chain breakdown */}
+                        <span className="font-medium text-secondary mb-1">
+                          {indexBalance}
+                        </span>
+                        <div className="flex flex-col gap-1">
+                          <ChainBalanceBadge chain="arbitrum" balance={arbitrumBalance} />
+                          <ChainBalanceBadge chain="orbit" balance={orbitBalance} />
+                        </div>
+                      </>
+                    ) : (
+                      <span className="font-medium text-secondary">
+                        {indexBalance}
+                      </span>
+                    )}
                   </div>
                 </td>
                 <td className="py-4 px-4 text-right max-w-[140px] w-[140px]">

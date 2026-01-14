@@ -46,6 +46,8 @@ export interface ITPBalance {
   quantity?: string;
   // Optional: total share (%) the user owns of the ITP supply
   sharePct?: number;
+  // Chain indicator: which chain this balance is on
+  chain?: 'arbitrum' | 'orbit';
 }
 
 interface WalletHoldingsTableProps {
@@ -207,7 +209,7 @@ export default function WalletHoldingsTable({
                 {itpRows.length > 0 && sectionHeader("ITP Indexes")}
                 {itpRows.map((itp, i) => (
                   <HoldingsRow
-                    key={`itp-${itp.address}-${i}`}
+                    key={`itp-${itp.address}-${itp.chain ?? 'default'}-${i}`}
                     type="itp"
                     symbol={itp.symbol}
                     name={itp.name}
@@ -216,6 +218,7 @@ export default function WalletHoldingsTable({
                     value={itp.value}
                     contractAddress={itp.address}
                     explorerBaseUrl={explorerBaseUrl}
+                    chain={itp.chain}
                     extra={
                       itp.sharePct != null
                         ? `${formatNumber(itp.sharePct, {
@@ -250,6 +253,28 @@ export default function WalletHoldingsTable({
   );
 }
 
+/**
+ * Chain badge component for displaying which chain a balance is on
+ */
+function ChainBadge({ chain }: { chain?: 'arbitrum' | 'orbit' }) {
+  if (!chain) return null;
+
+  const isArbitrum = chain === 'arbitrum';
+
+  return (
+    <span
+      className={cn(
+        "px-1.5 py-0.5 rounded text-[10px] font-medium",
+        isArbitrum
+          ? "bg-blue-500/20 text-blue-400"
+          : "bg-purple-500/20 text-purple-400"
+      )}
+    >
+      {isArbitrum ? "Arb" : "Orbit"}
+    </span>
+  );
+}
+
 function HoldingsRow({
   type, // "token" | "itp"
   symbol,
@@ -260,6 +285,7 @@ function HoldingsRow({
   contractAddress,
   explorerBaseUrl,
   extra,
+  chain,
 }: {
   type: "token" | "itp";
   symbol: string;
@@ -270,6 +296,7 @@ function HoldingsRow({
   contractAddress: string; // "native" ok for tokens; ITPs are ERC-20
   explorerBaseUrl: string;
   extra?: string;
+  chain?: 'arbitrum' | 'orbit';
 }) {
   const isNative = contractAddress.toLowerCase() === "native";
   const contractUrl = isNative
@@ -297,6 +324,7 @@ function HoldingsRow({
           <div className="flex items-center gap-2">
             <span className="font-medium">{symbol}</span>
             {name ? <span className="text-secondary">{name}</span> : null}
+            <ChainBadge chain={chain} />
           </div>
         </div>
       </TableCell>

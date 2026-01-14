@@ -13,6 +13,17 @@ import { useState, useCallback } from "react";
 import { Copy, Check, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ARBITRUM_CHAIN_ID, ORBIT_CHAIN_ID, ORBIT_EXPLORER_URL } from "@/lib/contracts/addresses";
+import { useLanguageSafe } from "@/contexts/language-context";
+
+/**
+ * Normalize explorer URL to ensure no double slashes
+ */
+function normalizeExplorerUrl(baseUrl: string, path: string): string {
+  const base = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  const pathPart = path.startsWith('/') ? path : `/${path}`;
+  return `${base}${pathPart}`;
+}
 
 /**
  * Block explorer configuration
@@ -21,14 +32,12 @@ export const BLOCK_EXPLORERS = {
   arbitrum: {
     name: "Arbiscan",
     txUrl: "https://arbiscan.io/tx/",
-    chainId: 42161,
+    chainId: ARBITRUM_CHAIN_ID,
   },
   orbit: {
     name: "Orbit Explorer",
-    // Orbit explorer URL - uses Arbitrum Orbit format
-    // Update this when the actual explorer URL is confirmed
-    txUrl: "https://explorer.orbit.arbitrum.io/tx/",
-    chainId: 111222333,
+    txUrl: normalizeExplorerUrl(ORBIT_EXPLORER_URL, "/tx/"),
+    chainId: ORBIT_CHAIN_ID,
   },
 } as const;
 
@@ -70,6 +79,7 @@ export function TxLink({
   className,
 }: TxLinkProps) {
   const [copied, setCopied] = useState(false);
+  const { t } = useLanguageSafe();
 
   const explorer = BLOCK_EXPLORERS[chain];
   const explorerUrl = `${explorer.txUrl}${hash}`;
@@ -79,12 +89,12 @@ export function TxLink({
     try {
       await navigator.clipboard.writeText(hash);
       setCopied(true);
-      toast.success("Transaction hash copied");
+      toast.success(t("bridge.txHashCopied"));
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Failed to copy");
+      toast.error(t("bridge.copyFailed"));
     }
-  }, [hash]);
+  }, [hash, t]);
 
   return (
     <div className={cn("flex items-center gap-2", className)}>

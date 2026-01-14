@@ -14,13 +14,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { createPublicClient, http, type Log } from 'viem';
-
-/**
- * Chain configuration for Orbit
- */
-const ORBIT_CHAIN_ID = 111222333;
-const ORBIT_RPC_URL = process.env.NEXT_PUBLIC_ORBIT_RPC_URL || 'https://rpc.orbit.arbitrum.io';
+import { ORBIT_CHAIN_ID, ORBIT_RPC_URL } from '@/lib/contracts/addresses';
 
 /**
  * Bridge event types that can be monitored

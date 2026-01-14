@@ -188,7 +188,31 @@ export function BridgeProgress({
 }
 
 /**
+ * Labels for buy steps - can be overridden with translations
+ */
+export interface BuyStepLabels {
+  submitted: string;
+  confirmed: string;
+  bridging: string;
+  complete: string;
+}
+
+/**
+ * Default English labels for buy steps
+ */
+export const DEFAULT_BUY_LABELS: BuyStepLabels = {
+  submitted: "Transaction submitted",
+  confirmed: "Deposit confirmed on Arbitrum",
+  bridging: "Bridging to Orbit...",
+  complete: "Buy complete!",
+};
+
+/**
  * Creates the default steps for a buy operation
+ * @param currentStatus - Current status of the bridge operation
+ * @param timestamps - Optional timestamps for each step
+ * @param errorMessage - Error message if status is error
+ * @param labels - Optional translated labels (defaults to English)
  */
 export function createBuySteps(
   currentStatus: "pending" | "arbitrum-confirmed" | "orbit-processing" | "completed" | "error",
@@ -198,7 +222,8 @@ export function createBuySteps(
     orbitProcessing?: string;
     completed?: string;
   },
-  errorMessage?: string
+  errorMessage?: string,
+  labels: BuyStepLabels = DEFAULT_BUY_LABELS
 ): BridgeStep[] {
   const getStatus = (
     stepIndex: number,
@@ -226,25 +251,25 @@ export function createBuySteps(
   return [
     {
       id: "submit",
-      label: "Transaction submitted",
+      label: labels.submitted,
       status: getStatus(0, statusIndex),
       completedAt: timestamps?.submitted,
     },
     {
       id: "confirm",
-      label: "Deposit confirmed on Arbitrum",
+      label: labels.confirmed,
       status: getStatus(1, statusIndex),
       completedAt: timestamps?.arbitrumConfirmed,
     },
     {
       id: "bridge",
-      label: "Bridging to Orbit...",
+      label: labels.bridging,
       status: getStatus(2, statusIndex),
       completedAt: timestamps?.orbitProcessing,
     },
     {
       id: "complete",
-      label: "Buy complete!",
+      label: labels.complete,
       status: getStatus(3, statusIndex),
       completedAt: timestamps?.completed,
       errorMessage: currentStatus === "error" ? errorMessage : undefined,
@@ -253,7 +278,31 @@ export function createBuySteps(
 }
 
 /**
+ * Labels for sell steps - can be overridden with translations
+ */
+export interface SellStepLabels {
+  submitted: string;
+  confirmed: string;
+  processing: string;
+  complete: string;
+}
+
+/**
+ * Default English labels for sell steps
+ */
+export const DEFAULT_SELL_LABELS: SellStepLabels = {
+  submitted: "Transaction submitted",
+  confirmed: "Sell requested on Arbitrum",
+  processing: "Processing on Orbit...",
+  complete: "Sell complete!",
+};
+
+/**
  * Creates the default steps for a sell operation
+ * @param currentStatus - Current status of the bridge operation
+ * @param timestamps - Optional timestamps for each step
+ * @param errorMessage - Error message if status is error
+ * @param labels - Optional translated labels (defaults to English)
  */
 export function createSellSteps(
   currentStatus: "pending" | "arbitrum-confirmed" | "orbit-processing" | "completed" | "error",
@@ -263,7 +312,8 @@ export function createSellSteps(
     orbitProcessing?: string;
     completed?: string;
   },
-  errorMessage?: string
+  errorMessage?: string,
+  labels: SellStepLabels = DEFAULT_SELL_LABELS
 ): BridgeStep[] {
   const getStatus = (
     stepIndex: number,
@@ -291,25 +341,25 @@ export function createSellSteps(
   return [
     {
       id: "submit",
-      label: "Transaction submitted",
+      label: labels.submitted,
       status: getStatus(0, statusIndex),
       completedAt: timestamps?.submitted,
     },
     {
       id: "confirm",
-      label: "Sell requested on Arbitrum",
+      label: labels.confirmed,
       status: getStatus(1, statusIndex),
       completedAt: timestamps?.arbitrumConfirmed,
     },
     {
       id: "bridge",
-      label: "Processing on Orbit...",
+      label: labels.processing,
       status: getStatus(2, statusIndex),
       completedAt: timestamps?.orbitProcessing,
     },
     {
       id: "complete",
-      label: "Sell complete!",
+      label: labels.complete,
       status: getStatus(3, statusIndex),
       completedAt: timestamps?.completed,
       errorMessage: currentStatus === "error" ? errorMessage : undefined,

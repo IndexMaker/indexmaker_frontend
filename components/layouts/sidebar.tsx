@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/language-context";
 import { useWallet } from "@/contexts/wallet-context";
-import { Calculator, TrendingUp, X, Users, FileScanIcon } from "lucide-react";
+import { Calculator, TrendingUp, X, Users, FileScanIcon, BarChart3 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePathname } from "next/navigation";
 import EcosystemSvg from "../icons/ecosystem";
@@ -179,6 +179,15 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
               collapsed={collapsed}
             >
               {t("common.taxCalculator")}
+            </NavItem>
+            <NavItem
+              href="/keeper-charts"
+              active={isRouteActive("/keeper-charts")}
+              className="text-[13px] text-secondary py-[6px] px-[10px] h-[32px]"
+              icon={BarChart3}
+              collapsed={collapsed}
+            >
+              Keeper Charts
             </NavItem>
           </nav>
 

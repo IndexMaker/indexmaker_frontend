@@ -43,3 +43,17 @@ export function useLanguage() {
   return context
 }
 
+// Safe version that returns fallback when outside provider (for components that may render outside provider)
+export function useLanguageSafe() {
+  const context = useContext(LanguageContext)
+  if (context === undefined) {
+    // Return fallback that uses English translations
+    return {
+      language: "en",
+      setLanguage: () => {},
+      t: (key: string) => getTranslation("en", key),
+    }
+  }
+  return context
+}
+

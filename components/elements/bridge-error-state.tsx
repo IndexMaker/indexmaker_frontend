@@ -12,6 +12,7 @@
 import { AlertTriangle, RefreshCw, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useLanguageSafe } from "@/contexts/language-context";
 
 /**
  * Known bridge error types for specific handling
@@ -60,28 +61,28 @@ export interface BridgeErrorStateProps {
 }
 
 /**
- * Get user-friendly message for error type
+ * Get translation key for error type
  */
-function getErrorMessage(type: BridgeErrorType, defaultMessage: string): string {
+function getErrorMessageKey(type: BridgeErrorType): string {
   switch (type) {
     case "arbitrum_reverted":
-      return "Transaction reverted on Arbitrum. This may be due to insufficient balance or contract state.";
+      return "bridge.transactionReverted";
     case "bridge_timeout":
-      return "Bridge operation timed out. The transaction may still complete - please check your wallet in a few minutes.";
+      return "bridge.bridgeTimeout";
     case "orbit_gas_error":
-      return "Unexpected error on Orbit chain. Gas should be free - this indicates a system issue.";
+      return "bridge.orbitGasError";
     case "contract_execution_failed":
-      return "Contract execution failed. The operation could not be completed.";
+      return "bridge.contractExecutionFailed";
     case "user_rejected":
-      return "Transaction was rejected in your wallet.";
+      return "bridge.userRejected";
     case "insufficient_balance":
-      return "Insufficient balance for this operation.";
+      return "bridge.insufficientBalance";
     case "approval_failed":
-      return "Token approval failed. Please try again.";
+      return "bridge.approvalFailed";
     case "network_error":
-      return "Network connection error. Please check your connection and try again.";
+      return "bridge.networkError";
     default:
-      return defaultMessage || "An unexpected error occurred.";
+      return "";
   }
 }
 
@@ -136,8 +137,28 @@ export function BridgeErrorState({
   canRetry,
   className,
 }: BridgeErrorStateProps) {
+  const { t } = useLanguageSafe();
   const retryAllowed = canRetry ?? isRetryable(error.type);
-  const userMessage = getErrorMessage(error.type, error.message);
+
+  // Get translated message - use translation key if available, otherwise fall back to error.message
+  const messageKey = getErrorMessageKey(error.type);
+  const userMessage = messageKey ? t(messageKey) : error.message;
+
+  // Get translated step names
+  const getStepName = (step: string) => {
+    switch (step) {
+      case "submit":
+        return t("bridge.transactionSubmitted");
+      case "arbitrum":
+        return t("bridge.arbitrumConfirmation");
+      case "bridge":
+        return t("bridge.bridgeProcessing");
+      case "orbit":
+        return t("bridge.operationComplete");
+      default:
+        return step;
+    }
+  };
 
   return (
     <div
@@ -150,18 +171,15 @@ export function BridgeErrorState({
       <div className="flex items-start gap-3">
         <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-red-500">Operation Failed</p>
+          <p className="text-sm font-medium text-red-500">{t("bridge.operationFailed")}</p>
           <p className="text-sm text-red-400 mt-1">{userMessage}</p>
 
           {/* Failed step indicator */}
           {error.failedStep && (
             <p className="text-xs text-red-400/70 mt-2">
-              Failed at:{" "}
+              {t("bridge.failedAt")}:{" "}
               <span className="font-mono">
-                {error.failedStep === "submit" && "Transaction submission"}
-                {error.failedStep === "arbitrum" && "Arbitrum confirmation"}
-                {error.failedStep === "bridge" && "Bridge processing"}
-                {error.failedStep === "orbit" && "Orbit completion"}
+                {getStepName(error.failedStep)}
               </span>
             </p>
           )}
@@ -170,7 +188,7 @@ export function BridgeErrorState({
           {error.details && (
             <details className="mt-3">
               <summary className="text-xs text-red-400/60 cursor-pointer hover:text-red-400">
-                Technical details
+                {t("bridge.technicalDetails")}
               </summary>
               <pre className="mt-2 p-2 bg-red-500/5 rounded text-xs text-red-400/70 overflow-x-auto whitespace-pre-wrap break-all">
                 {error.details}
@@ -197,7 +215,7 @@ export function BridgeErrorState({
             className="flex-1 border-red-500/30 text-red-500 hover:bg-red-500/10"
           >
             <RefreshCw className="w-4 h-4 mr-1.5" />
-            Retry
+            {t("bridge.retry")}
           </Button>
         )}
 
@@ -209,7 +227,7 @@ export function BridgeErrorState({
             className="flex-1 text-secondary hover:text-primary"
           >
             <MessageCircle className="w-4 h-4 mr-1.5" />
-            Contact Support
+            {t("bridge.contactSupport")}
           </Button>
         )}
       </div>
@@ -217,13 +235,13 @@ export function BridgeErrorState({
       {/* Help text for specific errors */}
       {error.type === "insufficient_balance" && (
         <p className="text-xs text-secondary mt-3">
-          Please ensure you have enough USDC in your wallet and try again.
+          {t("bridge.checkBalanceRetry")}
         </p>
       )}
 
       {error.type === "bridge_timeout" && (
         <p className="text-xs text-secondary mt-3">
-          Your transaction may still complete. Check your wallet balances before retrying.
+          {t("bridge.checkWalletBalances")}
         </p>
       )}
     </div>

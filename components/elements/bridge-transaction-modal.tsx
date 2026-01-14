@@ -15,11 +15,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useWallet } from "@/contexts/wallet-context";
-import { BridgeProgress, createBuySteps, createSellSteps, type BridgeStep } from "./bridge-progress";
+import { useLanguage } from "@/contexts/language-context";
+import { BridgeProgress, createBuySteps, createSellSteps, type BridgeStep, type BuyStepLabels, type SellStepLabels } from "./bridge-progress";
 import { DualTxLinks } from "./tx-links";
+import { BridgeErrorState, parseBridgeError, type BridgeErrorInfo } from "./bridge-error-state";
 import { useOrbitEventMonitor } from "@/hooks/useOrbitEventMonitor";
 
 /**
@@ -81,12 +83,13 @@ export function BridgeTransactionModal({
   onError,
 }: BridgeTransactionModalProps) {
   const { wallet, connectWallet } = useWallet();
+  const { t } = useLanguage();
 
   // Bridge operation state
   const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus>("pending");
   const [arbitrumTxHash, setArbitrumTxHash] = useState<string | null>(null);
   const [orbitTxHash, setOrbitTxHash] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorInfo, setErrorInfo] = useState<BridgeErrorInfo | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Timestamps for progress display
@@ -107,11 +110,26 @@ export function BridgeTransactionModal({
     reset: resetMonitor,
   } = useOrbitEventMonitor();
 
+  // Generate translated labels for progress steps
+  const buyLabels: BuyStepLabels = {
+    submitted: t("bridge.transactionSubmitted"),
+    confirmed: t("bridge.depositConfirmedArbitrum"),
+    bridging: t("bridge.bridgingToOrbit"),
+    complete: t("bridge.buyComplete"),
+  };
+
+  const sellLabels: SellStepLabels = {
+    submitted: t("bridge.transactionSubmitted"),
+    confirmed: t("bridge.sellRequestedArbitrum"),
+    processing: t("bridge.processingOnOrbit"),
+    complete: t("bridge.sellComplete"),
+  };
+
   // Generate progress steps based on current status
   const steps: BridgeStep[] =
     operationType === "buy"
-      ? createBuySteps(bridgeStatus, timestamps, errorMessage || undefined)
-      : createSellSteps(bridgeStatus, timestamps, errorMessage || undefined);
+      ? createBuySteps(bridgeStatus, timestamps, errorInfo?.message, buyLabels)
+      : createSellSteps(bridgeStatus, timestamps, errorInfo?.message, sellLabels);
 
   /**
    * Handle Arbitrum transaction submission
@@ -126,7 +144,7 @@ export function BridgeTransactionModal({
     }
 
     setIsProcessing(true);
-    setErrorMessage(null);
+    setErrorInfo(null);
     setBridgeStatus("pending");
     setTimestamps({ submitted: new Date().toISOString() });
 
@@ -152,9 +170,7 @@ export function BridgeTransactionModal({
       //   if (result.txHash) setArbitrumTxHash(result.txHash);
       // }
 
-      toast.warning(
-        "Bridge contracts not yet deployed - this is a preview of the transaction flow"
-      );
+      toast.warning(t("bridge.contractsNotDeployed"));
 
       // For now, simulate successful Arbitrum confirmation
       setTimeout(() => {
@@ -168,15 +184,15 @@ export function BridgeTransactionModal({
       }, 2000);
 
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Transaction failed";
-      setErrorMessage(message);
+      const parsed = parseBridgeError(err, "submit");
+      setErrorInfo(parsed);
       setBridgeStatus("error");
-      toast.error(message);
-      onError?.(message);
+      toast.error(parsed.message);
+      onError?.(parsed.message);
     } finally {
       setIsProcessing(false);
     }
-  }, [wallet, connectWallet, operationType, amount, itpAddress, onError]);
+  }, [wallet, connectWallet, operationType, amount, itpAddress, onError, t]);
 
   /**
    * Start Orbit monitoring when Arbitrum tx confirms
@@ -212,7 +228,7 @@ export function BridgeTransactionModal({
         setOrbitTxHash(eventData.txHash);
       }
       toast.success(
-        operationType === "buy" ? "Buy complete!" : "Sell complete!"
+        operationType === "buy" ? t("bridge.buyComplete") : t("bridge.sellComplete")
       );
       onSuccess?.({
         arbitrumTxHash: arbitrumTxHash || "",
@@ -223,27 +239,35 @@ export function BridgeTransactionModal({
 
     if (monitorStatus === "timeout") {
       // Don't mark as error - operation may still complete
-      toast.warning("Bridge operation is taking longer than expected");
+      toast.warning(t("bridge.bridgeTimeout"));
     }
 
     if (monitorStatus === "failed" && monitorError) {
-      setErrorMessage(monitorError);
+      const parsed = parseBridgeError(new Error(monitorError), "orbit");
+      setErrorInfo(parsed);
       setBridgeStatus("error");
       onError?.(monitorError);
     }
-  }, [monitorStatus, eventData, monitorError, operationType, amount, arbitrumTxHash, onSuccess, onError]);
+  }, [monitorStatus, eventData, monitorError, operationType, amount, arbitrumTxHash, onSuccess, onError, t]);
 
   /**
    * Handle retry for failed operations
    */
   const handleRetry = useCallback(() => {
-    setErrorMessage(null);
+    setErrorInfo(null);
     setBridgeStatus("pending");
     setArbitrumTxHash(null);
     setOrbitTxHash(null);
     setTimestamps({});
     resetMonitor();
   }, [resetMonitor]);
+
+  /**
+   * Handle contact support action
+   */
+  const handleContactSupport = useCallback(() => {
+    window.open("/contact-us", "_blank");
+  }, []);
 
   /**
    * Reset state when modal closes
@@ -253,7 +277,7 @@ export function BridgeTransactionModal({
     setBridgeStatus("pending");
     setArbitrumTxHash(null);
     setOrbitTxHash(null);
-    setErrorMessage(null);
+    setErrorInfo(null);
     setTimestamps({});
     setIsProcessing(false);
     resetMonitor();
@@ -267,14 +291,14 @@ export function BridgeTransactionModal({
         onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogTitle className="text-lg font-bold">
-          {operationType === "buy" ? "Buy via Bridge" : "Sell via Bridge"}
+          {operationType === "buy" ? t("bridge.buyViaBridge") : t("bridge.sellViaBridge")}
         </DialogTitle>
 
         <div className="space-y-6 py-4">
           {/* Operation summary */}
           <div className="p-3 bg-foreground rounded-lg">
             <div className="flex justify-between items-center text-sm">
-              <span className="text-secondary">Amount</span>
+              <span className="text-secondary">{t("table.amount")}</span>
               <span className="font-medium">
                 {amount} {operationType === "buy" ? "USDC" : itpSymbol}
               </span>
@@ -282,7 +306,7 @@ export function BridgeTransactionModal({
             {itpSymbol && (
               <div className="flex justify-between items-center text-sm mt-2">
                 <span className="text-secondary">
-                  {operationType === "buy" ? "Buying" : "Selling"}
+                  {operationType === "buy" ? t("type.buy") : t("type.sell")}
                 </span>
                 <span className="font-medium">{itpSymbol}</span>
               </div>
@@ -295,7 +319,7 @@ export function BridgeTransactionModal({
           {/* Transaction links */}
           {arbitrumTxHash && (
             <div className="pt-2 border-t border-accent">
-              <p className="text-xs text-secondary mb-2">Transaction Details</p>
+              <p className="text-xs text-secondary mb-2">{t("bridge.transactionDetails")}</p>
               <DualTxLinks
                 arbitrumTxHash={arbitrumTxHash}
                 orbitTxHash={orbitTxHash}
@@ -304,37 +328,12 @@ export function BridgeTransactionModal({
           )}
 
           {/* Error state with retry */}
-          {bridgeStatus === "error" && errorMessage && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-red-500 font-medium">
-                    Operation Failed
-                  </p>
-                  <p className="text-xs text-red-400 mt-1">{errorMessage}</p>
-                </div>
-              </div>
-              <div className="flex gap-2 mt-3">
-                <Button
-                  onClick={handleRetry}
-                  size="sm"
-                  variant="outline"
-                  className="flex-1"
-                >
-                  <RefreshCw className="w-4 h-4 mr-1" />
-                  Retry
-                </Button>
-                <Button
-                  onClick={handleClose}
-                  size="sm"
-                  variant="ghost"
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
+          {bridgeStatus === "error" && errorInfo && (
+            <BridgeErrorState
+              error={errorInfo}
+              onRetry={handleRetry}
+              onContactSupport={handleContactSupport}
+            />
           )}
 
           {/* Action buttons */}
@@ -344,7 +343,7 @@ export function BridgeTransactionModal({
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               disabled={isProcessing}
             >
-              {operationType === "buy" ? "Confirm Buy" : "Confirm Sell"}
+              {operationType === "buy" ? t("bridge.confirmBuy") : t("bridge.confirmSell")}
             </Button>
           )}
 
@@ -352,25 +351,15 @@ export function BridgeTransactionModal({
             <Button disabled className="w-full">
               <span className="inline-flex items-center gap-2">
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                Processing...
+                {t("bridge.processing")}
               </span>
             </Button>
           )}
 
           {bridgeStatus === "completed" && (
             <Button onClick={handleClose} className="w-full">
-              Done
+              {t("bridge.done")}
             </Button>
-          )}
-
-          {/* Support link */}
-          {bridgeStatus === "error" && (
-            <p className="text-xs text-center text-secondary">
-              Need help?{" "}
-              <a href="#" className="text-blue-500 hover:underline">
-                Contact Support
-              </a>
-            </p>
           )}
         </div>
       </DialogContent>
