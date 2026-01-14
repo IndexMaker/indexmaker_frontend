@@ -100,6 +100,7 @@ export const en = {
     success: "Success",
     sell: "Sell",
     invoices: "Invoices",
+    keeperCharts: "Keeper Charts",
     beforeInvesting: "Before investing, consider the index' investment objectives, risks, charges and expenses. Contact your investment professional or visit indexmaker.global for a prospectus containing this information. Read it carefully.",
     testnetDisclaimer: "IndexMaker is currently operating in testnet/beta phase. All indexes, products, and services are provided exclusively for testing and evaluation purposes only, even where real funds are used. Nothing on this website or in any related materials constitutes an offer, invitation, recommendation, investment advice, or solicitation to buy, sell, or hold any tokens, indexes, or financial instruments. IndexMaker indexes are on-chain, decentralized products. They are not Exchange-Traded Funds (ETFs), are not registered with any financial regulatory authority, and are not subject to the same regulatory requirements or investor protections as traditional regulated investment products (including but not limited to ETFs, UCITS, mutual funds, etc.). No regulatory protections apply. There is no capital guarantee. You may lose your entire investment. No compensation scheme applies.",
     riskDisclosure: "Before interacting with any IndexMaker index, carefully consider the investment objectives, risks, charges, and expenses. On-chain indexes carry significant risks including but not limited to complete loss of principal, smart contract vulnerabilities and exploits, extreme volatility, liquidity risks, regulatory and legal uncertainty, counterparty and oracle risks, impermanent loss (where applicable), and network congestion and high gas fees. Full technical documentation and risk disclosures are available at indexmaker.global or upon request from IndexMaker Labs LTD. You must read these documents carefully before any interaction.",
@@ -355,5 +356,45 @@ export const en = {
     // Status
     processing: "Processing...",
     contractsNotDeployed: "Bridge contracts not yet deployed - this is a preview of the transaction flow"
+  },
+  keeperCharts: {
+    // Page titles
+    title: "Keeper Charts",
+    subtitle: "Monitor Keeper acquisition and disposal activity over time",
+    filters: "Filters",
+    keeper: "Keeper",
+    timeRange: "Time Range",
+    activityOverTime: "Activity Over Time",
+    dataPointsLabel: "data points",
+    understandingData: "Understanding the Data",
+    // Acquisition/Disposal descriptions
+    acquisitionDesc: "Shows how the Keeper realizes new orders. Returns (receive ITP, deliver USDC) from the getClaimableAcquisition method.",
+    disposalDesc: "Shows how often users claim ITP/Withdrawals. Returns (receive USDC, deliver ITP) from the getClaimableDisposal method.",
+    // Stats titles
+    latestAcquisition: "Latest Acquisition",
+    latestDisposal: "Latest Disposal",
+    change24h: "24h Change",
+    change7d: "7d Change",
+    peakAcquisition: "Peak Acquisition",
+    peakDisposal: "Peak Disposal",
+    avgAcquisition: "Avg Acquisition",
+    avgDisposal: "Avg Disposal",
+    acqVelocity: "Acq Velocity",
+    dispVelocity: "Disp Velocity",
+    dataPoints: "Data Points",
+    efficiency: "Efficiency",
+    // Stats labels
+    acquisition: "Acquisition",
+    disposal: "Disposal",
+    rateOfChange: "Rate of change",
+    increasing: "Increasing",
+    decreasing: "Decreasing",
+    acqDispRatio: "Acquisition / Disposal ratio",
+    acqDominant: "Acquisition dominant",
+    dispDominant: "Disposal dominant",
+    // Messages
+    noStatsAvailable: "No statistics available. Select a keeper and time range to view data.",
+    noDataAvailable: "No data available for the selected keeper and time range.",
+    scrollToZoom: "Scroll to zoom, drag to pan. Use the zoom out button to reset."
   }
 };

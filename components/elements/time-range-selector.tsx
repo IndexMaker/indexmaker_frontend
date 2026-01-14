@@ -13,6 +13,7 @@ export type TimeRangePreset = "24h" | "7d" | "30d" | "90d" | "all" | "custom";
 interface TimeRange {
   startDate: string | undefined;
   endDate: string | undefined;
+  preset: TimeRangePreset;
 }
 
 interface TimeRangeSelectorProps {
@@ -45,6 +46,7 @@ export function TimeRangeSelector({
     onTimeRangeChange({
       startDate: format(startDate, "yyyy-MM-dd"),
       endDate: format(endDate, "yyyy-MM-dd"),
+      preset: "30d",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -82,6 +84,7 @@ export function TimeRangeSelector({
     onTimeRangeChange({
       startDate: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
       endDate: preset === "all" ? undefined : format(endDate, "yyyy-MM-dd"),
+      preset,
     });
   };
 
@@ -90,6 +93,7 @@ export function TimeRangeSelector({
       onTimeRangeChange({
         startDate: format(customStartDate, "yyyy-MM-dd"),
         endDate: format(customEndDate, "yyyy-MM-dd"),
+        preset: "custom",
       });
     }
   };

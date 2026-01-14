@@ -2,24 +2,28 @@
 
 import { Suspense, useState, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { KeeperSelector } from "@/components/elements/keeper-selector";
-import { TimeRangeSelector } from "@/components/elements/time-range-selector";
+import { TimeRangeSelector, TimeRangePreset } from "@/components/elements/time-range-selector";
 import { KeeperActivityChart } from "@/components/elements/keeper-activity-chart";
 import { KeeperStatsSummary } from "@/components/elements/keeper-stats-summary";
 import {
   useKeeperChartData,
   useAllKeepersChartData,
 } from "@/hooks/useKeeperChartData";
+import Dashboard from "@/components/views/Dashboard/dashboard";
+import { useLanguage } from "@/contexts/language-context";
 
-const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const REFRESH_INTERVAL = 30 * 1000; // 30 seconds
 
 function KeeperChartsPageContent() {
+  const { t } = useLanguage();
   const [selectedKeeper, setSelectedKeeper] = useState<string>("all");
   const [timeRange, setTimeRange] = useState<{
     startDate: string | undefined;
     endDate: string | undefined;
-  }>({ startDate: undefined, endDate: undefined });
+    preset: TimeRangePreset;
+  }>({ startDate: undefined, endDate: undefined, preset: "30d" });
 
   // Use the appropriate hook based on selection
   const singleKeeperData = useKeeperChartData({
@@ -44,25 +48,25 @@ function KeeperChartsPageContent() {
   }, [selectedKeeper, allKeepersData, singleKeeperData]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Keeper Charts</h1>
-            <p className="text-sm text-gray-600">
-              Monitor Keeper acquisition and disposal activity over time
-            </p>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-primary">{t("keeperCharts.title")}</h1>
+          <p className="text-sm text-secondary">
+            {t("keeperCharts.subtitle")}
+          </p>
         </div>
+      </div>
 
-        {/* Controls */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Filters</h3>
+      {/* Controls */}
+      <Card className="bg-foreground border border-accent shadow-sm">
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-semibold text-primary mb-4">{t("keeperCharts.filters")}</h3>
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-600">
-                Keeper
+              <label className="text-sm font-medium text-secondary">
+                {t("keeperCharts.keeper")}
               </label>
               <KeeperSelector
                 selectedKeeper={selectedKeeper}
@@ -70,27 +74,29 @@ function KeeperChartsPageContent() {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-600">
-                Time Range
+              <label className="text-sm font-medium text-secondary">
+                {t("keeperCharts.timeRange")}
               </label>
               <TimeRangeSelector onTimeRangeChange={setTimeRange} />
             </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Statistics Summary */}
-        <KeeperStatsSummary
-          data={activeData.data}
-          isLoading={activeData.isLoading}
-        />
+      {/* Statistics Summary */}
+      <KeeperStatsSummary
+        data={activeData.data}
+        isLoading={activeData.isLoading}
+      />
 
-        {/* Chart */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      {/* Chart */}
+      <Card className="bg-foreground border border-accent shadow-sm">
+        <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Activity Over Time</h3>
+            <h3 className="text-lg font-semibold text-primary">{t("keeperCharts.activityOverTime")}</h3>
             {activeData.data && (
-              <span className="text-sm text-gray-500">
-                {activeData.data.total_records} data points
+              <span className="text-sm text-secondary">
+                {activeData.data.total_records} {t("keeperCharts.dataPointsLabel")}
               </span>
             )}
           </div>
@@ -99,56 +105,49 @@ function KeeperChartsPageContent() {
             isLoading={activeData.isLoading}
             error={activeData.error}
             onRefresh={activeData.refetch}
+            timeRangePreset={timeRange.preset}
           />
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Info Section */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Understanding the Data</h3>
+      {/* Info Section */}
+      <Card className="bg-foreground border border-accent shadow-sm">
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-semibold text-primary mb-4">{t("keeperCharts.understandingData")}</h3>
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <h4 className="text-green-600 font-semibold mb-2">
-                Acquisition (Green Lines)
+              <h4 className="text-green-600 dark:text-green-400 font-semibold mb-2">
+                {t("keeperCharts.acquisition")} (Green Lines)
               </h4>
-              <p className="text-sm text-gray-600">
-                Shows how the Keeper realizes new orders. The two values
-                represent different aspects of the acquisition process from the{" "}
-                <code className="text-xs bg-gray-100 text-gray-800 px-1 rounded">
-                  getClaimableAcquisition
-                </code>{" "}
-                method.
+              <p className="text-sm text-secondary">
+                {t("keeperCharts.acquisitionDesc")}
               </p>
             </div>
             <div>
-              <h4 className="text-orange-600 font-semibold mb-2">
-                Disposal (Orange Lines)
+              <h4 className="text-orange-600 dark:text-orange-400 font-semibold mb-2">
+                {t("keeperCharts.disposal")} (Orange Lines)
               </h4>
-              <p className="text-sm text-gray-600">
-                Shows how often users claim ITP/Withdrawals. The two values
-                represent different aspects of the disposal process from the{" "}
-                <code className="text-xs bg-gray-100 text-gray-800 px-1 rounded">
-                  getClaimableDisposal
-                </code>{" "}
-                method.
+              <p className="text-sm text-secondary">
+                {t("keeperCharts.disposalDesc")}
               </p>
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
 function KeeperChartsPageSkeleton() {
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="space-y-2">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-4 w-64" />
         </div>
       </div>
-      <Card>
+      <Card className="bg-foreground border border-accent">
         <CardContent className="pt-6">
           <div className="flex gap-4">
             <Skeleton className="h-10 w-[200px]" />
@@ -157,11 +156,11 @@ function KeeperChartsPageSkeleton() {
         </CardContent>
       </Card>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => (
+        {[...Array(8)].map((_, i) => (
           <Skeleton key={i} className="h-24" />
         ))}
       </div>
-      <Card>
+      <Card className="bg-foreground border border-accent">
         <CardContent className="pt-6">
           <Skeleton className="h-96 w-full" />
         </CardContent>
@@ -172,8 +171,10 @@ function KeeperChartsPageSkeleton() {
 
 export default function KeeperChartsPage() {
   return (
-    <Suspense fallback={<KeeperChartsPageSkeleton />}>
-      <KeeperChartsPageContent />
-    </Suspense>
+    <Dashboard>
+      <Suspense fallback={<KeeperChartsPageSkeleton />}>
+        <KeeperChartsPageContent />
+      </Suspense>
+    </Dashboard>
   );
 }

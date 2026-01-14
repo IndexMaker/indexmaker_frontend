@@ -12,6 +12,7 @@ import {
   Legend,
   TimeScale,
   Filler,
+  type ChartOptions,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import "chartjs-adapter-date-fns";
@@ -20,6 +21,7 @@ import { useTheme } from "next-themes";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, ZoomOut } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context";
 import type { TransformedChartData } from "@/hooks/useKeeperChartData";
 
 ChartJS.register(
@@ -40,6 +42,7 @@ interface KeeperActivityChartProps {
   isLoading: boolean;
   error: string | null;
   onRefresh?: () => void;
+  timeRangePreset?: string;
 }
 
 export function KeeperActivityChart({
@@ -47,9 +50,11 @@ export function KeeperActivityChart({
   isLoading,
   error,
   onRefresh,
+  timeRangePreset = "30d",
 }: KeeperActivityChartProps) {
   const chartRef = useRef<any>(null);
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const isDark = theme === "dark";
 
   const chartColors = useMemo(
@@ -76,45 +81,45 @@ export function KeeperActivityChart({
     return {
       datasets: [
         {
-          label: "Acquisition (Value 1)",
+          label: "Acquisition - Receive ITP",
           data: chartData.acquisitionLine1,
           borderColor: chartColors.acquisition1,
           backgroundColor: `${chartColors.acquisition1}20`,
-          tension: 0.3,
-          pointRadius: 0,
+          tension: 0,
+          pointRadius: 3,
           pointHoverRadius: 4,
           borderWidth: 2,
           fill: false,
         },
         {
-          label: "Acquisition (Value 2)",
+          label: "Acquisition - Deliver USDC",
           data: chartData.acquisitionLine2,
           borderColor: chartColors.acquisition2,
           backgroundColor: `${chartColors.acquisition2}20`,
-          tension: 0.3,
-          pointRadius: 0,
+          tension: 0,
+          pointRadius: 3,
           pointHoverRadius: 4,
           borderWidth: 2,
           fill: false,
         },
         {
-          label: "Disposal (Value 1)",
+          label: "Disposal - Receive USDC",
           data: chartData.disposalLine1,
           borderColor: chartColors.disposal1,
           backgroundColor: `${chartColors.disposal1}20`,
-          tension: 0.3,
-          pointRadius: 0,
+          tension: 0,
+          pointRadius: 3,
           pointHoverRadius: 4,
           borderWidth: 2,
           fill: false,
         },
         {
-          label: "Disposal (Value 2)",
+          label: "Disposal - Deliver ITP",
           data: chartData.disposalLine2,
           borderColor: chartColors.disposal2,
           backgroundColor: `${chartColors.disposal2}20`,
-          tension: 0.3,
-          pointRadius: 0,
+          tension: 0,
+          pointRadius: 3,
           pointHoverRadius: 4,
           borderWidth: 2,
           fill: false,
@@ -123,7 +128,25 @@ export function KeeperActivityChart({
     };
   }, [chartData, chartColors]);
 
-  const options: any = useMemo(
+  // Determine optimal time unit based on selected time range
+  const timeUnit = useMemo(() => {
+    switch (timeRangePreset) {
+      case "24h":
+        return "hour";
+      case "7d":
+        return "hour";
+      case "30d":
+        return "day";
+      case "90d":
+        return "day";
+      case "all":
+        return "week";
+      default:
+        return "day";
+    }
+  }, [timeRangePreset]);
+
+  const options = useMemo<ChartOptions<"line">>(
     () => ({
       responsive: true,
       maintainAspectRatio: false,
@@ -135,11 +158,12 @@ export function KeeperActivityChart({
         x: {
           type: "time",
           time: {
-            unit: "hour",
+            unit: timeUnit,
             tooltipFormat: "dd MMM yyyy HH:mm",
             displayFormats: {
               hour: "HH:mm",
               day: "MMM dd",
+              week: "MMM dd",
             },
           },
           grid: {
@@ -229,7 +253,7 @@ export function KeeperActivityChart({
         },
       },
     }),
-    [chartColors, isDark]
+    [chartColors, isDark, timeUnit]
   );
 
   if (isLoading) {
@@ -257,8 +281,8 @@ export function KeeperActivityChart({
   if (!chartData || !data) {
     return (
       <div className="flex items-center justify-center h-96 bg-accent rounded-lg">
-        <p className="text-muted-foreground">
-          No data available for the selected keeper and time range.
+        <p className="text-secondary">
+          {t("keeperCharts.noDataAvailable")}
         </p>
       </div>
     );
@@ -291,8 +315,8 @@ export function KeeperActivityChart({
       <div className="w-full h-96">
         <Line ref={chartRef} data={data} options={options} />
       </div>
-      <p className="text-xs text-muted-foreground mt-2 text-center">
-        Scroll to zoom, drag to pan. Use the zoom out button to reset.
+      <p className="text-xs text-secondary mt-2 text-center">
+        {t("keeperCharts.scrollToZoom")}
       </p>
     </div>
   );

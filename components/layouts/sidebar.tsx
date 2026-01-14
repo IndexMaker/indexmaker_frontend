@@ -187,7 +187,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
               icon={BarChart3}
               collapsed={collapsed}
             >
-              Keeper Charts
+              {t("common.keeperCharts")}
             </NavItem>
           </nav>
 

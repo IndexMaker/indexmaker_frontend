@@ -38,6 +38,7 @@ interface UseKeeperChartDataResult {
   data: KeeperHistoryResponse | null;
   chartData: TransformedChartData | null;
   isLoading: boolean;
+  isRefetching: boolean;
   error: string | null;
   refetch: () => Promise<void>;
 }
@@ -72,9 +73,11 @@ export function useKeeperChartData({
   const [data, setData] = useState<KeeperHistoryResponse | null>(null);
   const [chartData, setChartData] = useState<TransformedChartData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefetching, setIsRefetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasInitialData = data !== null;
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isBackgroundRefresh = false) => {
     if (!keeperAddress || keeperAddress === "all") {
       // For aggregated data, we would need to fetch all keepers and combine
       // For now, skip if "all" is selected
@@ -84,7 +87,12 @@ export function useKeeperChartData({
       return;
     }
 
-    setIsLoading(true);
+    // Only show loading skeleton on initial fetch, use refetching indicator for background
+    if (isBackgroundRefresh) {
+      setIsRefetching(true);
+    } else {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -114,30 +122,35 @@ export function useKeeperChartData({
     } catch (err) {
       console.error("Error fetching keeper chart data:", err);
       setError(err instanceof Error ? err.message : "Failed to load data");
-      setData(null);
-      setChartData(null);
+      // Only clear data on initial load errors, not background refresh errors
+      if (!isBackgroundRefresh) {
+        setData(null);
+        setChartData(null);
+      }
     } finally {
       setIsLoading(false);
+      setIsRefetching(false);
     }
   }, [keeperAddress, startDate, endDate]);
 
   useEffect(() => {
-    fetchData();
+    fetchData(false);
   }, [fetchData]);
 
   useEffect(() => {
-    if (refreshInterval && refreshInterval > 0) {
-      const interval = setInterval(fetchData, refreshInterval);
+    if (refreshInterval && refreshInterval > 0 && hasInitialData) {
+      const interval = setInterval(() => fetchData(true), refreshInterval);
       return () => clearInterval(interval);
     }
-  }, [fetchData, refreshInterval]);
+  }, [fetchData, refreshInterval, hasInitialData]);
 
   return {
     data,
     chartData,
     isLoading,
+    isRefetching,
     error,
-    refetch: fetchData,
+    refetch: () => fetchData(false),
   };
 }
 
@@ -150,10 +163,17 @@ export function useAllKeepersChartData({
   const [data, setData] = useState<KeeperHistoryResponse | null>(null);
   const [chartData, setChartData] = useState<TransformedChartData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefetching, setIsRefetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasInitialData = data !== null;
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
+  const fetchData = useCallback(async (isBackgroundRefresh = false) => {
+    // Only show loading skeleton on initial fetch, use refetching indicator for background
+    if (isBackgroundRefresh) {
+      setIsRefetching(true);
+    } else {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -253,29 +273,34 @@ export function useAllKeepersChartData({
     } catch (err) {
       console.error("Error fetching aggregated keeper data:", err);
       setError(err instanceof Error ? err.message : "Failed to load data");
-      setData(null);
-      setChartData(null);
+      // Only clear data on initial load errors, not background refresh errors
+      if (!isBackgroundRefresh) {
+        setData(null);
+        setChartData(null);
+      }
     } finally {
       setIsLoading(false);
+      setIsRefetching(false);
     }
   }, [startDate, endDate]);
 
   useEffect(() => {
-    fetchData();
+    fetchData(false);
   }, [fetchData]);
 
   useEffect(() => {
-    if (refreshInterval && refreshInterval > 0) {
-      const interval = setInterval(fetchData, refreshInterval);
+    if (refreshInterval && refreshInterval > 0 && hasInitialData) {
+      const interval = setInterval(() => fetchData(true), refreshInterval);
       return () => clearInterval(interval);
     }
-  }, [fetchData, refreshInterval]);
+  }, [fetchData, refreshInterval, hasInitialData]);
 
   return {
     data,
     chartData,
     isLoading,
+    isRefetching,
     error,
-    refetch: fetchData,
+    refetch: () => fetchData(false),
   };
 }

@@ -100,6 +100,7 @@ export const zh = {
     success: "成功",
     sell: "出售",
     invoices: "发票",
+    keeperCharts: "保管人图表",
     beforeInvesting: "在投资之前，请考虑指数的投资目标、风险、费用和开支。请联系您的投资专业人士或访问indexmaker.global获取包含此信息的招股说明书。请仔细阅读。",
     testnetDisclaimer: "IndexMaker目前正在测试网/测试阶段运行。所有指数、产品和服务仅供测试和评估之用，即使使用真实资金也是如此。本网站或任何相关材料中的任何内容均不构成要约、邀请、推荐、投资建议或购买、出售或持有任何代币、指数或金融工具的招揽。IndexMaker指数是链上去中心化产品。它们不是交易所交易基金（ETF），未在任何金融监管机构注册，不受与传统受监管投资产品（包括但不限于ETF、UCITS、共同基金等）相同的监管要求或投资者保护。不适用监管保护。没有资本保证。您可能会失去全部投资。不适用任何补偿计划。",
     riskDisclosure: "在与任何IndexMaker指数互动之前，请仔细考虑投资目标、风险、费用和开支。链上指数具有重大风险，包括但不限于本金完全损失、智能合约漏洞和利用、极端波动性、流动性风险、监管和法律不确定性、交易对手和预言机风险、无常损失（如适用）以及网络拥堵和高燃气费。完整的技术文档和风险披露可在indexmaker.global获取，或向IndexMaker Labs LTD索取。在任何互动之前，您必须仔细阅读这些文件。",
@@ -355,5 +356,45 @@ export const zh = {
     // 状态
     processing: "处理中...",
     contractsNotDeployed: "桥接合约尚未部署 - 这是交易流程的预览"
+  },
+  keeperCharts: {
+    // 页面标题
+    title: "保管人图表",
+    subtitle: "监控保管人的获取和处置活动",
+    filters: "筛选条件",
+    keeper: "保管人",
+    timeRange: "时间范围",
+    activityOverTime: "活动趋势",
+    dataPointsLabel: "数据点",
+    understandingData: "数据说明",
+    // 获取/处置描述
+    acquisitionDesc: "显示保管人如何实现新订单。从 getClaimableAcquisition 方法返回（接收 ITP，交付 USDC）。",
+    disposalDesc: "显示用户领取 ITP/提款的频率。从 getClaimableDisposal 方法返回（接收 USDC，交付 ITP）。",
+    // 统计标题
+    latestAcquisition: "最新获取量",
+    latestDisposal: "最新处置量",
+    change24h: "24小时变化",
+    change7d: "7天变化",
+    peakAcquisition: "获取峰值",
+    peakDisposal: "处置峰值",
+    avgAcquisition: "平均获取量",
+    avgDisposal: "平均处置量",
+    acqVelocity: "获取速度",
+    dispVelocity: "处置速度",
+    dataPoints: "数据点数",
+    efficiency: "效率",
+    // 统计标签
+    acquisition: "获取",
+    disposal: "处置",
+    rateOfChange: "变化率",
+    increasing: "上升中",
+    decreasing: "下降中",
+    acqDispRatio: "获取/处置比率",
+    acqDominant: "获取主导",
+    dispDominant: "处置主导",
+    // 消息
+    noStatsAvailable: "暂无统计数据。请选择保管人和时间范围查看数据。",
+    noDataAvailable: "所选保管人和时间范围暂无数据。",
+    scrollToZoom: "滚动缩放，拖动平移。点击缩小按钮重置。"
   }
 };
