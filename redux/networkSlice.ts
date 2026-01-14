@@ -16,7 +16,7 @@ interface NetworkState {
 
 const initialState: NetworkState = {
   network: null,
-  selectedNetwork: "0x2105", // Default to Ethereum
+  selectedNetwork: "0xa4b1", // Default to Arbitrum One
   currentChainId: null,
 };
 

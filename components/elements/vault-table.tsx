@@ -471,7 +471,7 @@ export function VaultTable({
                                   className="relative before:absolute before:top-0 before:left-0 before:w-px before:h-full before:bg-accent"
                                 >
                                   {wallet &&
-                                  currentChainId === selectedNetwork ? (
+                                  (currentChainId === "0xa4b1" || currentChainId === "0x6A11E3D") ? (
                                     <Button
                                       className={cn(
                                         "bg-[#2470ff] hover:bg-blue-700 text-white text-[11px] rounded-[4px] px-[5px] py-[8px] h-[26px] sticky right-0"

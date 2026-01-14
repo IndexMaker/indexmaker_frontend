@@ -18,253 +18,7 @@ export type VaultInfo = {
   performanceFee: string;
 };
 
-export const vaults: VaultInfo[] = [
-  {
-    id: "relend-eth",
-    name: "Relend ETH",
-    icon: "🟠",
-    token: "ETH",
-    tokenIcon: "🟠",
-    totalSupply: "1.28 WETH",
-    totalSupplyUsd: "$2080.80",
-    instantApy: "5.38%",
-    vaultApy: "5.38%",
-    curator: "B.Protocol",
-    curatorIcon: "⚡️",
-    collateral: ["🔵", "🟣", "🟠"],
-    rewards: "+1.16%",
-    performanceFee: "0%",
-  },
-  {
-    id: "mev-usdc",
-    name: "MEV Capital Usual USDC",
-    icon: "🔵",
-    token: "USDC",
-    tokenIcon: "🔵",
-    totalSupply: "322,956,538.41 USDC",
-    totalSupplyUsd: "$322.87M",
-    instantApy: "6.41%",
-    vaultApy: "5.25%",
-    curator: "MEV Capital",
-    curatorIcon: "⚡️",
-    collateral: ["🟢", "🔴", "🔵", "+13"],
-    rewards: "+1.16%",
-    performanceFee: "10%",
-  },
-  {
-    id: "spark-dai-1",
-    name: "Steakhouse USDC",
-    icon: "🔵",
-    token: "USDC",
-    tokenIcon: "🔵",
-    totalSupply: "113,948,063.12 USDC",
-    totalSupplyUsd: "$113.94M",
-    instantApy: "6.78%",
-    vaultApy: "5.36%",
-    curator: "Steakhouse Financial",
-    curatorIcon: "🥩",
-    collateral: ["🟡", "🔵", "🟢", "+7"],
-    rewards: "+1.16%",
-    performanceFee: "5%",
-  },
-  {
-    id: "spark-dai-2",
-    name: "Smokehouse USDC",
-    icon: "🔵",
-    token: "USDC",
-    tokenIcon: "🔵",
-    totalSupply: "104,908,784.12 USDC",
-    totalSupplyUsd: "$104.87M",
-    instantApy: "5.76%",
-    vaultApy: "4.60%",
-    curator: "Steakhouse Financial",
-    curatorIcon: "🥩",
-    collateral: ["🟡", "🔵", "🟢"],
-    rewards: "+1.16%",
-    performanceFee: "5%",
-  },
-  {
-    id: "spark-dai-3",
-    name: "Steakhouse RUSD",
-    icon: "🟠",
-    token: "rUSD",
-    tokenIcon: "🟠",
-    totalSupply: "89,888,265.90 rUSD",
-    totalSupplyUsd: "$89.86M",
-    instantApy: "7.19%",
-    vaultApy: "6.03%",
-    curator: "Steakhouse Financial",
-    curatorIcon: "🥩",
-    collateral: ["🟡", "🔵", "🟢"],
-    rewards: "+1.16%",
-    performanceFee: "5%",
-  },
-  {
-    id: "spark-dai-4",
-    name: "Gauntlet USDC Core",
-    icon: "🔵",
-    token: "USDC",
-    tokenIcon: "🔵",
-    totalSupply: "83,017,026.08 USDC",
-    totalSupplyUsd: "$82.96M",
-    instantApy: "5.69%",
-    vaultApy: "5.12%",
-    curator: "Gauntlet",
-    curatorIcon: "🛡️",
-    collateral: ["🟡", "🔵", "🟢", "+9"],
-    rewards: "+1.16%",
-    performanceFee: "10%",
-  },
-  {
-    id: "mev-usdc-1",
-    name: "Hakutora USDC",
-    icon: "🔵",
-    token: "USDC",
-    tokenIcon: "🔵",
-    totalSupply: "52,719,107.98 USDC",
-    totalSupplyUsd: "$52.71M",
-    instantApy: "5.34%",
-    vaultApy: "4.27%",
-    curator: "Hakutora",
-    curatorIcon: "🐯",
-    collateral: ["🟢", "🔵", "🟣"],
-    rewards: "+1.16%",
-    performanceFee: "0%",
-  },
-  {
-    id: "mev-usdc-2",
-    name: "Gauntlet WETH Prime",
-    icon: "🟣",
-    token: "WETH",
-    tokenIcon: "🟣",
-    totalSupply: "29,157.98 WETH",
-    totalSupplyUsd: "$83.82M",
-    instantApy: "3.76%",
-    vaultApy: "2.89%",
-    curator: "Gauntlet",
-    curatorIcon: "🛡️",
-    collateral: ["🟡", "🔵", "🟢", "+9"],
-    rewards: "+1.16%",
-    performanceFee: "10%",
-  },
-  {
-    id: "mev-usdc-3",
-    name: "Steakhouse USDT",
-    icon: "🟢",
-    token: "USDT",
-    tokenIcon: "🟢",
-    totalSupply: "52,453,172.01 USDT",
-    totalSupplyUsd: "$52.45M",
-    instantApy: "4.74%",
-    vaultApy: "3.36%",
-    curator: "Steakhouse Financial",
-    curatorIcon: "🥩",
-    collateral: ["🟡", "🔵"],
-    rewards: "+1.16%",
-    performanceFee: "5%",
-  },
-  {
-    id: "mev-usdc-5",
-    name: "Gauntlet LBTC Core",
-    icon: "🟡",
-    token: "LBTC",
-    tokenIcon: "🟡",
-    totalSupply: "589.45 LBTC",
-    totalSupplyUsd: "$32.80M",
-    instantApy: "3.58%",
-    vaultApy: "1.92%",
-    curator: "Gauntlet",
-    curatorIcon: "🛡️",
-    collateral: ["🟡", "🔵", "🟢"],
-    rewards: "+1.16%",
-    performanceFee: "10%",
-  },
-];
 
-export const mockup_vaults: Vault[] = [
-  {
-    id: "relend-eth",
-    name: "Relend ETH",
-    description:
-      "The Spark DAI 1 vault curated by SparkDAO is intended to seamlessly allocate DAI liquidity from Maker to IndexMaker markets.",
-    icon: "https://cdn.indexmaker.org/assets/logos/eth.svg",
-    token: {
-      symbol: "ETH",
-      icon: "https://cdn.indexmaker.org/assets/logos/eth.svg",
-      address: "0x6b175474e89094c44da98b954eedeac495271d0f",
-    },
-    curator: {
-      name: "B.protocol",
-      icon: "https://cdn.indexmaker.org/v2/assets/images/bprotocol.png",
-      url: "https://spark.fi",
-    },
-    totalSupply: {
-      amount: "525.00M DAI",
-      usdValue: "$526.24M",
-    },
-    instantApy: "5.25%",
-    performanceFee: "0%",
-    vaultAddress: "0x73e6...ed9D",
-    guardianAddress: "0x0000...0000",
-    liquidity: {
-      amount: "163.35M DAI",
-      usdValue: "$163.74M",
-    },
-    collateral: ["🔵", "🟣", "🟠", "🟢", "🔴", "🔵", "+13"],
-    documents: [
-      {
-        id: "whitepaper",
-        name: "Technical details about the Spark DAI vault",
-        url: "#",
-        description: "Coming in v0.8",
-      },
-      {
-        id: "audit",
-        name: "Security Audit",
-        url: "#",
-        description: "Security audit report by ChainSecurity",
-      },
-    ],
-  },
-  {
-    id: "mev-usdc",
-    name: "MEV Capital Usual USDC",
-    description:
-      "MEV Capital's USDC vault optimizes yield through strategic market positioning and MEV capture techniques.",
-    icon: "https://cdn.indexmaker.org/v2/assets/images/usual.svg",
-    token: {
-      symbol: "USDC",
-      icon: "https://cdn.indexmaker.org/assets/logos/usdc.svg",
-      address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-    },
-    curator: {
-      name: "MEV Capital",
-      icon: "https://cdn.indexmaker.org/v2/assets/images/mevcapital.png",
-      url: "https://mev.capital",
-    },
-    totalSupply: {
-      amount: "244.19M USDC",
-      usdValue: "$244.13M",
-    },
-    instantApy: "8.45%",
-    performanceFee: "2%",
-    vaultAddress: "0x8a43...b721",
-    guardianAddress: "0x9f72...e451",
-    liquidity: {
-      amount: "198.35M USDC",
-      usdValue: "$198.31M",
-    },
-    collateral: ["🔵", "🟣", "🟠", "🟢", "🔴", "🔵", "+13"],
-    documents: [
-      {
-        id: "whitepaper",
-        name: "Whitepaper",
-        url: "#",
-        description: "Technical details about the MEV Capital USDC vault",
-      },
-    ],
-  },
-];
 
 
 
@@ -388,6 +142,20 @@ export const transactionTypes = [
 ];
 
 
+export const mockup_vaults = [
+  {
+    id: "1",
+    name: "Symmio Index",
+    icon: "",
+    token: {
+      symbol: "USDC",
+      icon: "/logos/usd-coin.png",
+      address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+    },
+    guardianAddress: "0x0000000000000000000000000000000000000000"
+  }
+];
+
 export const TOKEN_LIST = [
   {
     symbol: 'ETH',
@@ -441,6 +209,22 @@ export const TOKEN_LIST = [
 export const TOKEN_METADATA: {
   [chainId: string]: { [key: string]: { address?: string; decimals: number; type: 'native' | 'erc20' } };
 } = {
+  "0xa4b1": {
+    // Arbitrum One
+    USDC: {
+      type: 'erc20',
+      address: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USDC on Arbitrum
+      decimals: 6,
+    },
+  },
+  "0x6A11E3D": {
+    // Custom Orbit Chain (111222333 decimal)
+    USDC: {
+      type: 'erc20',
+      address: '0xE1AccDbE71393F582CD86a6F04872ed341B499e9', // Wrapped USDC on Orbit
+      decimals: 6,
+    },
+  },
   "0x1": {
     // Ethereum mainnet
     // ETH: {

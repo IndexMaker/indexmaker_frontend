@@ -19,21 +19,21 @@ const setups: Setup[] = [
   {
     name: 'SIPP',
     type: 'deferred',
-    fees: 'GBP 60,000 annually. Tax relief 20-45% on contributions, tax-free growth, 25% tax-free withdrawal (EET partial). From 55 (57 from 2028); early unauthorized 55% charge.',
+    fees: 'GBP 60,000 annual allowance (2025/26). Tax relief 20-45% on contributions, tax-free growth, 25% tax-free lump sum. Access from age 55 (rising to 57 in 2028); early unauthorized access incurs 55% charge.',
     penaltyRate: 0.55, // 55% unauthorized payment charge
-    thresholdAge: 55,
+    thresholdAge: 55, // Note: Rising to 57 from April 2028
   },
   {
     name: 'ISA',
     type: 'taxfree',
-    fees: 'GBP 20,000 annually. Tax-free gains/dividends (TEE). No minimum; withdrawals tax-free, no re-contribution.',
+    fees: 'GBP 20,000 annual allowance (2025/26). Tax-free gains/dividends (TEE). Withdrawals tax-free anytime.',
     penaltyRate: 0,
     thresholdAge: Number.POSITIVE_INFINITY,
   },
   {
     name: 'Taxable Account',
     type: 'taxable',
-    fees: 'No withdrawal restrictions. Subject to capital gains tax (10-20%) with GBP 6,000 annual allowance.',
+    fees: 'No withdrawal restrictions. Subject to capital gains tax (18-24%) with GBP 3,000 annual allowance (2025/26).',
     penaltyRate: 0,
     thresholdAge: Number.POSITIVE_INFINITY,
   },
@@ -153,7 +153,7 @@ export const uk: any = {
   name: 'United Kingdom',
   currency: 'GBP',
   statuses,
-  cryptoNote: 'Capital gains tax (10-20%) on disposals. Income tax (20-45%) on staking/lending rewards. GBP 6,000 CGT allowance.',
+  cryptoNote: 'Capital gains tax (18% basic rate, 24% higher rate as of Oct 2024) on disposals. Income tax (20-45%) on staking/lending/airdrops. GBP 3,000 annual CGT allowance (2025/26).',
   setups,
   getBrackets,
   computeTaxable,

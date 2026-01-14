@@ -302,5 +302,58 @@ export const en = {
     pleaseUploadPDF: "Please upload a PDF file",
     provideFileAndName: "Please provide a file and name",
     failedToFetchBalances: "Failed to fetch balances"
+  },
+  bridge: {
+    // Status messages - Buy flow (AC #1)
+    depositConfirmedArbitrum: "Deposit confirmed on Arbitrum",
+    bridgingToOrbit: "Bridging to Orbit...",
+    buyComplete: "Buy complete!",
+    // Status messages - Sell flow (AC #2)
+    sellRequestedArbitrum: "Sell requested on Arbitrum",
+    processingOnOrbit: "Processing on Orbit...",
+    sellComplete: "Sell complete!",
+    // Progress step labels
+    transactionSubmitted: "Transaction submitted",
+    arbitrumConfirmation: "Arbitrum confirmation",
+    bridgeProcessing: "Bridge processing",
+    operationComplete: "Operation complete",
+    // Transaction links (AC #3)
+    arbitrumTransaction: "Arbitrum",
+    orbitTransaction: "Orbit",
+    orbitTxPending: "Orbit transaction pending...",
+    viewOnExplorer: "View on Explorer",
+    txHashCopied: "Transaction hash copied",
+    copyFailed: "Failed to copy",
+    // Error messages (AC #4)
+    operationFailed: "Operation Failed",
+    transactionReverted: "Transaction reverted on Arbitrum. This may be due to insufficient balance or contract state.",
+    bridgeTimeout: "Bridge operation timed out. The transaction may still complete - please check your wallet in a few minutes.",
+    orbitGasError: "Unexpected error on Orbit chain. Gas should be free - this indicates a system issue.",
+    contractExecutionFailed: "Contract execution failed. The operation could not be completed.",
+    userRejected: "Transaction was rejected in your wallet.",
+    insufficientBalance: "Insufficient balance for this operation.",
+    approvalFailed: "Token approval failed. Please try again.",
+    networkError: "Network connection error. Please check your connection and try again.",
+    // Actions
+    retry: "Retry",
+    contactSupport: "Contact Support",
+    confirmBuy: "Confirm Buy",
+    confirmSell: "Confirm Sell",
+    done: "Done",
+    cancel: "Cancel",
+    // Modal titles
+    buyViaBridge: "Buy via Bridge",
+    sellViaBridge: "Sell via Bridge",
+    transactionDetails: "Transaction Details",
+    bridgeOperation: "Bridge Operation",
+    // Help text
+    checkBalanceRetry: "Please ensure you have enough USDC in your wallet and try again.",
+    checkWalletBalances: "Your transaction may still complete. Check your wallet balances before retrying.",
+    technicalDetails: "Technical details",
+    failedAt: "Failed at",
+    needHelp: "Need help?",
+    // Status
+    processing: "Processing...",
+    contractsNotDeployed: "Bridge contracts not yet deployed - this is a preview of the transaction flow"
   }
 };

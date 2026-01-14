@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -32,14 +33,16 @@ export function HowItWorksPopup({ open, onClose }: HowItWorksPopupProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent 
+      <DialogContent
         className={cn(
           "p-0 overflow-hidden border-0",
-          isMobile 
-            ? "w-[95vw] max-w-[95vw] h-auto" 
+          isMobile
+            ? "w-[95vw] max-w-[95vw] h-auto"
             : "w-[90vw] max-w-[1200px] h-auto"
         )}
       >
+        {/* Visually hidden but accessible DialogTitle for screen readers */}
+        <DialogTitle className="sr-only">How It Works Tutorial Video</DialogTitle>
         <div className="relative w-full bg-black">
           {/* Close button */}
           <button

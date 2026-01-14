@@ -23,6 +23,7 @@ export type TranslationKeys = {
   network: Record<string, string>;
   tax: Record<string, string>;
   errors: Record<string, string>;
+  bridge: Record<string, string>;
 };
 
 type Translations = {

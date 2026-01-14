@@ -302,5 +302,58 @@ export const zh = {
     pleaseUploadPDF: "请上传PDF文件",
     provideFileAndName: "请提供文件和名称",
     failedToFetchBalances: "获取余额失败"
+  },
+  bridge: {
+    // 状态消息 - 购买流程 (AC #1)
+    depositConfirmedArbitrum: "存款已在Arbitrum确认",
+    bridgingToOrbit: "正在桥接到Orbit...",
+    buyComplete: "购买完成！",
+    // 状态消息 - 出售流程 (AC #2)
+    sellRequestedArbitrum: "出售请求已在Arbitrum提交",
+    processingOnOrbit: "正在Orbit处理中...",
+    sellComplete: "出售完成！",
+    // 进度步骤标签
+    transactionSubmitted: "交易已提交",
+    arbitrumConfirmation: "Arbitrum确认",
+    bridgeProcessing: "桥接处理中",
+    operationComplete: "操作完成",
+    // 交易链接 (AC #3)
+    arbitrumTransaction: "Arbitrum",
+    orbitTransaction: "Orbit",
+    orbitTxPending: "Orbit交易等待中...",
+    viewOnExplorer: "在浏览器中查看",
+    txHashCopied: "交易哈希已复制",
+    copyFailed: "复制失败",
+    // 错误消息 (AC #4)
+    operationFailed: "操作失败",
+    transactionReverted: "交易在Arbitrum上被撤销。可能是由于余额不足或合约状态问题。",
+    bridgeTimeout: "桥接操作超时。交易可能仍会完成 - 请在几分钟后检查您的钱包。",
+    orbitGasError: "Orbit链上发生意外错误。Gas应该是免费的 - 这表明系统出现问题。",
+    contractExecutionFailed: "合约执行失败。操作无法完成。",
+    userRejected: "交易在您的钱包中被拒绝。",
+    insufficientBalance: "此操作余额不足。",
+    approvalFailed: "代币授权失败。请重试。",
+    networkError: "网络连接错误。请检查您的连接并重试。",
+    // 操作
+    retry: "重试",
+    contactSupport: "联系支持",
+    confirmBuy: "确认购买",
+    confirmSell: "确认出售",
+    done: "完成",
+    cancel: "取消",
+    // 模态框标题
+    buyViaBridge: "通过桥接购买",
+    sellViaBridge: "通过桥接出售",
+    transactionDetails: "交易详情",
+    bridgeOperation: "桥接操作",
+    // 帮助文本
+    checkBalanceRetry: "请确保您的钱包中有足够的USDC，然后重试。",
+    checkWalletBalances: "您的交易可能仍会完成。在重试之前请检查您的钱包余额。",
+    technicalDetails: "技术详情",
+    failedAt: "失败于",
+    needHelp: "需要帮助？",
+    // 状态
+    processing: "处理中...",
+    contractsNotDeployed: "桥接合约尚未部署 - 这是交易流程的预览"
   }
 };

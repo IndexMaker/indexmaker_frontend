@@ -37,7 +37,7 @@ function getBrackets(status: string): any {
     solidarity: 0.055,
     annualExempt: 1000,
     cryptoHoldFree: 1,
-    cryptoSmallExempt: 600,
+    cryptoSmallExempt: 1000, // Updated from €600 to €1,000 (tax year 2024+)
   };
 }
 
@@ -70,7 +70,7 @@ function computeTaxable(p: TaxableParams) {
   if (isCrypto) {
     const holdFreeYears = brackets.cryptoHoldFree ?? 1;
     if (isLong && years >= holdFreeYears) return { tax: 0, niit: 0 };
-    const small = brackets.cryptoSmallExempt ?? 600;
+    const small = brackets.cryptoSmallExempt ?? 1000; // €1,000 exemption (tax year 2024+)
     if (taxableAmount <= small) return { tax: 0, niit: 0 };
     const base = Math.max(0, agiExcl - brackets.stdDed);
     const t = taxIncrement(brackets.ordinary.uppers, brackets.ordinary.rates, base, taxableAmount);
@@ -101,7 +101,7 @@ export const germany: any = {
   statuses,
   getBrackets,
   setups,
-  cryptoNote: 'Crypto tax-free >1y; else progressive with EUR 600 cliff.',
+  cryptoNote: 'Crypto tax-free after 1 year holding; short-term gains taxed progressively (14-45% + 5.5% solidarity surcharge) with EUR 1,000 cliff exemption (tax year 2024+).',
   computeTaxable,
   computeDeferredFull,
   computeSetupTax: (setup: any, params: any) => {

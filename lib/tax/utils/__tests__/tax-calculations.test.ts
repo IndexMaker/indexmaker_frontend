@@ -89,7 +89,10 @@ describe('taxIncrement', () => {
   it('should handle negative base taxable income', () => {
     const baseTaxable = -1000;
     const delta = 5000;
-    const expectedIncrement = 5000 * 0.1; // 500
+    // When baseTaxable is negative, it's treated as 0
+    // x0 = max(0, -1000) = 0, x1 = max(0, -1000 + 5000) = 4000
+    // Tax on income 0 to 4000 = 4000 * 0.1 = 400
+    const expectedIncrement = 4000 * 0.1; // 400
     expect(taxIncrement(uppers, rates, baseTaxable, delta)).toBe(expectedIncrement);
   });
 });
@@ -239,7 +242,203 @@ describe('createDefaultComputeFunctions', () => {
     };
 
     const result = computeTaxable(params);
-    
+
     expect(result.niit).toBe(0);
+  });
+});
+
+// Country-specific tests for tax data accuracy (Story 3.7)
+describe('Country-specific tax calculations', () => {
+  describe('Germany crypto tax', () => {
+    // Import Germany module
+    const { germany } = require('../../germany');
+
+    it('should have updated crypto small exemption of €1,000 (2024+)', () => {
+      const brackets = germany.getBrackets('single');
+      expect(brackets.cryptoSmallExempt).toBe(1000);
+    });
+
+    it('should have 1-year crypto hold exemption', () => {
+      const brackets = germany.getBrackets('single');
+      expect(brackets.cryptoHoldFree).toBe(1);
+    });
+
+    it('should return zero tax for crypto held over 1 year', () => {
+      const brackets = germany.getBrackets('single');
+      const result = germany.computeTaxable({
+        country: 'germany',
+        status: 'single',
+        agiExcl: 50000,
+        taxableAmount: 10000,
+        isLong: true,
+        brackets,
+        isCrypto: true,
+        years: 1.5, // Held for 1.5 years
+      });
+      expect(result.tax).toBe(0);
+      expect(result.niit).toBe(0);
+    });
+
+    it('should return zero tax for crypto gains under €1,000 exemption', () => {
+      const brackets = germany.getBrackets('single');
+      const result = germany.computeTaxable({
+        country: 'germany',
+        status: 'single',
+        agiExcl: 50000,
+        taxableAmount: 800, // Under €1,000 exemption
+        isLong: false,
+        brackets,
+        isCrypto: true,
+        years: 0.5, // Short-term
+      });
+      expect(result.tax).toBe(0);
+      expect(result.niit).toBe(0);
+    });
+
+    it('should tax crypto gains over €1,000 at progressive rates', () => {
+      const brackets = germany.getBrackets('single');
+      const result = germany.computeTaxable({
+        country: 'germany',
+        status: 'single',
+        agiExcl: 50000,
+        taxableAmount: 5000, // Over €1,000 exemption
+        isLong: false,
+        brackets,
+        isCrypto: true,
+        years: 0.5, // Short-term
+      });
+      expect(result.tax).toBeGreaterThan(0);
+    });
+  });
+
+  describe('UK capital gains tax', () => {
+    const { uk } = require('../../uk');
+
+    it('should have £3,000 annual CGT exemption for 2025/26', () => {
+      const brackets = uk.getBrackets();
+      expect(brackets.annualExempt).toBe(3000);
+    });
+
+    it('should have 18% basic rate and 24% higher rate', () => {
+      const brackets = uk.getBrackets();
+      expect(brackets.capGainRateBasic).toBe(0.18);
+      expect(brackets.capGainRateHigher).toBe(0.24);
+    });
+
+    it('should return zero tax for gains under £3,000 allowance', () => {
+      const brackets = uk.getBrackets();
+      const result = uk.computeTaxable({
+        country: 'uk',
+        status: 'single',
+        agiExcl: 30000,
+        taxableAmount: 2500, // Under £3,000 allowance
+        isLong: true,
+        brackets,
+        isCrypto: false,
+        years: 2,
+      });
+      expect(result.tax).toBe(0);
+    });
+
+    it('should tax gains over £3,000 at appropriate rates', () => {
+      const brackets = uk.getBrackets();
+      const result = uk.computeTaxable({
+        country: 'uk',
+        status: 'single',
+        agiExcl: 30000, // Basic rate taxpayer
+        taxableAmount: 10000, // £7,000 taxable after £3,000 allowance
+        isLong: true,
+        brackets,
+        isCrypto: false,
+        years: 2,
+      });
+      // Expected: £7,000 * 18% = £1,260
+      expect(result.tax).toBe(7000 * 0.18);
+    });
+  });
+
+  describe('India crypto tax', () => {
+    const { india } = require('../../india');
+
+    it('should tax crypto at flat 31.2% (30% + 4% cess)', () => {
+      const brackets = india.getBrackets('single');
+      const result = india.computeTaxable({
+        country: 'india',
+        status: 'single',
+        agiExcl: 500000,
+        taxableAmount: 100000, // ₹1 lakh crypto gain
+        isLong: false,
+        brackets,
+        isCrypto: true,
+        years: 0.5,
+      });
+      // Expected: ₹100,000 * 31.2% = ₹31,200
+      expect(result.tax).toBe(100000 * 0.312);
+    });
+
+    it('should apply 1% TDS penalty for crypto over ₹50,000', () => {
+      const brackets = india.getBrackets('single');
+      const result = india.computeTaxable({
+        country: 'india',
+        status: 'single',
+        agiExcl: 500000,
+        taxableAmount: 100000, // Over ₹50,000 threshold
+        isLong: false,
+        brackets,
+        isCrypto: true,
+        years: 0.5,
+      });
+      expect(result.penalty).toBe(100000 * 0.01); // 1% TDS
+    });
+  });
+
+  describe('USA retirement account limits', () => {
+    const { usa } = require('../../usa');
+
+    it('should have correct 2026 IRA contribution limit in description', () => {
+      const iraSetup = usa.setups.find((s: any) => s.name === 'Traditional IRA');
+      expect(iraSetup.fees).toContain('7,500');
+    });
+
+    it('should have correct 2026 401k contribution limit in description', () => {
+      const setup = usa.setups.find((s: any) => s.name === '401k Traditional');
+      expect(setup.fees).toContain('24,500');
+    });
+
+    it('should have 10% early withdrawal penalty', () => {
+      const iraSetup = usa.setups.find((s: any) => s.name === 'Traditional IRA');
+      expect(iraSetup.penaltyRate).toBe(0.1);
+    });
+
+    it('should have 59.5 threshold age for penalty-free withdrawal', () => {
+      const iraSetup = usa.setups.find((s: any) => s.name === 'Roth IRA');
+      expect(iraSetup.thresholdAge).toBe(59.5);
+    });
+  });
+
+  describe('Australia CGT discount', () => {
+    const { australia } = require('../../australia');
+
+    it('should have 50% CGT discount for holdings over 12 months', () => {
+      const brackets = australia.getBrackets();
+      expect(brackets.capGainDiscount).toBe(0.5);
+    });
+
+    it('should apply 50% discount for long-term gains', () => {
+      const brackets = australia.getBrackets();
+      const result = australia.computeTaxable({
+        country: 'australia',
+        status: 'single',
+        agiExcl: 50000,
+        taxableAmount: 20000,
+        isLong: true, // Over 12 months
+        brackets,
+        isCrypto: true,
+        years: 1.5,
+      });
+      // With 50% discount, only $10,000 is taxable
+      // Tax should be calculated on $10,000 at marginal rates
+      expect(result.tax).toBeLessThan(20000 * 0.45); // Should be less than max rate on full amount
+    });
   });
 });

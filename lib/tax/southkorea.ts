@@ -16,7 +16,7 @@ function getBrackets(status: string): Brackets {
     stdDed: 0, // No standard deduction mentioned
     niitThresh: 0, // No NIIT in South Korea
     exemptThreshold: 2500000, // KRW 2.5M threshold
-    postponedUntil: '2028-01-01', // Capital gains tax postponed until 2028
+    postponedUntil: '2026-01-01', // Capital gains tax postponed to 2026
     irpBenefits: true, // Individual Retirement Pension (IRP) benefits
     isaBenefits: true, // Individual Savings Account (ISA) benefits
   });
@@ -56,7 +56,7 @@ export const southkorea: any = {
   name: 'South Korea',
   currency: 'KRW', // South Korean Won
   statuses,
-  cryptoNote: 'No capital gains tax until 2028 (postponed); gains taxed as other income at 6-45% if over KRW 2.5m threshold starting 2028 (brackets: 6% KRW 14m-50m, 15% 50m-88m, 24% 88m-150m, 35% 150m-300m, 38% 300m-500m, 40% 500m-1b, 45% >1b). Staking/mining taxed as income at progressive rates 6-45%.',
+  cryptoNote: '20% tax on gains over KRW 2.5M (postponed to 2026 from original 2022 implementation). Staking/mining taxed as income at progressive rates 6-45%.',
   setups,
   getBrackets,
   computeTaxable,

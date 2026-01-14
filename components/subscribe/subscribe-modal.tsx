@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -55,9 +55,9 @@ export function SubscribeModal({
         <div className="container mx-auto px-4 py-8">
           {/* Header Section */}
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold mb-4 text-primary">
+            <DialogTitle className="text-3xl font-bold mb-4 text-primary">
               Subscribe to IndexMaker Insights
-            </h2>
+            </DialogTitle>
             <p className="text-lg mb-6 text-secondary text-left">
               {t("subscribe.description") ||
                 "Receive direct updates with the latest observations on markets from our senior investment professionals and discover the latest opportunities across equities, bonds and specialized assets."}

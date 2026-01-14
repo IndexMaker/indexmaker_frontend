@@ -153,7 +153,7 @@ export const india: any = {
   currency: 'INR',
   statuses: ['single', 'married'],
   cryptoNote:
-    'Crypto gains are generally treated as capital gains (12.5% LTCG over ₹1.25 lakh exemption) plus 4% cess.',
+    'Crypto gains taxed at flat 30% + 4% cess (31.2% total). No deductions allowed except acquisition cost. 1% TDS on transfers over ₹50,000. Losses cannot be offset against other income.',
   setups,
   getBrackets,
   computeTaxable,

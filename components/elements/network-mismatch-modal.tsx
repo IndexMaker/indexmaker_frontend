@@ -1,5 +1,21 @@
 import { CustomButton } from "../ui/custom-button";
 
+// Helper function to get network name from chain ID
+const getNetworkName = (chainId: string): string => {
+  switch (chainId) {
+    case "0x1":
+      return "Ethereum";
+    case "0x2105":
+      return "Base";
+    case "0xa4b1":
+      return "Arbitrum One";
+    case "0x6A11E3D":
+      return "IndexMaker Chain";
+    default:
+      return "Unknown";
+  }
+};
+
 // Modal Component
 export const NetworkMismatchModal = ({
     isOpen,
@@ -16,13 +32,8 @@ export const NetworkMismatchModal = ({
   }) => {
     if (!isOpen) return null;
   
-    const walletNetwork =
-      walletChainId === "0x1"
-        ? "Ethereum"
-        : walletChainId === "0x2105"
-        ? "Base"
-        : "Unknown";
-    const desiredNetworkName = desiredNetwork === "0x1" ? "Ethereum" : "Base";
+    const walletNetwork = getNetworkName(walletChainId);
+    const desiredNetworkName = getNetworkName(desiredNetwork);
   
     return (
       <div className="absolute z-10 top-[70px] right-[50px] max-w-[400px] rounded-md">
@@ -36,7 +47,7 @@ export const NetworkMismatchModal = ({
           <div className="flex flex-col gap-8">
             <div className="flex gap-2 flex-col">
               <p className="text-[16px] text-primary">
-                You’re currently connected to the wrong chain.
+                You're currently connected to the wrong chain.
               </p>
               <p className="text-[14px] text-secondary">
                 Current wallet is connected to {walletNetwork}.

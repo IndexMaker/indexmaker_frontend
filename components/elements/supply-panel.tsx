@@ -1,5 +1,21 @@
 "use client";
 
+/**
+ * SupplyPanel - Buy/Sell ITP tokens via bundler
+ *
+ * ARBITRUM INTEGRATION (Story 3.2):
+ * =================================
+ * Balance validation using Arbitrum utilities is wired via:
+ * - validateArbitrumBalance() - checks USDC balance on Arbitrum chain
+ * - Uses hasSufficientUsdcBalance from '@/lib/contracts/balance-utils'
+ *
+ * When Arbitrum buy/sell contracts are deployed:
+ * 1. handleSupply() - Add chain detection for Arbitrum vs Base flow
+ * 2. Sell button - Enable when Keeper mechanism is ready (Epic 5)
+ *
+ * See: docs/ARBITRUM_INTEGRATION.md for full integration guide
+ */
+
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/language-context";
 import { useQuoteContext } from "@/contexts/quote-context";
@@ -21,7 +37,7 @@ import { selectLatestMintInvoice } from "@/redux/mintInvoicesSlice";
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useMediaQuery } from "react-responsive";
-import { formatEther, formatUnits } from "viem";
+import { formatEther, formatUnits, parseUnits } from "viem";
 import USDC from "../../public/logos/usd-coin.png";
 import IndexMaker from "../icons/indexmaker";
 import Info from "../icons/info";
@@ -30,6 +46,14 @@ import AnimatedPrice from "./animate-price";
 import CustomTooltip from "./custom-tooltip";
 import { TransactionConfirmModal } from "./transaction-modal";
 import { format } from "date-fns";
+import { BridgeTab } from "./bridge-tab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Arbitrum balance validation utilities (Story 3.2)
+import {
+  hasSufficientUsdcBalance,
+  USDC_DECIMALS,
+} from "@/lib/contracts/balance-utils";
+import { ARBITRUM_CHAIN_ID } from "@/lib/contracts/addresses";
 
 interface SupplyPanelProps {
   vaultIds: VaultInfo[];
@@ -82,8 +106,66 @@ export function SupplyPanel({
   );
   const [balances, setBalances] = useState<{ [key: string]: number }>({});
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("buy");
+  const [arbitrumBalanceError, setArbitrumBalanceError] = useState<string | null>(null);
 
   const dispatch = useDispatch();
+
+  /**
+   * Validate USDC balance on Arbitrum before proceeding with transaction.
+   * This is the wired implementation of Task 4.2 from Story 3.2.
+   *
+   * @param requiredAmount - Amount of USDC required (human-readable string)
+   * @returns true if balance is sufficient, false otherwise
+   */
+  const validateArbitrumBalance = useCallback(
+    async (requiredAmount: string): Promise<boolean> => {
+      // Only validate on Arbitrum chain
+      // currentChainId is a hex string (e.g., "0xa4b1"), ARBITRUM_CHAIN_ID is a number
+      const chainIdNum = currentChainId ? parseInt(currentChainId, 16) : null;
+      if (chainIdNum !== ARBITRUM_CHAIN_ID) {
+        setArbitrumBalanceError(null);
+        return true; // Skip Arbitrum validation on other chains
+      }
+
+      if (!wallet?.accounts?.[0]?.address) {
+        setArbitrumBalanceError("Wallet not connected");
+        return false;
+      }
+
+      try {
+        if (!currentChainId) {
+          setArbitrumBalanceError("Chain not detected");
+          return false;
+        }
+        const client = getViemClient(currentChainId);
+        const amountWei = parseUnits(requiredAmount || "0", USDC_DECIMALS);
+        const userAddress = wallet.accounts[0].address as `0x${string}`;
+
+        // Type assertion needed due to viem version differences
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result = await hasSufficientUsdcBalance(client as any, userAddress, amountWei);
+
+        if (!result.isSufficient) {
+          const shortfallFormatted = formatUnits(result.shortfall, USDC_DECIMALS);
+          setArbitrumBalanceError(
+            `Insufficient USDC. You need ${shortfallFormatted} more USDC.`
+          );
+          setInsufficientValue(true);
+          return false;
+        }
+
+        setArbitrumBalanceError(null);
+        return true;
+      } catch (error) {
+        console.error("[SupplyPanel] Arbitrum balance validation error:", error);
+        // Fall back to local balance check if Arbitrum validation fails
+        setArbitrumBalanceError(null);
+        return true;
+      }
+    },
+    [currentChainId, wallet]
+  );
 
   useEffect(() => {
     const _transactions: TransactionData[] = vaults.map((vault) => {
@@ -168,8 +250,23 @@ export function SupplyPanel({
     return () => clearInterval(id);
   }, [wallet, currentChainId, pollInterval]);
 
-  const handleSupply = () => {
-    // In a real app, this would handle the supply transaction
+  const handleSupply = async () => {
+    // Calculate total USDC amount from all selected vaults
+    const totalAmount = selectedVault.reduce((sum, vault) => {
+      const amount = parseFloat(vault.amount) || 0;
+      return sum + amount;
+    }, 0);
+
+    // Validate Arbitrum balance before proceeding (Story 3.2 - AC #3)
+    // currentChainId is a hex string, ARBITRUM_CHAIN_ID is a number
+    const chainIdNum = currentChainId ? parseInt(currentChainId, 16) : null;
+    if (chainIdNum === ARBITRUM_CHAIN_ID) {
+      const isValid = await validateArbitrumBalance(totalAmount.toString());
+      if (!isValid) {
+        return; // Error message already set by validateArbitrumBalance
+      }
+    }
+
     setConfrimModalOpen(true);
   };
 
@@ -266,7 +363,25 @@ export function SupplyPanel({
               <NavigationAlert className="h-4 w-4 text-primary flex lg:hidden cursor-pointer" />
             </div>
           </div>
-          <div className="flex flex-col">
+          
+          <Tabs defaultValue="buy" onValueChange={setActiveTab} className="w-full flex-1 flex flex-col">
+            <TabsList className="w-full rounded-none border-b border-accent bg-transparent p-0">
+              <TabsTrigger 
+                value="buy" 
+                className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent py-3"
+              >
+                Buy
+              </TabsTrigger>
+              <TabsTrigger 
+                value="bridge" 
+                className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent py-3"
+              >
+                Bridge
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="buy" className="flex-1 overflow-y-auto m-0 pb-[120px]">
+              <div className="flex flex-col">
             {vaults.map((vault, index) => {
               return (
                 <div key={vault.name + index}>
@@ -393,7 +508,7 @@ export function SupplyPanel({
                         <div className="flex justify-end mt-1 gap-1">
                           <Info color="#c73e59f2" className="w-4 h-4" />
                           <span className="text-xs text-secondary">
-                            {t("common.insufficientValue")}
+                            {arbitrumBalanceError || t("common.insufficientValue")}
                           </span>
                         </div>
                       )}
@@ -506,7 +621,13 @@ export function SupplyPanel({
                 </div>
               );
             })}
-          </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="bridge" className="flex-1 m-0">
+              <BridgeTab />
+            </TabsContent>
+          </Tabs>
 
           {/* Previous Mint Invoices Section - Commented Out */}
           {/* <div className="flex flex-col p-4 border-t border-accent">
@@ -586,20 +707,22 @@ export function SupplyPanel({
             })()}
           </div> */}
 
-          {/* Footer */}
-          {!wallet ? (
-            <div className="p-4 flex flex-col gap-2 border-t border-accent bottom-[50px] absolute w-full">
-              <Button
-                onClick={connectWallet}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[14px] cursor-pointer"
-              >
-                {t("common.connectWallet")}
-              </Button>
-            </div>
-          ) : (
-            // Connected & Whitelisted
-            <div className="bottom-[50px] absolute w-full p-2 border-t border-accent">
-              <div className="p-0 flex flex-col">
+          {/* Footer - Only show on Buy tab */}
+          {activeTab === "buy" && (
+            <>
+              {!wallet ? (
+                <div className="p-4 flex flex-col gap-2 border-t border-accent bottom-[50px] absolute w-full">
+                  <Button
+                    onClick={connectWallet}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[14px] cursor-pointer"
+                  >
+                    {t("common.connectWallet")}
+                  </Button>
+                </div>
+              ) : (
+                // Connected & Whitelisted
+                <div className="bottom-[50px] absolute w-full p-2 border-t border-accent">
+                  <div className="p-0 flex flex-col">
                 <span className="text-yellow-500 text-[11px] text-right">
                   ⚠️Withdraw and Invest are pause until DAO is formed.
                 </span>
@@ -673,6 +796,8 @@ export function SupplyPanel({
                 </div>
               </div>
             </div>
+              )}
+            </>
           )}
         </div>
       </div>

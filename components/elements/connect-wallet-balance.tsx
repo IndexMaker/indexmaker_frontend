@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { ethers } from "ethers";
 import { useWallet } from "@/contexts/wallet-context";
 import WalletHoldingsTable, { ITPBalance } from "./wallet-assets";
@@ -47,8 +47,10 @@ export default function ConnectedWalletBalances({
   explorerBaseUrl = "https://basescan.org",
   className,
 }: ConnectedWalletBalancesProps) {
-  const { wallet, address, isConnected } = useWallet();
+  const { wallet, address, isConnected, chainId } = useWallet();
   const [supplyPositions, setSupplyPositions] = useState<any[]>([]);
+  // Track chain ID at start of fetch to detect mid-request changes
+  const fetchChainIdRef = useRef<string | null>(null);
 
   // 2. Select Prices from Redux
   const { prices: reduxPrices } = useSelector(
@@ -100,18 +102,24 @@ export default function ConnectedWalletBalances({
   useEffect(() => {
     if (wallet?.accounts) {
       let intervalId: NodeJS.Timeout;
+      let isMounted = true;
       setSupplyPositions([]);
+
       const _fetchDepositTransaction = async (_indexId: number) => {
         try {
           const response = await fetchDepositTransactionData(
             -1,
             wallet.accounts[0]?.address
           );
-          const data = response;
-          setSupplyPositions(data);
+          // Only update state if component is still mounted
+          if (isMounted) {
+            setSupplyPositions(response);
+          }
         } catch (error) {
-          console.error("Error deposit transaction data:", error);
-        } finally {
+          // Only log if component is still mounted (avoid logging after unmount)
+          if (isMounted) {
+            console.error("Error deposit transaction data:", error);
+          }
         }
       };
 
@@ -123,8 +131,9 @@ export default function ConnectedWalletBalances({
         _fetchDepositTransaction(-1);
       }, 10000);
 
-      // Cleanup function to clear interval when component unmounts or dependencies change
+      // Cleanup function to clear interval and prevent state updates after unmount
       return () => {
+        isMounted = false;
         if (intervalId) {
           clearInterval(intervalId);
         }
@@ -133,7 +142,10 @@ export default function ConnectedWalletBalances({
   }, [wallet]);
 
   const fetchBalances = useCallback(async () => {
-    if (!provider || !address) return;
+    if (!provider || !address || !chainId) return;
+
+    // Store the current chain ID at the start of the fetch
+    fetchChainIdRef.current = chainId;
 
     setLoading(true);
     try {
@@ -154,8 +166,15 @@ export default function ConnectedWalletBalances({
           provider.getBalance(address),
           provider.getNetwork(),
         ]);
+
+        // Check if chain changed during the request
+        if (chainId !== fetchChainIdRef.current) {
+          // Chain changed mid-request, abort silently
+          return;
+        }
+
         const symbol = nativeSymbolFromChainId(Number(net.chainId));
-        
+
         // Resolve Price for Native
         const price = getPrice(symbol, "native");
 
@@ -174,71 +193,141 @@ export default function ConnectedWalletBalances({
       const erc20s = normalized.filter((a) => a !== "native");
       await Promise.all(
         erc20s.map(async (addrLower) => {
-          const contract = new ethers.Contract(addrLower, ERC20_ABI, provider);
-          // Fetch metadata first to know decimals
-          const [decimals, symbol, name] = await Promise.all([
-            contract.decimals().catch(() => 18),
-            contract.symbol().catch(() => "UNK"),
-            contract.name().catch(() => undefined),
-          ]);
-          const bal = await contract.balanceOf(address);
-          
-          // Resolve Price using Symbol or Address
-          const price = getPrice(symbol, addrLower);
+          try {
+            const contract = new ethers.Contract(addrLower, ERC20_ABI, provider);
+            // Fetch metadata first to know decimals
+            const [decimals, symbol, name] = await Promise.all([
+              contract.decimals().catch(() => 18),
+              contract.symbol().catch(() => "UNK"),
+              contract.name().catch(() => undefined),
+            ]);
 
-          results.push({
-            address: ethers.getAddress(addrLower),
-            symbol,
-            name,
-            logoUrl: logos[addrLower],
-            balanceRaw: bal.toString(),
-            decimals: Number(decimals),
-            usdPrice: price,
-          });
+            // Check if chain changed before making balance call
+            if (chainId !== fetchChainIdRef.current) {
+              return; // Skip this token, chain changed
+            }
+
+            const bal = await contract.balanceOf(address);
+
+            // Resolve Price using Symbol or Address
+            const price = getPrice(symbol, addrLower);
+
+            results.push({
+              address: ethers.getAddress(addrLower),
+              symbol,
+              name,
+              logoUrl: logos[addrLower],
+              balanceRaw: bal.toString(),
+              decimals: Number(decimals),
+              usdPrice: price,
+            });
+          } catch (tokenError: any) {
+            // Handle specific error codes gracefully
+            const errorCode = tokenError?.code;
+
+            if (errorCode === "NETWORK_ERROR") {
+              // Network changed during request - ignore silently
+              return;
+            }
+
+            if (errorCode === "BAD_DATA") {
+              // Contract doesn't exist on this chain or returned empty data (0x)
+              // This happens when querying a contract on the wrong chain
+              return;
+            }
+
+            if (errorCode === "CALL_EXCEPTION") {
+              // Contract call failed - might not exist on this chain
+              return;
+            }
+
+            // Log unexpected errors but don't throw
+            console.debug(`Failed to fetch balance for ${addrLower}:`, tokenError?.message);
+          }
         })
       );
 
-      setBalances(results);
+      // Only update state if chain hasn't changed during entire fetch
+      if (chainId === fetchChainIdRef.current) {
+        setBalances(results);
+        setError(undefined);
+      }
     } catch (e: any) {
-      console.error("Failed to fetch balances", e);
-      setError(e?.message ?? "Failed to fetch balances");
+      // Handle top-level errors
+      const errorCode = e?.code;
+
+      if (errorCode === "NETWORK_ERROR") {
+        // Chain changed during request - ignore silently
+        return;
+      }
+
+      if (errorCode === "BAD_DATA") {
+        // Empty response from wrong chain - ignore silently
+        return;
+      }
+
+      // Only log actual errors, not chain-switching artifacts
+      console.debug("Failed to fetch balances:", e?.message);
+
+      // Only set error if it's a real error, not chain switching
+      if (chainId === fetchChainIdRef.current) {
+        setError(e?.message ?? "Failed to fetch balances");
+      }
     } finally {
       setLoading(false);
     }
-  }, [provider, address, normalized, logos, getPrice]); 
+  }, [provider, address, normalized, logos, getPrice, chainId]); 
+
+  // Clear balances and re-fetch when chain changes
+  useEffect(() => {
+    // Clear stale balances when chain changes
+    setBalances([]);
+    setError(undefined);
+  }, [chainId]);
 
   // Initial + Polling
   // Re-run if Redux prices change (via getPrice dependency)
+  // Debounce fetch on chain changes to avoid rapid requests
   useEffect(() => {
-    fetchBalances();
     if (!isConnected || !provider || !address) return;
+
+    // Debounce the initial fetch to handle rapid chain changes
+    const debounceTimeout = setTimeout(() => {
+      fetchBalances();
+    }, 100);
+
     const id = setInterval(fetchBalances, pollInterval);
-    return () => clearInterval(id);
-  }, [fetchBalances, pollInterval, isConnected, provider, address]);
+
+    return () => {
+      clearTimeout(debounceTimeout);
+      clearInterval(id);
+    };
+  }, [fetchBalances, pollInterval, isConnected, provider, address, chainId]);
 
   return (
     <WalletHoldingsTable
       tokens={balances}
       itps={supplyPositions}
-      hideZeroBalances={true}
-      explorerBaseUrl="https://basescan.org"
+      hideZeroBalances={hideZeroBalances}
+      explorerBaseUrl={explorerBaseUrl}
     />
   );
 }
 
 function nativeSymbolFromChainId(chainId: number): string {
-  // Basic mapping; extend as needed
   switch (chainId) {
     case 1:
       return "ETH";
     case 8453:
       return "ETH"; // Base uses ETH as gas
     case 42161:
-      return "ETH";
+      return "ETH"; // Arbitrum One
     case 137:
       return "MATIC";
     case 10:
       return "ETH"; // OP Mainnet
+    case 111222333:
+      return "IND"; // IndexMaker Orbit Chain
     default:
       return "ETH";
   }

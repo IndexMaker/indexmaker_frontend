@@ -104,7 +104,7 @@ export const italy: any = {
   name: 'Italy',
   currency: 'EUR',
   statuses: ['single', 'married'],
-  cryptoNote: 'Capital gains are subject to 26% flat tax.',
+  cryptoNote: 'Capital gains taxed at 26% flat rate on gains above €2,000 annual threshold. No holding period distinctions.',
   setups,
   getBrackets,
   computeTaxable,

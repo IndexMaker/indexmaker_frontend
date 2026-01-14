@@ -156,7 +156,15 @@ export function Header({
       const chainId = wallet.chains[0].id;
       dispatch(setCurrentChainId(chainId));
 
-      if (chainId !== selectedNetwork && chainId !== "0x2105") {
+      // Check if connected to a supported Arbitrum chain
+      const isArbitrumChain = chainId === "0xa4b1" || chainId === "0x6A11E3D";
+      
+      // If not on Arbitrum chains, auto-switch to Arbitrum Mainnet
+      if (!isArbitrumChain) {
+        // Set selected network to Arbitrum if not already
+        if (selectedNetwork !== "0xa4b1" && selectedNetwork !== "0x6A11E3D") {
+          dispatch(setSelectedNetwork("0xa4b1"));
+        }
         setShowModal(true);
       } else {
         setShowModal(false);
@@ -206,13 +214,12 @@ export function Header({
 
       dispatch(setSelectedNetwork(chainId));
 
+      // Automatically switch wallet to selected network without confirmation
       if (currentChainId !== chainId) {
-        setShowModal(true);
-      } else {
-        setShowModal(false);
+        await switchNetwork(chainId);
       }
     },
-    [isConnected, currentChainId, dispatch]
+    [isConnected, currentChainId, dispatch, switchNetwork]
   );
 
   const handleSwitchWalletNetwork = async () => {

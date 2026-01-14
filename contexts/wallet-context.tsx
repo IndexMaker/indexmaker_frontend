@@ -101,40 +101,12 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Initialize wallet and handle auto-connection
   useEffect(() => {
-    let unsubscribe: any;
-    let intervalId: NodeJS.Timeout | undefined;
+    let unsubscribe: (() => void) | undefined;
 
     const init = async () => {
       try {
-        // Check for previously connected wallet
-        const lastWalletLabel = localStorage.getItem(LAST_WALLET_KEY);
-        const initialWallets = onboard.state.get().wallets;
-
-        if (initialWallets.length > 0) {
-          updateWalletState(initialWallets[0]);
-          setIsInitialized(true);
-          return;
-        }
-
-        // Attempt auto-connection if a wallet was previously connected
-        if (lastWalletLabel) {
-          try {
-            const wallets = await onboard.connectWallet({
-              autoSelect: { label: lastWalletLabel, disableModals: true },
-            });
-            if (wallets.length > 0) {
-              updateWalletState(wallets[0]);
-              setIsInitialized(true);
-              return;
-            }
-          } catch (error) {
-            console.warn("Auto-connection failed:", error);
-            localStorage.removeItem(LAST_WALLET_KEY);
-          }
-        }
-
-        // Subscribe to wallet changes
-        unsubscribe = onboard.state.select("wallets").subscribe((wallets) => {
+        // ALWAYS subscribe to wallet changes first - this ensures we catch all updates
+        const subscription = onboard.state.select("wallets").subscribe((wallets) => {
           const newWallet = wallets[0] || null;
           setWallet(
             (newWallet
@@ -157,6 +129,31 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
             localStorage.removeItem(LAST_WALLET_KEY);
           }
         });
+        unsubscribe = () => subscription.unsubscribe();
+
+        // Check for already connected wallet
+        const initialWallets = onboard.state.get().wallets;
+        if (initialWallets.length > 0) {
+          updateWalletState(initialWallets[0]);
+          setIsInitialized(true);
+          return;
+        }
+
+        // Attempt auto-connection if a wallet was previously connected
+        const lastWalletLabel = localStorage.getItem(LAST_WALLET_KEY);
+        if (lastWalletLabel) {
+          try {
+            const wallets = await onboard.connectWallet({
+              autoSelect: { label: lastWalletLabel, disableModals: true },
+            });
+            if (wallets.length > 0) {
+              updateWalletState(wallets[0]);
+            }
+          } catch (error) {
+            console.warn("Auto-connection failed:", error);
+            localStorage.removeItem(LAST_WALLET_KEY);
+          }
+        }
 
         setIsInitialized(true);
       } catch (error) {
@@ -168,8 +165,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     init();
 
     return () => {
-      // unsubscribe?.();
-      if (intervalId) clearInterval(intervalId);
+      unsubscribe?.();
     };
   }, []);
 
@@ -231,15 +227,36 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("Provider disconnected");
       disconnectWallet();
     };
+
     const handleAccountsChanged = (accounts: string[]) => {
       if (accounts.length === 0) {
         console.log("No accounts available, disconnecting");
         disconnectWallet();
+      } else {
+        // User switched accounts - update wallet state with new account
+        console.log("Account changed to:", accounts[0]);
+        setWallet((prev) =>
+          prev
+            ? {
+                ...prev,
+                accounts: accounts.map((addr) => ({
+                  address: addr,
+                  // ENS and balance will be re-fetched by web3-onboard
+                })),
+              }
+            : null
+        );
       }
+    };
+
+    const handleChainChanged = (chainIdHex: string) => {
+      console.log("Chain changed to:", chainIdHex);
+      setChainId(chainIdHex);
     };
 
     wallet.rawProvider.on?.("disconnect", handleDisconnect);
     wallet.rawProvider.on?.("accountsChanged", handleAccountsChanged);
+    wallet.rawProvider.on?.("chainChanged", handleChainChanged);
 
     const intervalId = setInterval(checkConnection, CHECK_INTERVAL);
 
@@ -249,6 +266,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
         "accountsChanged",
         handleAccountsChanged
       );
+      wallet.rawProvider.removeListener?.("chainChanged", handleChainChanged);
       clearInterval(intervalId);
     };
   }, [isConnected, wallet, checkConnection, disconnectWallet]);
