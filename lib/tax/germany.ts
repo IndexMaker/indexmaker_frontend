@@ -180,8 +180,17 @@ export const germany: any = {
       // For deferred accounts, show tax as percentage of total withdrawal, not just gains
       taxPct = withdrawn > 0 ? (taxOnGainOnly / withdrawn) * 100 : 0;
     } else {
-      // For taxable accounts, show tax as percentage of gains
-      taxPct = gain > 0 ? (taxOnGainOnly / gain) * 100 : 0;
+      // For taxable accounts, use taxable gain for percentage calculation
+      // Non-crypto: has annual exemption (€1,000 single, €2,000 married)
+      // Crypto: €1,000 cliff exemption (if over, full amount taxed; if under, no tax)
+      let taxableGain = gain;
+      if (!isCrypto) {
+        let exempt = brackets.annualExempt ?? 0;
+        if (status === 'married') exempt *= 2;
+        taxableGain = Math.max(0, gain - exempt);
+      }
+      // For crypto, if under €1,000 cliff, tax is 0, so taxPct should also be 0
+      taxPct = taxableGain > 0 ? (taxOnGainOnly / taxableGain) * 100 : 0;
     }
 
     return {

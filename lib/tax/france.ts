@@ -148,6 +148,7 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
   let niit = 0;
   let penalty = 0;
   let taxOnGainOnly = 0;
+  let effectiveGainBase = gain; // Base for calculating tax percentage
 
   const name = setup.name.toLowerCase();
 
@@ -167,6 +168,7 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
     tax = irRate * taxableGain;
     niit = 0.172 * taxableGain;
     taxOnGainOnly = tax + niit;
+    effectiveGainBase = taxableGain; // Use taxable gain for percentage
   } else if (name === 'per (deductible)') {
     const added = initial;
     const baseIr = taxIncrement(brackets.ordinary.uppers, brackets.ordinary.rates, agiExcl, added);
@@ -185,9 +187,10 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
     tax = 0.128 * taxableGain;
     niit = 0.172 * taxableGain;
     taxOnGainOnly = tax + niit;
+    effectiveGainBase = taxableGain; // Use taxable gain for percentage
   }
 
-  const taxPct = gain > 0 ? (taxOnGainOnly / gain) * 100 : 0;
+  const taxPct = effectiveGainBase > 0 ? (taxOnGainOnly / effectiveGainBase) * 100 : 0;
   const totalReported = tax + niit + penalty;
 
   return { tax: totalReported, niit, penalty, taxPct };

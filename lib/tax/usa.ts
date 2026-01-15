@@ -121,11 +121,11 @@ function computeTaxable(p: TaxableParams): { readonly tax: number; readonly niit
   let tax = 0;
   let niit = 0;
 
-  if (isLong && !isCrypto && lt) {
-    // Long-term capital gains
+  if (isLong && lt) {
+    // Long-term capital gains (applies to both stocks AND crypto held >1 year in USA)
     tax = computeUSLTCGTax(ordinaryTaxable, taxableAmount, lt.uppers, lt.rates);
   } else {
-    // Ordinary income or short-term gains
+    // Ordinary income or short-term gains (including short-term crypto)
     tax = taxIncrement(ordinary.uppers, ordinary.rates, ordinaryTaxable, taxableAmount);
   }
 

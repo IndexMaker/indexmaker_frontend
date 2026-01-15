@@ -104,6 +104,7 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
   let niit = 0;
   let penalty = 0;
   let taxOnGainOnly = 0;
+  let effectiveGainBase = gain; // Base for calculating tax percentage
 
   const name = setup.name.toLowerCase();
 
@@ -127,6 +128,11 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
   } else if (name === 'isa') {
     // tax-free
   } else if (name === 'taxable') {
+    // Calculate taxable gain after £3,000 annual allowance
+    const allowance = brackets.annualExempt ?? 3000;
+    const taxableGain = Math.max(0, gain - allowance);
+    effectiveGainBase = taxableGain; // Use taxable gain for percentage
+
     const { tax: taxableTax, niit: taxableNiit } = computeTaxable({
       country: 'uk',
       status,
@@ -142,7 +148,7 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
     taxOnGainOnly = tax + niit;
   }
 
-  const taxPct = gain > 0 ? (taxOnGainOnly / gain) * 100 : 0;
+  const taxPct = effectiveGainBase > 0 ? (taxOnGainOnly / effectiveGainBase) * 100 : 0;
   const totalReported = tax + niit + penalty;
 
   return { tax: totalReported, niit, penalty, taxPct };

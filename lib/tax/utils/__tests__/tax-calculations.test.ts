@@ -248,7 +248,123 @@ describe('createDefaultComputeFunctions', () => {
 });
 
 // Country-specific tests for tax data accuracy (Story 3.7)
+// Updated with additional tests for code review fixes
 describe('Country-specific tax calculations', () => {
+  describe('USA long-term crypto gains', () => {
+    const { usa } = require('../../usa');
+
+    it('should apply LTCG rates to crypto held over 1 year', () => {
+      const brackets = usa.getBrackets('single');
+      // Test that crypto with isLong=true gets LTCG treatment
+      const result = usa.computeTaxable({
+        country: 'usa',
+        status: 'single',
+        agiExcl: 50000,
+        taxableAmount: 20000,
+        isLong: true, // Over 1 year
+        brackets,
+        isCrypto: true,
+        years: 1.5,
+      });
+      // With $50k income and $20k LTCG, should be in 0% LTCG bracket
+      // since total ($70k after deduction) is below $48,350 threshold
+      expect(result.tax).toBeLessThan(20000 * 0.22); // Should be less than ordinary rate
+    });
+
+    it('should tax short-term crypto as ordinary income', () => {
+      const brackets = usa.getBrackets('single');
+      const result = usa.computeTaxable({
+        country: 'usa',
+        status: 'single',
+        agiExcl: 50000,
+        taxableAmount: 20000,
+        isLong: false, // Short-term
+        brackets,
+        isCrypto: true,
+        years: 0.5,
+      });
+      // Short-term should be taxed at ordinary income rates
+      expect(result.tax).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Portugal crypto tax rules', () => {
+    const { portugal } = require('../../portugal');
+
+    it('should return zero tax for crypto held over 1 year', () => {
+      const brackets = portugal.getBrackets('single');
+      const result = portugal.computeTaxable({
+        country: 'portugal',
+        status: 'single',
+        agiExcl: 30000,
+        taxableAmount: 10000,
+        isLong: true,
+        brackets,
+        isCrypto: true,
+        years: 1.5, // Over 1 year
+      });
+      expect(result.tax).toBe(0);
+    });
+
+    it('should tax short-term crypto at 28%', () => {
+      const brackets = portugal.getBrackets('single');
+      const result = portugal.computeTaxable({
+        country: 'portugal',
+        status: 'single',
+        agiExcl: 30000,
+        taxableAmount: 10000,
+        isLong: false,
+        brackets,
+        isCrypto: true,
+        years: 0.5, // Under 1 year
+      });
+      expect(result.tax).toBe(10000 * 0.28); // 28% flat rate
+    });
+
+    it('should have computeSetupTax function', () => {
+      expect(portugal.computeSetupTax).toBeDefined();
+    });
+  });
+
+  describe('South Korea crypto postponement', () => {
+    const { southkorea } = require('../../southkorea');
+
+    it('should return zero tax for crypto while postponed (before 2026)', () => {
+      const brackets = southkorea.getBrackets('single');
+      // Mock the date check by verifying the postponedUntil bracket property
+      expect(brackets.postponedUntil).toBe('2026-01-01');
+
+      // Test the computation
+      const result = southkorea.computeTaxable({
+        country: 'southkorea',
+        status: 'single',
+        agiExcl: 50000000, // KRW
+        taxableAmount: 10000000, // KRW 10M gain
+        isLong: false,
+        brackets,
+        isCrypto: true,
+        years: 0.5,
+      });
+
+      // Current date should be before 2026-01-01, so tax should be 0
+      // (Note: This test will need updating after 2026-01-01)
+      const currentDate = new Date();
+      const postponedDate = new Date('2026-01-01');
+      if (currentDate < postponedDate) {
+        expect(result.tax).toBe(0);
+      } else {
+        // After 2026: 20% on gains over KRW 2.5M
+        const expectedTax = (10000000 - 2500000) * 0.20;
+        expect(result.tax).toBe(expectedTax);
+      }
+    });
+
+    it('should have computeSetupTax function', () => {
+      expect(southkorea.computeSetupTax).toBeDefined();
+    });
+  });
+
+
   describe('Germany crypto tax', () => {
     // Import Germany module
     const { germany } = require('../../germany');

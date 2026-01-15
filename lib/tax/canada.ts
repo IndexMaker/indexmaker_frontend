@@ -129,8 +129,10 @@ function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
     // TFSA: No tax, so 0%
     taxPct = 0;
   } else {
-    // Taxable accounts: Tax is on gains only, so percentage should be against gains
-    taxPct = gain > 0 ? (totalTax / gain) * 100 : 0;
+    // Taxable accounts: Use taxable gain after 50% inclusion rate for percentage
+    const inclusion = brackets.capGainInclusion ?? 0.5;
+    const taxableGain = gain * inclusion;
+    taxPct = taxableGain > 0 ? (totalTax / taxableGain) * 100 : 0;
   }
 
   return {

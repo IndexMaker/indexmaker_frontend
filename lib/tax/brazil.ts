@@ -270,8 +270,10 @@ export const brazil: any = {
       // VGBL: Tax is on gains only (TEE model), so percentage should be against gains
       taxPct = gain > 0 ? (taxOnGainOnly / gain) * 100 : 0;
     } else {
-      // Taxable accounts: Tax is on gains only
-      taxPct = gain > 0 ? (taxOnGainOnly / gain) * 100 : 0;
+      // Taxable accounts: Use taxable gain after R$35,000 exemption for percentage
+      const exemptAmount = 35000;
+      const taxableGain = Math.max(0, gain - exemptAmount);
+      taxPct = taxableGain > 0 ? (taxOnGainOnly / taxableGain) * 100 : 0;
     }
 
     return {

@@ -1,5 +1,6 @@
 // Italy tax calculations
 import type { CalcOut, TaxableParams } from './types';
+import { taxIncrement } from './utils/tax-calculations';
 
 // Italy tax brackets for ordinary income
 // 23% €0-€28,000, 25% €28,001-€50,000, 35% €50,001-€75,000, 43% >€75,000
@@ -108,7 +109,15 @@ export const italy: any = {
   setups,
   getBrackets,
   computeTaxable,
-  computeDeferredFull: computeTaxable,
+  computeDeferredFull: (params: TaxableParams): { readonly tax: number; readonly niit: number } => {
+    // Deferred accounts (Pension Fund) - taxed at reduced rates or ordinary income
+    // For pension funds, Italy uses a reduced flat rate of around 15-23% depending on years
+    // When called directly, use ordinary income progressive rates as fallback
+    const { agiExcl, taxableAmount, brackets } = params;
+    const base = Math.max(0, agiExcl - brackets.stdDed);
+    const tax = taxIncrement(brackets.ordinary.uppers, brackets.ordinary.rates, base, taxableAmount);
+    return { tax, niit: 0 };
+  },
   computeSetupTax: (setup: any, params: any) => {
     const { initial, gain, years, currentAge, additionalPenalty } = params;
     const withdrawn = initial + gain;
@@ -168,8 +177,10 @@ export const italy: any = {
         taxPct = gain > 0 ? (totalTax / gain) * 100 : 0;
       }
     } else {
-      // Taxable accounts: Tax is on gains only, so percentage should be against gains
-      taxPct = gain > 0 ? (totalTax / gain) * 100 : 0;
+      // Taxable accounts: Use taxable gain (after exemption) for percentage calculation
+      const exemptAmount = params.isCrypto ? 2000 : 0;
+      const taxableGain = Math.max(0, gain - exemptAmount);
+      taxPct = taxableGain > 0 ? (totalTax / taxableGain) * 100 : 0;
     }
 
     return {

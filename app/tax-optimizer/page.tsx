@@ -857,6 +857,7 @@ function CalculatorContent() {
 
     const resultsObj: {
       gain: number;
+      cryptoGain: number;
       etf?: {
         tax: number;
         niit: number;
@@ -888,6 +889,7 @@ function CalculatorContent() {
       matrix?: number[][];
     } = {
       gain: initial * Math.pow(1 + annualRate, years) - initial,
+      cryptoGain: initial * Math.pow(1 + annualRate + expectedDeFiExtra, years) - initial,
       crypto: {
         tax: cryptoTaxes.tax,
         niit: cryptoTaxes.niit,
@@ -1658,7 +1660,7 @@ function CalculatorContent() {
                       </TableCell>
                     )}
                     <TableCell className="text-primary">
-                      {formatCurrency(results.gain)}
+                      {formatCurrency(results.cryptoGain)}
                     </TableCell>
                     {maritalFeature &&
                       divorce &&
@@ -1669,7 +1671,7 @@ function CalculatorContent() {
                             {formatCurrency(results.gain)}
                           </TableCell>
                           <TableCell className="text-primary">
-                            {formatCurrency(results.gain)}
+                            {formatCurrency(results.cryptoGain)}
                           </TableCell>
                         </>
                       )}

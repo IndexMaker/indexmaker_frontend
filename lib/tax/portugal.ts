@@ -1,6 +1,6 @@
 // lib/tax/portugal.ts
-import type { Brackets, Setup } from './types';
-import { createCountryBrackets, createDefaultComputeFunctions } from './utils/tax-calculations';
+import type { Brackets, Setup, TaxableParams, CalcOut, TaxParams } from './types';
+import { createCountryBrackets, taxIncrement } from './utils/tax-calculations';
 
 // Portugal tax brackets (from data.json: 28% short-term gains; tax-free if held >1 year; 14.5-53% progressive for mining/staking)
 function getBrackets(status: string): Brackets {
@@ -46,8 +46,117 @@ const setups: Setup[] = [
   }
 ];
 
-// Use shared computation functions
-const { computeTaxable, computeDeferredFull } = createDefaultComputeFunctions(getBrackets);
+// Custom computation functions for Portugal's unique crypto tax rules
+function computeTaxable(p: TaxableParams) {
+  const { agiExcl, taxableAmount, isLong, brackets, isCrypto, years } = p;
+
+  let tax = 0;
+
+  if (isCrypto) {
+    // Portugal crypto rules:
+    // - Tax-free if held over 1 year
+    // - 28% flat rate if held less than 1 year
+    const holdingPeriod = (brackets as any).longTermHoldingPeriod ?? 1;
+    if (isLong && years >= holdingPeriod) {
+      tax = 0; // Tax-free for long-term crypto
+    } else {
+      const shortTermRate = (brackets as any).shortTermRate ?? 0.28;
+      tax = taxableAmount * shortTermRate; // 28% flat rate
+    }
+  } else {
+    // Regular investments - progressive tax on gains
+    const base = Math.max(0, agiExcl);
+    tax = taxIncrement(brackets.ordinary.uppers, brackets.ordinary.rates, base, taxableAmount);
+  }
+
+  return { tax, niit: 0 };
+}
+
+function computeDeferredFull(p: TaxableParams) {
+  const { agiExcl, taxableAmount, brackets } = p;
+  // Deferred accounts taxed as ordinary income
+  const base = Math.max(0, agiExcl);
+  const tax = taxIncrement(brackets.ordinary.uppers, brackets.ordinary.rates, base, taxableAmount);
+  return { tax, niit: 0 };
+}
+
+function computeSetupTax(setup: Setup, p: TaxParams): CalcOut {
+  const {
+    status,
+    agiExcl,
+    initial,
+    gain,
+    years,
+    currentAge,
+    isCrypto,
+    additionalPenalty,
+    brackets,
+  } = p;
+  const withdrawn = initial + gain;
+
+  let tax = 0;
+  let niit = 0;
+  let penalty = 0;
+
+  if (setup.type === 'deferred') {
+    // Pension funds - reduced tax after 8 years
+    let rate = 0.175; // 17.5% for 0-5 years
+    if (years >= 5 && years < 8) {
+      rate = 0.14; // 14% for 5-8 years
+    } else if (years >= 8) {
+      rate = 0.07; // 7% for >8 years
+    }
+    tax = withdrawn * rate;
+  } else if (setup.type === 'taxfree') {
+    // PPR - Tax-free if held 5 years
+    if (years >= 5) {
+      tax = 0;
+    } else {
+      // Early withdrawal - standard capital gains tax
+      tax = gain * 0.28;
+    }
+  } else {
+    // Taxable accounts
+    const taxableParams = {
+      country: 'portugal' as const,
+      status,
+      agiExcl,
+      taxableAmount: gain,
+      isLong: years >= 1,
+      brackets,
+      isCrypto,
+      years,
+    };
+    const result = computeTaxable(taxableParams);
+    tax = result.tax;
+    niit = result.niit;
+  }
+
+  // Add any additional penalty
+  penalty += withdrawn * additionalPenalty;
+
+  const totalTax = tax + niit + penalty;
+
+  // Calculate tax percentage
+  let taxPct = 0;
+  if (setup.type === 'deferred') {
+    taxPct = withdrawn > 0 ? (totalTax / withdrawn) * 100 : 0;
+  } else if (setup.type === 'taxfree') {
+    taxPct = years >= 5 ? 0 : (gain > 0 ? (totalTax / gain) * 100 : 0);
+  } else {
+    // For crypto: tax-free after 1 year, 28% short-term
+    // Tax is calculated on full gain (no exemption subtracted), so use gain as base
+    // For non-crypto: progressive rates on full gain
+    taxPct = gain > 0 ? (totalTax / gain) * 100 : 0;
+  }
+
+  return {
+    tax: totalTax,
+    niit,
+    penalty,
+    taxPct,
+  };
+}
 
 export const portugal: any = {
   key: 'portugal',
@@ -59,4 +168,5 @@ export const portugal: any = {
   getBrackets,
   computeTaxable,
   computeDeferredFull,
+  computeSetupTax,
 };

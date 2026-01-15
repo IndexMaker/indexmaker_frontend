@@ -132,8 +132,12 @@ export const australia: any = {
       // For super accounts, show tax as percentage of total withdrawal
       taxPct = withdrawn > 0 ? (taxOnGainOnly / withdrawn) * 100 : 0;
     } else {
-      // For taxable accounts, show tax as percentage of gains
-      taxPct = gain > 0 ? (taxOnGainOnly / gain) * 100 : 0;
+      // For taxable accounts, calculate taxable gain after 50% CGT discount
+      const isLong = years > 1;
+      const discount = isLong ? (brackets.capGainDiscount ?? 0) : 0;
+      const taxableGain = gain * (1 - discount);
+      // Show tax as percentage of taxable gain (after discount)
+      taxPct = taxableGain > 0 ? (taxOnGainOnly / taxableGain) * 100 : 0;
     }
 
     return {

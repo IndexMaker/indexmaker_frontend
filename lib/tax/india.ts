@@ -157,7 +157,26 @@ export const india: any = {
   setups,
   getBrackets,
   computeTaxable,
-  computeDeferredFull: computeTaxable,
+  computeDeferredFull: (params: TaxableParams): CalcOut => {
+    // Deferred accounts (NPS, ELSS) - tax on withdrawal as ordinary income
+    const { agiExcl, taxableAmount, brackets } = params;
+
+    const totalIncome = agiExcl + taxableAmount;
+    const totalTax = calculateProgressiveTax(totalIncome, brackets.ordinary);
+    const baseTax = calculateProgressiveTax(agiExcl, brackets.ordinary);
+    const taxOnWithdrawal = Math.max(0, totalTax - baseTax);
+
+    // Add 4% cess
+    const cess = taxOnWithdrawal * 0.04;
+    const tax = taxOnWithdrawal + cess;
+
+    return {
+      tax,
+      niit: 0,
+      penalty: 0,
+      taxPct: taxableAmount > 0 ? (tax / taxableAmount) * 100 : 0,
+    };
+  },
   computeSetupTax: (setup: any, params: any) => {
     const { initial, gain, years, currentAge, additionalPenalty } = params;
     const withdrawn = initial + gain;
@@ -240,8 +259,15 @@ export const india: any = {
       // PPF: Tax-free
       taxPct = 0;
     } else {
-      // Taxable accounts: Tax is on gains only, so percentage should be against gains
-      taxPct = gain > 0 ? (totalTax / gain) * 100 : 0;
+      // Taxable accounts: Use taxable gain for percentage calculation
+      // For crypto: flat 31.2% on full amount (no exemption)
+      // For non-crypto LTCG: 12.5% + cess over ₹1.25 lakh exemption
+      let taxableGain = gain;
+      if (!params.isCrypto && params.isLong) {
+        const exemptAmount = 125000; // ₹1.25 lakh exemption for LTCG
+        taxableGain = Math.max(0, gain - exemptAmount);
+      }
+      taxPct = taxableGain > 0 ? (totalTax / taxableGain) * 100 : 0;
     }
 
     return {
