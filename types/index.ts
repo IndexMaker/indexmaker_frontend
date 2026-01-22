@@ -22,7 +22,7 @@ export interface IndexListEntry {
   totalSupply: number;
   totalSupplyUSD: number;
   ytdReturn: number;
-  collateral: { name: string; logo: string }[]; // URLs to token logos
+  collateral: { name: string; logo: string; weight?: number }[]; // URLs to token logos, weight in basis points (0-10000)
   managementFee: number;
   assetClass?: string;
   category?: string;

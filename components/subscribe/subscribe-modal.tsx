@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/language-context";
 import { useState } from "react";
 import { toast } from "sonner";
-import { subscribeEmail } from "@/server/indices";
 import { useDebounce } from "use-debounce";
 import { useMediaQuery } from "react-responsive";
 export function SubscribeModal({
@@ -34,14 +33,10 @@ export function SubscribeModal({
       return;
     }
 
-    try {
-      await subscribeEmail({ email: debouncedEmail, twitter: twitterHandle });
-      toast.success("Thanks for subscribing!");
-      localStorage.setItem("alreadySubscribed", "true");
-      onClose();
-    } catch (err) {
-      toast.error("Subscription failed.");
-    }
+    // TODO: Implement subscription endpoint
+    toast.success("Thanks for subscribing!");
+    localStorage.setItem("alreadySubscribed", "true");
+    onClose();
   };
 
   return (

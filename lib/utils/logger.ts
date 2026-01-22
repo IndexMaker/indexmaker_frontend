@@ -19,9 +19,7 @@ const getLogLevel = () => {
 
 // Configure logger based on environment
 const createLogger = () => {
-  const isDevelopment = process.env.NODE_ENV === 'development';
   const isBrowser = typeof window !== 'undefined';
-  const isServer = typeof process !== 'undefined' && process.versions?.node;
 
   // Browser-safe logger configuration
   if (isBrowser) {
@@ -47,25 +45,15 @@ const createLogger = () => {
   }
 
   // Server-side logger configuration
+  // NOTE: Do NOT use pino-pretty transport - it spawns worker threads
+  // which break in Next.js API routes causing MODULE_NOT_FOUND errors
   try {
     return pino({
       level: getLogLevel(),
-      // Only use transport in server environment during development
-      transport: isDevelopment && isServer
-        ? {
-            target: 'pino-pretty',
-            options: {
-              colorize: true,
-              translateTime: 'HH:MM:ss',
-              ignore: 'pid,hostname',
-              singleLine: true,
-            },
-          }
-        : undefined,
       // Add timestamp and service info
       timestamp: pino.stdTimeFunctions.isoTime,
       base: {
-        service: 'calculator',
+        service: 'indexmaker',
         version: (typeof process !== 'undefined' && process.env?.npm_package_version) || '1.0.0',
       },
       // Redact sensitive information

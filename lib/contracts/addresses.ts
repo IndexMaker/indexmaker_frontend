@@ -26,15 +26,16 @@ function validateAddress(
 }
 
 // Contract addresses deployed on Arbitrum Mainnet
+// Updated to match deployed contracts (2026-01-18)
 export const BRIDGE_PROXY_ADDRESS = validateAddress(
   process.env.NEXT_PUBLIC_BRIDGE_PROXY_ADDRESS,
-  '0xABCFB96dfB5e872921D20ba392E324bE0525D139',
+  '0xD39238ba5E44B0109BaF7D399A4db67C5fb54B14',
   'BRIDGE_PROXY'
 );
 
 export const BRIDGED_ITP_FACTORY_ADDRESS = validateAddress(
   process.env.NEXT_PUBLIC_BRIDGED_ITP_FACTORY_ADDRESS,
-  '0xdd236e1584c0e35DAd4e0dacF27c9831FdeD52ba',
+  '0xC8f7B4B4834b8DDfad604cA48e95280ef3e95150',
   'BRIDGED_ITP_FACTORY'
 );
 
@@ -50,15 +51,16 @@ export const ORBIT_RPC_URL = process.env.NEXT_PUBLIC_ORBIT_RPC_URL || 'https://i
 export const ORBIT_EXPLORER_URL = process.env.NEXT_PUBLIC_ORBIT_EXPLORER_URL || 'https://index.explorer.zeeve.net';
 
 // Orbit Contract Addresses
+// Updated to match deployed contracts (2026-01-18)
 export const ORBIT_VAULT_ADDRESS = validateAddress(
   process.env.NEXT_PUBLIC_ORBIT_VAULT_ADDRESS,
-  '0x621f5f30d4902ab75d8bd50820cc0a09cc563559',
+  '0xC71b518779176868F47E52a8c6ae4Ac4D7bAC934',
   'ORBIT_VAULT'
 );
 
 export const ORBIT_CASTLE_ADDRESS = validateAddress(
   process.env.NEXT_PUBLIC_ORBIT_CASTLE_ADDRESS,
-  '0xddb1b34d67a86949fdf5cbeb761fa1122c659426',
+  '0x1409a0ce0770e6e428add1ef73c6d872319557d8',
   'ORBIT_CASTLE'
 );
 

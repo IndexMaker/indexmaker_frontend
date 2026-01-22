@@ -1,10 +1,11 @@
 // src/api/indices.ts
 import { Activity, SupplyPosition } from "@/lib/data";
 import { log } from "@/lib/utils/logger";
-import { IndexListEntry } from "@/types/index";
+import { Asset, IndexListEntry, InventoryResponse } from "@/types/index";
 import axios from "axios";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API;
+const API_ISSUER_URL = "/api/issuer";
 
 export const fetchAllIndicesProd = async (): Promise<IndexListEntry[]> => {
   const response = await fetch(`${API_BASE_URL}/indexes`);
@@ -245,26 +246,20 @@ export const downloadDailyPriceData = async (
   }
 };
 
-export const sendMintInvoiceToBackend = async (
-  payload: any
-): Promise<void> => {
-  try {
-    await axios.post(`${API_BASE_URL}/save-blockchain-event`, payload);
-  } catch (error) {
-    log.error("Failed to create deposit transaction", {
-      error: axios.isAxiosError(error) ? error.message : "Failed to send mint invoice"
-    });
-  }
-};
 
-export const subscribeEmail = async (
-  payload: any
-): Promise<void> => {
+
+
+
+export async function fetchAssets(): Promise<Asset[]> {
   try {
-    await axios.post(`${API_BASE_URL}/subscribe`, payload);
+    const response = await fetch(`${API_BASE_URL}/fetch-all-assets`);
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch assets");
+    }
+    return await response.json();
   } catch (error) {
-    log.error("Failed to subscribe to index", {
-      error: axios.isAxiosError(error) ? error.message : "Failed to send email"
-    });
+    console.warn("Failed to fetch assets from API:", error);
+    return [];
   }
-};
+}

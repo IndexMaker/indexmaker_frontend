@@ -26,22 +26,26 @@ import {
   setTotalManaged,
   setTotalVolume,
 } from "@/redux/indexSlice";
+import { setTokenPrice, setTokenSupply } from "@/redux/market-data-slice";
 import { RootState } from "@/redux/store";
 import { clearSelectedVault } from "@/redux/vaultSlice";
 import { IndexListEntry } from "@/types/index";
+import type { ItpListEntry, ItpListResponse } from "@/types/itp";
 import { Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useDebouncedCallback } from "use-debounce";
 import { useDispatch, useSelector } from "react-redux";
 import { useWallet } from "../../../contexts/wallet-context";
 import { HowEarnWorks } from "./how-earn-works";
 import ConnectedWalletBalances from "@/components/elements/connect-wallet-balance";
 import IBKRAlertBanner from "@/components/elements/AnnouncementBanner";
+import { PendingOrders } from "@/components/elements/PendingOrders";
 import { useQuoteContext } from "@/contexts/quote-context";
 import Image from "next/image";
 import USDC from "../../../public/logos/usd-coin.png";
 import { Asset } from "@/types";
-import { fetchAssets, fetchInventory } from "@/server/invoice";
+import { fetchAssets } from "@/server/indices";
 
 type ColumnType = {
   id: string;
@@ -56,7 +60,7 @@ const initialColumns: ColumnType[] = [
   { id: "ytdReturn", title: "YTD return", visible: false },
   { id: "performance", title: "Average Annual Returns", visible: false },
   { id: "curator", title: "Curator", visible: true },
-  { id: "collateral", title: "Collateral", visible: false },
+  { id: "collateral", title: "Collateral", visible: true },
   { id: "assetClass", title: "Asset Class", visible: true },
   { id: "category", title: "Category", visible: true },
   { id: "inceptionDate", title: "Inception Date", visible: false },
@@ -76,12 +80,22 @@ export function EarnContent({
   const { wallet, isConnected } = useWallet();
   const { t } = useLanguage();
   const [columns, setColumns] = useState(initialColumns);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState(""); // Immediate input value
+  const [searchQuery, setSearchQuery] = useState(""); // Debounced search query
   const [sortColumn, setSortColumn] = useState<string>("");
+
+  // Debounced search update (300ms delay as per Task 4.1)
+  const debouncedSetSearch = useDebouncedCallback((value: string) => {
+    setSearchQuery(value);
+  }, 300);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterMyIndex, setFilterMyIndex] = useState(false);
+  const [itps, setItps] = useState<ItpListEntry[]>([]);
+  const [itpLoading, setItpLoading] = useState(false);
+  const [itpTotalAum, setItpTotalAum] = useState<number | null>(null);
+  const [symbolToCoinId, setSymbolToCoinId] = useState<Record<string, string>>({});
 
   const [activeMyearnTab, setActiveMyearnTab] = useState<
     "position" | "historic"
@@ -123,12 +137,11 @@ export function EarnContent({
       setIsLoading(true);
       try {
         const data = await fetchAllIndices();
-        console.log("✅ Fetched indices:", data);
         setIndexLists(data || []);
         dispatch(setIndices(data || []));
         localStorage.setItem("storedVaults", JSON.stringify(data));
       } catch (error) {
-        console.error("❌ Error fetching indices:", error);
+        console.error("Error fetching indices:", error);
       } finally {
         setIsLoading(false);
       }
@@ -141,45 +154,259 @@ export function EarnContent({
   }, []);
 
   // ------------------------------------------------------------------
-  //  MODIFIED: Calculate Total Deposits (AUM) using Redux Market Data
+  //  Fetch coin symbol mapping for asset logos
   // ------------------------------------------------------------------
   useEffect(() => {
-    // 1. Identify which list of indexes to use
+    const fetchCoinMapping = async () => {
+      try {
+        const response = await fetch("/api/coins/symbol-mapping");
+        if (!response.ok) {
+          console.warn("Failed to fetch coin mapping, logos may not display");
+          return;
+        }
+        const data = await response.json();
+        // Convert array of {symbol, coin_id} to Record<string, string>
+        const mapping: Record<string, string> = {};
+        for (const item of data.mappings || []) {
+          mapping[item.symbol.toUpperCase()] = item.coin_id;
+        }
+        setSymbolToCoinId(mapping);
+      } catch (error) {
+        console.warn("Failed to fetch coin mapping", { error });
+      }
+    };
+
+    fetchCoinMapping();
+  }, []);
+
+  // ------------------------------------------------------------------
+  //  Fetch ITPs on mount and poll every 5 seconds for price updates
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    const fetchItpList = async (isInitial = false) => {
+      if (isInitial) setItpLoading(true);
+      try {
+        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:3002";
+        console.log(`[ITP Poll] Fetching prices at ${new Date().toLocaleTimeString()}`);
+        const response = await fetch(`${BACKEND_URL}/api/itp/list?limit=100`);
+        if (!response.ok) {
+          // API might not have this endpoint yet - silently fail
+          console.warn("ITP endpoint not available:", response.status);
+          setItps([]);
+          return;
+        }
+        const data: ItpListResponse = await response.json();
+        setItps(data.itps || []);
+
+        // Store total AUM from backend if available
+        if (data.total_aum != null) {
+          setItpTotalAum(data.total_aum);
+        }
+
+        // Update Redux with ITP prices and supplies
+        for (const itp of data.itps || []) {
+          if (itp.current_price != null) {
+            dispatch(setTokenPrice({ ticker: itp.symbol, price: itp.current_price }));
+          }
+          // Parse total_supply (it's a string in 18 decimals)
+          const supply = parseFloat(itp.total_supply) / 1e18;
+          if (!Number.isNaN(supply)) {
+            dispatch(setTokenSupply({ ticker: itp.symbol, supply }));
+          }
+        }
+
+        // Also store valid ITPs in Redux indices for SupplyPanel compatibility
+        // This is done after the first fetch to ensure ITPs are available in the store
+        if (isInitial && data.itps && data.itps.length > 0) {
+          // We'll update this in a separate effect that depends on itps state
+        }
+      } catch (error) {
+        console.warn("Error fetching ITPs:", error);
+        setItps([]);
+      } finally {
+        if (isInitial) setItpLoading(false);
+      }
+    };
+
+    fetchItpList(true); // Initial fetch with loading state
+
+    // Poll every 5 seconds for price updates
+    const intervalId = setInterval(() => fetchItpList(false), 5000);
+
+    return () => clearInterval(intervalId);
+  }, [dispatch]);
+
+  // ------------------------------------------------------------------
+  //  Update Redux indices with valid ITPs for SupplyPanel compatibility
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    // Filter and convert ITPs to IndexListEntry format
+    const validItpEntries = itps
+      .filter(itp => {
+        // Validate weights sum to ~1.0
+        if (!itp.weights || itp.weights.length === 0) return false;
+        const sum = itp.weights.reduce((acc, w) => acc + w, 0);
+        if (Math.abs(sum - 1.0) >= 0.01) return false;
+        // Validate has price data
+        if (!itp.current_price || itp.current_price <= 0) return false;
+        if (!itp.assets || itp.assets.length === 0) return false;
+        return true;
+      })
+      .map((itp): IndexListEntry => {
+        // Build collateral from ITP assets with logos and weights
+        const weights = itp.weights || [];
+        const collateral = (itp.assets || []).map((symbol, idx) => ({
+          name: symbol,
+          logo: `/logos/${symbol.toLowerCase()}.png`,
+          // Convert weight from decimal (0-1) to basis points (0-10000)
+          weight: weights[idx] !== undefined ? Math.round(weights[idx] * 10000) : undefined,
+        }));
+
+        return {
+          indexId: itp.id,
+          name: itp.name,
+          address: itp.orbit_address,
+          ticker: itp.symbol,
+          curator: "OrbitGo",
+          totalSupply: parseFloat(itp.total_supply) / 1e18,
+          totalSupplyUSD: (parseFloat(itp.total_supply) / 1e18) * (itp.current_price ?? 0),
+          ytdReturn: itp.price_24h_change ?? 0,
+          collateral: collateral.length > 0 ? collateral : [{ name: "USDC", logo: "/logos/usd-coin.png" }],
+          managementFee: 0,
+          assetClass: "Crypto",
+          category: itp.methodology || "ITP",
+          inceptionDate: new Date(itp.created_at * 1000).toISOString().split("T")[0],
+          indexPrice: itp.current_price ?? undefined,
+          performance: {
+            ytdReturn: itp.price_24h_change ?? 0,
+            oneYearReturn: itp.price_24h_change ?? 0,
+            threeYearReturn: 0,
+            fiveYearReturn: 0,
+            tenYearReturn: 0,
+          },
+        };
+      });
+
+    // Only update if we have ITPs to add
+    if (validItpEntries.length > 0) {
+      // Merge with existing traditional indices (avoiding duplicates by name)
+      const existingIndices = indexLists.filter(
+        idx => !validItpEntries.some(itp => itp.name === idx.name)
+      );
+      const mergedIndices = [...existingIndices, ...validItpEntries];
+      dispatch(setIndices(mergedIndices));
+    }
+  }, [itps, indexLists, dispatch]);
+
+  // ------------------------------------------------------------------
+  //  Validate ITP weights sum to ~1.0 (within 0.01 tolerance)
+  // ------------------------------------------------------------------
+  const isValidItpWeights = (itp: ItpListEntry): boolean => {
+    if (!itp.weights || itp.weights.length === 0) return false;
+    const sum = itp.weights.reduce((acc, w) => acc + w, 0);
+    return Math.abs(sum - 1.0) < 0.01;
+  };
+
+  // ------------------------------------------------------------------
+  //  Check if ITP has valid price data (has assets and current_price)
+  //  ITPs are valid if they have tradeable assets for price calculation
+  // ------------------------------------------------------------------
+  const hasValidPrice = (itp: ItpListEntry): boolean => {
+    // Must have current_price and assets
+    if (!itp.current_price || itp.current_price <= 0) return false;
+    if (!itp.assets || itp.assets.length === 0) return false;
+    return true;
+  };
+
+  // ------------------------------------------------------------------
+  //  Convert ITP to IndexListEntry format for VaultTable compatibility
+  // ------------------------------------------------------------------
+  // Helper function to get logo URL for an asset symbol
+  const getAssetLogo = (symbol: string): string | null => {
+    const upperSymbol = symbol.toUpperCase();
+    const coinId = symbolToCoinId[upperSymbol];
+    if (coinId) return `/logos/${coinId}.png`;
+    // Fallback: try lowercase symbol as coin_id
+    return `/logos/${symbol.toLowerCase()}.png`;
+  };
+
+  const itpToIndexEntry = (itp: ItpListEntry): IndexListEntry => {
+    // Build collateral from ITP assets with logos and weights
+    const weights = itp.weights || [];
+    const collateral = (itp.assets || []).map((symbol, idx) => ({
+      name: symbol,
+      logo: getAssetLogo(symbol) || "",
+      // Convert weight from decimal (0-1) to basis points (0-10000)
+      weight: weights[idx] !== undefined ? Math.round(weights[idx] * 10000) : undefined,
+    }));
+
+    return {
+      indexId: itp.id,
+      name: itp.name,
+      address: itp.orbit_address,
+      ticker: itp.symbol,
+      curator: "OrbitGo",
+      totalSupply: parseFloat(itp.total_supply) / 1e18,
+      totalSupplyUSD: (parseFloat(itp.total_supply) / 1e18) * (itp.current_price ?? 0),
+      ytdReturn: itp.price_24h_change ?? 0,
+      collateral: collateral.length > 0 ? collateral : [{ name: "USDC", logo: "/logos/usd-coin.png" }],
+      managementFee: 0,
+      assetClass: "Crypto",
+      category: itp.methodology || "ITP",
+      inceptionDate: new Date(itp.created_at * 1000).toISOString().split("T")[0],
+      indexPrice: itp.current_price ?? undefined,
+      performance: {
+        ytdReturn: itp.price_24h_change ?? 0,
+        oneYearReturn: itp.price_24h_change ?? 0,
+        threeYearReturn: 0,
+        fiveYearReturn: 0,
+        tenYearReturn: 0,
+      },
+    };
+  };
+
+  // ------------------------------------------------------------------
+  //  MODIFIED: Calculate Total Deposits (AUM) using Redux Market Data + ITPs
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    // Calculate AUM from traditional indexes
     const indices: IndexListEntry[] =
       storedIndexes && storedIndexes.length > 0 ? storedIndexes : indexLists;
 
-    if (!indices || indices.length === 0) return;
+    let liveTotalAUM = 0;
 
-    // 2. Sum up (Supply * Price) for every asset
-    const liveTotalAUM = indices.reduce((acc, idx) => {
-      const ticker = idx.ticker;
+    // Sum up (Supply * Price) for traditional indexes
+    if (indices && indices.length > 0) {
+      liveTotalAUM = indices.reduce((acc, idx) => {
+        const ticker = idx.ticker;
+        const supply = reduxSupplies[ticker] ?? 0;
+        let price = reduxPrices[ticker];
 
-      // Get Supply from Redux (Live on-chain data)
-      const supply = reduxSupplies[ticker] ?? 0;
-
-      // Get Price from Redux (Live feed)
-      let price = reduxPrices[ticker];
-
-      // Fallback: Fuzzy match price if exact ticker not found
-      if (price === undefined) {
-        const norm = normalize(ticker);
-        for (const [k, v] of Object.entries(reduxPrices)) {
-          if (normalize(k) === norm) {
-            price = v;
-            break;
+        if (price === undefined) {
+          const norm = normalize(ticker);
+          for (const [k, v] of Object.entries(reduxPrices)) {
+            if (normalize(k) === norm) {
+              price = v;
+              break;
+            }
           }
         }
-      }
 
-      // Calculate USD value for this asset
-      const assetValueUSD = supply * (price ?? 0);
+        return acc + supply * (price ?? 0);
+      }, 0);
+    }
 
-      return acc + assetValueUSD;
-    }, 0);
+    // Add ITP AUM (calculated from Redux prices/supplies for ITPs)
+    for (const itp of itps) {
+      const ticker = itp.symbol;
+      const supply = reduxSupplies[ticker] ?? 0;
+      const price = reduxPrices[ticker] ?? 0;
+      liveTotalAUM += supply * price;
+    }
 
-    // 3. Update Redux with the new Total Managed value
+    // Update Redux with the new Total Managed value
     dispatch(setTotalManaged(String(liveTotalAUM)));
-  }, [reduxPrices, reduxSupplies, storedIndexes, indexLists, dispatch]);
+  }, [reduxPrices, reduxSupplies, storedIndexes, indexLists, itps, dispatch]);
 
 
   // Function to handle sorting
@@ -190,22 +417,24 @@ export function EarnContent({
 
   // Filter and sort vaults based on search query and sort settings
   const filteredAndSortedVaults = useMemo(() => {
-    // First filter by search query
-    let filtered = storedIndexes;
-    if (!filtered) return [];
+    let filtered: IndexListEntry[];
 
-    // Filter logic based on "My Index" toggle
+    // Filter out ITPs with invalid weights (must sum to ~1.0) and no valid price
+    const validItps = itps.filter(itp => isValidItpWeights(itp) && hasValidPrice(itp));
+
+    // Convert valid ITPs to IndexListEntry format
+    const itpEntries = validItps.map(itpToIndexEntry);
+
     if (filterMyIndex && wallet?.accounts?.[0]?.address) {
       // When "My Index" is enabled: Show all indexes created by connected wallet
-      // Check both 'address' field (new) and 'curator' field (fallback for old data)
       const walletAddress = wallet.accounts[0].address.toLowerCase();
-      filtered = filtered.filter((vault) => 
+      filtered = (storedIndexes || []).filter((vault) =>
         vault.address?.toLowerCase() === walletAddress ||
         vault.curator?.toLowerCase() === walletAddress
       );
     } else {
-      // When "My Index" is disabled: Show only whitelisted indexes (id 21)
-      filtered = filtered.filter((vault) => vault.indexId === 21);
+      // Show only valid ITPs from API
+      filtered = itpEntries;
     }
 
     if (searchQuery.trim()) {
@@ -268,7 +497,7 @@ export function EarnContent({
         return 0;
       });
     else return filtered;
-  }, [searchQuery, sortColumn, sortDirection, storedIndexes, filterMyIndex, wallet]);
+  }, [searchQuery, sortColumn, sortDirection, storedIndexes, filterMyIndex, itps, wallet, isConnected, symbolToCoinId]);
   
   // Function to handle column visibility changes
   const handleColumnVisibilityChange = (columnId: string, visible: boolean) => {
@@ -294,21 +523,12 @@ export function EarnContent({
   useEffect(() => {
     const loadAssets = async () => {
       try {
-        const [assetsData, inventory] = await Promise.all([
+        const [assetsData] = await Promise.all([
           fetchAssets(),
-          fetchInventory(),
         ]);
 
-        console.log("🚀 ~ loadAssets ~ inventory:", inventory)
-
-        const invMap: Record<string, number> = Object.fromEntries(
-          Object.entries(inventory?.positions ?? {}).map(([key, val]) => {
-            const sym = val?.inventory_position?.symbol ?? key;
-            const raw = val?.actual_balance ?? 0;
-            const num = typeof raw === "string" ? parseFloat(raw) : raw;
-            return [sym, Number.isFinite(num) ? num : 0];
-          })
-        );
+        // Inventory data is not currently fetched - use empty map
+        const invMap: Record<string, number> = {};
 
         const filtered = assetsData
           .filter((a) => invMap[a.symbol] != null)
@@ -354,11 +574,11 @@ export function EarnContent({
               </CardHeader>
               <CardContent className="p-0 h-[20px]">
                 <div className="flex items-center justify-between font-normal text-secondary text-[15px] pb-2">
-                  {/* Updated Logic: Show loading if isLoading is true OR totalManaged is 0/undefined */}
-                  {isLoading || !totalManaged || Number(totalManaged) === 0 ? (
+                  {/* Show loading only during initial load, then show actual value (including 0) */}
+                  {isLoading ? (
                     <div className="h-5 w-24 bg-muted/50 animate-pulse rounded" />
                   ) : (
-                    <span>{formatUSDC(Number(totalManaged))}</span>
+                    <span>{formatUSDC(Number(totalManaged || 0))}</span>
                   )}
                   <Image
                     src={USDC}
@@ -443,12 +663,12 @@ export function EarnContent({
                       <div className="h-4 bg-muted rounded w-full mx-auto"></div>
                     </div>
                   ) : activeMyearnTab === "position" ? (
-                    <div className="mt-0">
+                    <div className="mt-0 space-y-4">
                       <ConnectedWalletBalances
                         tokenAddresses={[
                           "native", // show native chain balance
                           "0x833589fCD6eDb6E08f4c7C32D4f71b54bDa02913", // USDC on Base
-                          "0xcdce4c5ffd9cd0025d536dbc69a12cf7ada82193", // SYME 
+                          "0xcdce4c5ffd9cd0025d536dbc69a12cf7ada82193", // SYME
                           "0x0cee77782fa57cfb66403c94c08e2e3e376dc388", // SYL2
                           "0x8a8cf8860f97d007fcf46ed790df794e008b3ce8", // SYAZ
                           "0x700892f09f8f8589ff3e69341b806adb06bb67fd", // SYAI
@@ -456,7 +676,7 @@ export function EarnContent({
                           "0x03a4Ba7e555330a0631F457BA55b751785DEe091", // SY100
                         ]}
                         prices={{
-                          native: 3200, 
+                          native: 3200,
                           "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": 1,
                           "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca": 1,
                         }}
@@ -479,6 +699,8 @@ export function EarnContent({
                         }}
                         explorerBaseUrl="https://basescan.org"
                       />
+                      {/* Pending Bridge Orders */}
+                      <PendingOrders compact={true} maxOrders={5} />
                     </div>
                   ) : (
                     t("common.noClaimableRewards")
@@ -544,8 +766,11 @@ export function EarnContent({
                   type="search"
                   placeholder={t("common.searchVaults")}
                   className="pl-8 !text-[12px] h-[32px] md:w-[150px] text-primary border-[#afafaf1a] focus:border-[#afafaf1a] focus:border-none"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => {
+                    setSearchInput(e.target.value);
+                    debouncedSetSearch(e.target.value);
+                  }}
                 />
               </div>
             </div>
@@ -554,7 +779,7 @@ export function EarnContent({
           <IBKRAlertBanner />
 
           <VaultTable
-            isLoading={isLoading}
+            isLoading={isLoading || itpLoading}
             visibleColumns={visibleColumns}
             vaults={filteredAndSortedVaults}
             onSort={handleSort}

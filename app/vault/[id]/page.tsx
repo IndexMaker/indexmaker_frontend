@@ -5,10 +5,37 @@ import { log } from "@/lib/utils/logger";
 import { setIndices } from "@/redux/indexSlice";
 import { RootState } from "@/redux/store";
 import { IndexListEntry } from "@/types/index";
+import type { ItpListEntry, ItpListResponse } from "@/types/itp";
 import { notFound, redirect, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLanguage } from "@/contexts/language-context";
+
+// Convert ITP to IndexListEntry format for VaultDetailPage compatibility
+function itpToIndexEntry(itp: ItpListEntry): IndexListEntry {
+  return {
+    indexId: itp.id,
+    name: itp.name,
+    address: itp.orbit_address,
+    ticker: itp.symbol,
+    curator: "OrbitGo",
+    totalSupply: parseFloat(itp.total_supply) / 1e18,
+    totalSupplyUSD: (parseFloat(itp.total_supply) / 1e18) * (itp.current_price ?? 0),
+    ytdReturn: itp.price_24h_change ?? 0,
+    collateral: [{ name: "ETH", logo: "/assets/tokens/eth.svg" }],
+    managementFee: 0,
+    assetClass: "Crypto",
+    category: "ITP",
+    inceptionDate: new Date(itp.created_at * 1000).toISOString().split("T")[0],
+    performance: {
+      ytdReturn: itp.price_24h_change ?? 0,
+      oneYearReturn: itp.price_24h_change ?? 0,
+      threeYearReturn: 0,
+      fiveYearReturn: 0,
+      tenYearReturn: 0,
+    },
+  };
+}
 
 export default function VaultPage() {
   const params = useParams();
@@ -50,25 +77,43 @@ export default function VaultPage() {
       return;
     }
 
+    // Try to fetch ITP by symbol from OrbitGo backend
+    const fetchItpBySymbol = async (symbol: string): Promise<IndexListEntry | null> => {
+      try {
+        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:3002";
+        const response = await fetch(`${BACKEND_URL}/api/itp/list?search=${encodeURIComponent(symbol)}&limit=100`);
+        if (!response.ok) return null;
+
+        const data: ItpListResponse = await response.json();
+        const foundItp = data.itps?.find(
+          (itp) => itp.symbol.toLowerCase() === symbol.toLowerCase()
+        );
+
+        if (foundItp) {
+          log.info("ITP found in OrbitGo backend", { symbol: foundItp.symbol, id: foundItp.id });
+          return itpToIndexEntry(foundItp);
+        }
+        return null;
+      } catch (error) {
+        log.warn("Failed to fetch ITP from OrbitGo", { error, symbol });
+        return null;
+      }
+    };
+
     // Fetch from API and validate
     const fetchData = async () => {
       try {
         log.info("Fetching indices from API to validate ticker", { ticker: indexTicker });
         const response = await fetchAllIndices();
         const data: IndexListEntry[] = response || [];
-        
-        if (!data || data.length === 0) {
-          log.error("No indices returned from API");
-          setError(t("common.unableToLoadIndices"));
-          setLoading(false);
-          return;
-        }
 
-        dispatch(setIndices(data));
-        
-        // Store in localStorage for future use
-        if (typeof window !== "undefined") {
-          localStorage.setItem("storedVaults", JSON.stringify(data));
+        if (data && data.length > 0) {
+          dispatch(setIndices(data));
+
+          // Store in localStorage for future use
+          if (typeof window !== "undefined") {
+            localStorage.setItem("storedVaults", JSON.stringify(data));
+          }
         }
 
         // Find the index by ticker (case-insensitive)
@@ -77,23 +122,34 @@ export default function VaultPage() {
         );
 
         if (foundIndex) {
-          log.info("Index found and validated", { 
-            ticker: foundIndex.ticker, 
+          log.info("Index found and validated", {
+            ticker: foundIndex.ticker,
             indexId: foundIndex.indexId,
-            name: foundIndex.name 
+            name: foundIndex.name
           });
           setVault(foundIndex);
-        } else {
-          log.error("Index ticker not found in API response", { 
-            requestedTicker: indexTicker,
-            availableTickers: data.map(i => i.ticker).join(", ")
-          });
-          setError(t("common.indexNotFound").replace("{ticker}", indexTicker));
+          return;
         }
+
+        // Fallback: Try fetching from OrbitGo ITPs
+        log.info("Index not found in regular indices, trying OrbitGo ITPs", { ticker: indexTicker });
+        const itpAsIndex = await fetchItpBySymbol(indexTicker);
+
+        if (itpAsIndex) {
+          setVault(itpAsIndex);
+          return;
+        }
+
+        // Not found in either source
+        log.error("Ticker not found in indices or ITPs", {
+          requestedTicker: indexTicker,
+          availableIndices: data.map(i => i.ticker).join(", ")
+        });
+        setError(t("common.indexNotFound").replace("{ticker}", indexTicker));
       } catch (error) {
-        log.error("Error fetching indices from API", { 
-          error: error instanceof Error ? error.message : String(error), 
-          indexTicker 
+        log.error("Error fetching indices from API", {
+          error: error instanceof Error ? error.message : String(error),
+          indexTicker
         });
         setError(t("common.failedToLoadIndexData"));
       } finally {

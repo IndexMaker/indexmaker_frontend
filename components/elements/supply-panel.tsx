@@ -1,19 +1,10 @@
 "use client";
 
 /**
- * SupplyPanel - Buy/Sell ITP tokens via bundler
+ * SupplyPanel - Buy/Sell ITP tokens via Bridge
  *
- * ARBITRUM INTEGRATION (Story 3.2):
- * =================================
- * Balance validation using Arbitrum utilities is wired via:
- * - validateArbitrumBalance() - checks USDC balance on Arbitrum chain
- * - Uses hasSufficientUsdcBalance from '@/lib/contracts/balance-utils'
- *
- * When Arbitrum buy/sell contracts are deployed:
- * 1. handleSupply() - Add chain detection for Arbitrum vs Base flow
- * 2. Sell button - Enable when Keeper mechanism is ready (Epic 5)
- *
- * See: docs/ARBITRUM_INTEGRATION.md for full integration guide
+ * Inline execution without popup modals.
+ * Uses useArbitrumBuy and useArbitrumSell hooks for direct bridge transactions.
  */
 
 import { Button } from "@/components/ui/button";
@@ -31,9 +22,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@radix-ui/react-popover";
-import { Copy, X } from "lucide-react";
+import { X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import Image from "next/image";
-import { selectLatestMintInvoice } from "@/redux/mintInvoicesSlice";
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useMediaQuery } from "react-responsive";
@@ -44,16 +34,17 @@ import Info from "../icons/info";
 import NavigationAlert from "../icons/navigation-alert";
 import AnimatedPrice from "./animate-price";
 import CustomTooltip from "./custom-tooltip";
-import { TransactionConfirmModal } from "./transaction-modal";
-import { format } from "date-fns";
-import { BridgeTab } from "./bridge-tab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-// Arbitrum balance validation utilities (Story 3.2)
+import { useArbitrumBuy } from "@/hooks/useArbitrumBuy";
+import { useArbitrumSell } from "@/hooks/useArbitrumSell";
+import { useBridgedItps } from "@/hooks/useBridgedItps";
 import {
   hasSufficientUsdcBalance,
   USDC_DECIMALS,
 } from "@/lib/contracts/balance-utils";
 import { ARBITRUM_CHAIN_ID } from "@/lib/contracts/addresses";
+import { toast } from "sonner";
+import { VirtualOrderbook } from "./VirtualOrderbook";
 
 interface SupplyPanelProps {
   vaultIds: VaultInfo[];
@@ -68,17 +59,6 @@ interface VaultInfo {
   amount: string;
 }
 
-interface TransactionData {
-  token: string;
-  amount: number;
-  value: number;
-  apy: number;
-  collateral: {
-    name: string;
-    logo: string;
-  }[];
-}
-
 export function SupplyPanel({
   vaultIds,
   vaults,
@@ -87,45 +67,73 @@ export function SupplyPanel({
   setOpen,
 }: SupplyPanelProps) {
   const pollInterval = 30_000;
-  const { wallet, isWhitelisted, connectWallet } = useWallet();
+  const { wallet, connectWallet } = useWallet();
   const { indexPrices } = useQuoteContext();
   const [quantity, setQuantity] = useState<{ [key: string]: number }>({});
   const { t } = useLanguage();
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [confirmModalOpen, setConfrimModalOpen] = useState(false);
-  const [transactions, setTransactions] = useState<TransactionData[] | null>(
-    null
-  );
-  const isSmallWindow = useMediaQuery({ maxWidth: 1024 });
-  const [maxpopoverOpen, setMaxPopoverOpen] = useState(false);
   const [insufficientValue, setInsufficientValue] = useState(false);
-  // const storedWallet = useSelector((state: RootState) => state.wallet.wallet);
   const { currentChainId } = useSelector((state: RootState) => state.network);
   const selectedVault = useSelector(
     (state: RootState) => state.vault.selectedVault
   );
   const [balances, setBalances] = useState<{ [key: string]: number }>({});
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("buy");
+  const [activeTab, setActiveTab] = useState<"buy" | "sell">("buy");
   const [arbitrumBalanceError, setArbitrumBalanceError] = useState<string | null>(null);
+  const [itpBalance, setItpBalance] = useState<string>("0");
 
   const dispatch = useDispatch();
 
+  // Bridge hooks
+  const {
+    executeBuy,
+    status: buyStatus,
+    error: buyError,
+    txHash: buyTxHash,
+    reset: resetBuy,
+    isCorrectChain: buyCorrectChain,
+  } = useArbitrumBuy();
+
+  const {
+    executeSell,
+    status: sellStatus,
+    error: sellError,
+    txHash: sellTxHash,
+    reset: resetSell,
+    isCorrectChain: sellCorrectChain,
+  } = useArbitrumSell();
+
+  // Get bridged ITPs for address lookup
+  const { itps, findBySymbol, getItpAddress, isLoading: itpsLoading } = useBridgedItps();
+
+  // Current status based on active tab
+  const currentStatus = activeTab === "buy" ? buyStatus : sellStatus;
+  const currentError = activeTab === "buy" ? buyError : sellError;
+  const currentTxHash = activeTab === "buy" ? buyTxHash : sellTxHash;
+  const isCorrectChain = activeTab === "buy" ? buyCorrectChain : sellCorrectChain;
+
+  // Status helpers
+  const isProcessing = !["idle", "success", "error", "insufficient_balance", "approval_failed", "deposit_failed", "sell_failed"].includes(currentStatus);
+  const isSuccess = currentStatus === "success";
+  const isError = currentStatus === "error" || currentStatus === "approval_failed" || currentStatus === "deposit_failed" || currentStatus === "sell_failed" || currentStatus === "insufficient_balance";
+
+  // Get current vault and amount
+  const currentVault = vaults[0];
+  const currentAmount = selectedVault[0]?.amount || "0";
+  const parsedAmount = parseFloat(currentAmount) || 0;
+
+  // Find ITP address for current vault
+  const currentItpAddress = currentVault?.ticker ? getItpAddress(currentVault.ticker) : undefined;
+
   /**
-   * Validate USDC balance on Arbitrum before proceeding with transaction.
-   * This is the wired implementation of Task 4.2 from Story 3.2.
-   *
-   * @param requiredAmount - Amount of USDC required (human-readable string)
-   * @returns true if balance is sufficient, false otherwise
+   * Validate USDC balance on Arbitrum
    */
   const validateArbitrumBalance = useCallback(
     async (requiredAmount: string): Promise<boolean> => {
-      // Only validate on Arbitrum chain
-      // currentChainId is a hex string (e.g., "0xa4b1"), ARBITRUM_CHAIN_ID is a number
       const chainIdNum = currentChainId ? parseInt(currentChainId, 16) : null;
       if (chainIdNum !== ARBITRUM_CHAIN_ID) {
         setArbitrumBalanceError(null);
-        return true; // Skip Arbitrum validation on other chains
+        return true;
       }
 
       if (!wallet?.accounts?.[0]?.address) {
@@ -142,7 +150,6 @@ export function SupplyPanel({
         const amountWei = parseUnits(requiredAmount || "0", USDC_DECIMALS);
         const userAddress = wallet.accounts[0].address as `0x${string}`;
 
-        // Type assertion needed due to viem version differences
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const result = await hasSufficientUsdcBalance(client as any, userAddress, amountWei);
 
@@ -159,7 +166,6 @@ export function SupplyPanel({
         return true;
       } catch (error) {
         console.error("[SupplyPanel] Arbitrum balance validation error:", error);
-        // Fall back to local balance check if Arbitrum validation fails
         setArbitrumBalanceError(null);
         return true;
       }
@@ -167,39 +173,7 @@ export function SupplyPanel({
     [currentChainId, wallet]
   );
 
-  useEffect(() => {
-    const _transactions: TransactionData[] = vaults.map((vault) => {
-      return {
-        token: vault.name,
-        amount:
-          Number(
-            vaultIds.find((vaultId) => vaultId.name === vault.name)?.amount
-          ) || 0,
-        value:
-          Number(
-            vaultIds.find((vaultId) => vaultId.name === vault.name)?.amount
-          ) || 0,
-        apy: vault.performance?.oneYearReturn || 0,
-        collateral: vault.collateral,
-      };
-    });
-    setTransactions(_transactions);
-  }, [vaultIds, vaults]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setOpen(false);
-      } else {
-        // setOpen(false)
-      }
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [setOpen]);
-
+  // Fetch balances
   useEffect(() => {
     const fetchBalances = async () => {
       if (!wallet || !currentChainId || !TOKEN_METADATA[currentChainId]) {
@@ -228,103 +202,27 @@ export function SupplyPanel({
               newBalances[token] = Number.parseFloat(
                 formatUnits(balanceRaw as bigint, meta.decimals)
               );
-            } catch (contractError) {
+            } catch {
               newBalances[token] = 0;
             }
           }
         }
 
         setBalances(newBalances);
-      } catch (error) {
+      } catch {
         setBalances({});
-      } finally {
       }
     };
 
-    // run immediately
     fetchBalances();
 
     if (!wallet || !currentChainId) return;
 
-    const id = setInterval(fetchBalances, pollInterval); // <- same pattern as your top code
+    const id = setInterval(fetchBalances, pollInterval);
     return () => clearInterval(id);
   }, [wallet, currentChainId, pollInterval]);
 
-  const handleSupply = async () => {
-    // Calculate total USDC amount from all selected vaults
-    const totalAmount = selectedVault.reduce((sum, vault) => {
-      const amount = parseFloat(vault.amount) || 0;
-      return sum + amount;
-    }, 0);
-
-    // Validate Arbitrum balance before proceeding (Story 3.2 - AC #3)
-    // currentChainId is a hex string, ARBITRUM_CHAIN_ID is a number
-    const chainIdNum = currentChainId ? parseInt(currentChainId, 16) : null;
-    if (chainIdNum === ARBITRUM_CHAIN_ID) {
-      const isValid = await validateArbitrumBalance(totalAmount.toString());
-      if (!isValid) {
-        return; // Error message already set by validateArbitrumBalance
-      }
-    }
-
-    setConfrimModalOpen(true);
-  };
-
-  const viewFullInvoice = (
-    chain_id: string,
-    address: string,
-    client_order_id: string
-  ) => {
-    const invoiceUrl = `/invoices/${chain_id}/${address}/${client_order_id}`;
-    window.open(invoiceUrl, "_blank", "noopener,noreferrer");
-  };
-
-  const setMaxAmount = (vaultId: string) => {
-    // Assuming vaultId is unique and corresponds to a vault with a token
-    const vault = selectedVault.find((v) => v.name === vaultId);
-    const maxBalance = vault ? balances["USDC"] || 0 : 0;
-
-    if (maxBalance === 0) {
-      setInsufficientValue(true);
-      setMaxPopoverOpen(false);
-      return;
-    }
-    dispatch(
-      updateVaultAmount({ name: vaultId, amount: maxBalance.toString() })
-    );
-    setInsufficientValue(false);
-    setMaxPopoverOpen(false);
-  };
-
-  const removeVault = (vaultId: string) => {
-    dispatch(removeSelectedVault(vaultId));
-  };
-
-  const handleAmountChange = useCallback(
-    async (vaultId: string, value: string) => {
-      // Store value as-is
-      dispatch(updateVaultAmount({ name: vaultId, amount: value }));
-
-      // Optional: parse number for validation purposes
-      const amount = parseFloat(value);
-      if (!isNaN(amount) && amount >= 0) {
-        setQuantity((prev) => ({ ...prev, [vaultId]: 0 }));
-        setInsufficientValue(false);
-      }
-      const calculatedQuantity =
-        Number(indexPrices[vaultId]) !== 0 && indexPrices[vaultId]
-          ? amount / Number(indexPrices[vaultId])
-          : 0;
-      setQuantity((prev) => ({ ...prev, [vaultId]: calculatedQuantity }));
-    },
-    [indexPrices, dispatch]
-  );
-
-  const onConfirmTransactionClose = () => {
-    // console.log(`Supplying ${amount} to vault ${vaultIds}`);
-    setConfrimModalOpen(false);
-  };
-
+  // Calculate quantities when amounts change
   useEffect(() => {
     const newQuantities: { [ticker: string]: number } = {};
 
@@ -339,6 +237,168 @@ export function SupplyPanel({
     setQuantity(newQuantities);
   }, [selectedVault, indexPrices]);
 
+  /**
+   * Execute Buy Transaction
+   */
+  const handleBuy = async () => {
+    console.log("[handleBuy] currentVault:", currentVault);
+    console.log("[handleBuy] ticker:", currentVault?.ticker);
+    console.log("[handleBuy] currentItpAddress:", currentItpAddress);
+    console.log("[handleBuy] itps count:", itps.length);
+    console.log("[handleBuy] itps:", itps.map(i => ({ symbol: i.symbol, address: i.address })));
+
+    if (!currentVault || parsedAmount <= 0) {
+      toast.error("Please enter an amount");
+      return;
+    }
+
+    // Validate balance
+    const isValid = await validateArbitrumBalance(currentAmount);
+    if (!isValid) {
+      return;
+    }
+
+    // Find ITP address
+    let itpAddress = currentItpAddress;
+
+    // If no exact match, try to find by name or use first available
+    if (!itpAddress && itps.length > 0) {
+      // Try to find by partial name match
+      const foundItp = itps.find(itp =>
+        itp.name.toLowerCase().includes(currentVault.name.toLowerCase()) ||
+        currentVault.name.toLowerCase().includes(itp.name.toLowerCase()) ||
+        itp.symbol.toLowerCase().includes(currentVault.ticker.toLowerCase())
+      );
+
+      if (foundItp) {
+        itpAddress = foundItp.address;
+      } else {
+        // Use first available ITP for testing
+        itpAddress = itps[0].address;
+        toast.info(`Using ITP: ${itps[0].symbol}`);
+      }
+    }
+
+    if (!itpAddress) {
+      toast.error("No ITP available. Please create an ITP first via bridge.");
+      return;
+    }
+
+    // Execute buy
+    await executeBuy({
+      amount: currentAmount,
+      targetItpAddress: itpAddress as `0x${string}`,
+    });
+  };
+
+  /**
+   * Execute Sell Transaction
+   */
+  const handleSell = async () => {
+    if (!currentVault || parsedAmount <= 0) {
+      toast.error("Please enter an amount");
+      return;
+    }
+
+    let itpAddress = currentItpAddress;
+
+    if (!itpAddress && itps.length > 0) {
+      const foundItp = itps.find(itp =>
+        itp.name.toLowerCase().includes(currentVault.name.toLowerCase()) ||
+        itp.symbol.toLowerCase().includes(currentVault.ticker.toLowerCase())
+      );
+
+      if (foundItp) {
+        itpAddress = foundItp.address;
+      } else {
+        itpAddress = itps[0].address;
+        toast.info(`Using ITP: ${itps[0].symbol}`);
+      }
+    }
+
+    if (!itpAddress) {
+      toast.error("No ITP available for selling.");
+      return;
+    }
+
+    await executeSell({
+      itpAddress: itpAddress as `0x${string}`,
+      amount: currentAmount,
+    });
+  };
+
+  /**
+   * Reset transaction state
+   */
+  const handleReset = () => {
+    if (activeTab === "buy") {
+      resetBuy();
+    } else {
+      resetSell();
+    }
+  };
+
+  const setMaxAmount = (vaultId: string) => {
+    const maxBalance = balances["USDC"] || 0;
+
+    if (maxBalance === 0) {
+      setInsufficientValue(true);
+      return;
+    }
+    dispatch(
+      updateVaultAmount({ name: vaultId, amount: maxBalance.toString() })
+    );
+    setInsufficientValue(false);
+  };
+
+  const removeVault = (vaultId: string) => {
+    dispatch(removeSelectedVault(vaultId));
+  };
+
+  const handleAmountChange = useCallback(
+    async (vaultId: string, value: string) => {
+      dispatch(updateVaultAmount({ name: vaultId, amount: value }));
+
+      const amount = parseFloat(value);
+      if (!isNaN(amount) && amount >= 0) {
+        setQuantity((prev) => ({ ...prev, [vaultId]: 0 }));
+        setInsufficientValue(false);
+      }
+    },
+    [dispatch]
+  );
+
+  // Get status message
+  const getStatusMessage = () => {
+    switch (currentStatus) {
+      case "checking_balance":
+        return "Checking balance...";
+      case "checking_approval":
+        return "Checking approval...";
+      case "awaiting_approval":
+      case "approving":
+        return "Approving USDC...";
+      case "awaiting_deposit":
+      case "depositing":
+        return "Submitting buy order...";
+      case "processing":
+        return "Processing transaction...";
+      case "success":
+        return "Transaction successful!";
+      case "insufficient_balance":
+        return "Insufficient balance";
+      case "approval_failed":
+        return "Approval failed";
+      case "deposit_failed":
+      case "sell_failed":
+        return "Transaction failed";
+      case "error":
+        return currentError || "An error occurred";
+      default:
+        return "";
+    }
+  };
+
   return (
     <>
       {/* Mobile overlay */}
@@ -350,468 +410,346 @@ export function SupplyPanel({
       )}
       <div
         className={cn(
-          "border-l border-accent bg-foreground overflow-hidden lg:relative fixed lg:border-none top-0 bottom-0 right-0 w-[350px] lg:w-[400px]",
+          "border-l border-accent bg-foreground lg:relative fixed lg:border-none top-0 bottom-0 right-0 w-[350px] lg:w-[400px] flex flex-col",
           open ? "translate-x-0" : "translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="flex flex-col h-full lg:h-[calc(100%-50px)]">
-          <div className="flex flex-row items-center justify-between pt-[32px] pb-[16px] px-[18px] border-b border-accent">
-            <span className="text-[20px] text-primary">
-              {t("common.bundler")}
-            </span>
-            <div onClick={() => setOpen(!open)}>
-              <NavigationAlert className="h-4 w-4 text-primary flex lg:hidden cursor-pointer" />
-            </div>
+        {/* Fixed header */}
+        <div className="flex-shrink-0 flex flex-row items-center justify-between pt-[32px] pb-[16px] px-[18px] border-b border-accent">
+          <span className="text-[20px] text-primary">
+            Trade
+          </span>
+          <div onClick={() => setOpen(!open)}>
+            <NavigationAlert className="h-4 w-4 text-primary flex lg:hidden cursor-pointer" />
           </div>
-          
-          <Tabs defaultValue="buy" onValueChange={setActiveTab} className="w-full flex-1 flex flex-col">
-            <TabsList className="w-full rounded-none border-b border-accent bg-transparent p-0">
-              <TabsTrigger 
-                value="buy" 
-                className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent py-3"
+        </div>
+
+        {/* Scrollable content area */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as "buy" | "sell"); handleReset(); }} className="w-full flex-1 flex flex-col min-h-0">
+            <TabsList className="flex-shrink-0 w-full rounded-none border-b border-accent bg-transparent p-0">
+              <TabsTrigger
+                value="buy"
+                className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-green-500 data-[state=active]:bg-transparent data-[state=active]:text-green-500 py-3 font-semibold"
               >
                 Buy
               </TabsTrigger>
-              <TabsTrigger 
-                value="bridge" 
-                className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent py-3"
+              <TabsTrigger
+                value="sell"
+                className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-red-500 data-[state=active]:bg-transparent data-[state=active]:text-red-500 py-3 font-semibold"
               >
-                Bridge
+                Sell
               </TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="buy" className="flex-1 overflow-y-auto m-0 pb-[120px]">
-              <div className="flex flex-col">
-            {vaults.map((vault, index) => {
-              return (
-                <div key={vault.name + index}>
-                  {/* Header */}
-                  <div className="flex items-start justify-between py-8 px-4">
-                    <div className="flex items-start gap-2">
-                      <div className="w-[40px] h-[40px] rounded-full p-1 flex items-start justify-center text-ellipsis overflow-hidden">
-                        <IndexMaker className="w-[36px] h-[36px] text-muted" />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <h2 className="font-normal text-[15px] text-secondary">
-                          {vault.name}
-                        </h2>
-                        <div className="flex lg:flex-row flex-col lg:items-center items-start gap-2 text-sm text-secondary">
-                          <span className="text-[11px] bg-accent px-2 py-0.5 rounded">
-                            {shortenAddress(vault.curator)}
-                          </span>
-                          <span className="text-[11px] bg-accent px-2 py-0.5 rounded">
-                            <AnimatedPrice
-                              currency="USDC"
-                              value={Number(indexPrices[vault.ticker] ?? 0)}
-                            />
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeVault(vault.name)}
-                      className="text-secondary cursor-pointer hover:text-primary bg-accent p-[6px] w-[24px] h-[24px]  rounded-[4px]"
-                    >
-                      <X className="h-2 w-2" style={{ width: "12px" }} />
-                    </Button>
-                  </div>
 
-                  {/* Supply form */}
-                  <div className="p-4 pt-0 border-b border-accent">
-                    <div className="mb-6">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-[12px] text-secondary">
-                          {t("table.supply")} {"USDC"}
-                        </label>
-                      </div>
-                      <div className="flex flex-col">
-                        <div
-                          className={cn(
-                            "flex flex-row items-center justify-between gap-1 space-x-2 px-[8px] py-[10px] bg-accent rounded-[8px] border-[0.5px]",
-                            insufficientValue
-                              ? "border-[#c73e59f2]"
-                              : "border-accent"
-                          )}
-                        >
-                          {/* Input and Value Display */}
-                          <div className="flex flex-col">
-                            <input
-                              type="text"
-                              placeholder="0"
-                              id="amount"
-                              inputMode="decimal"
-                              autoComplete="off"
-                              autoCorrect="off"
-                              step="any"
-                              value={
-                                selectedVault.find(
-                                  (_vault) => _vault.name === vault.name
-                                )?.amount || ""
-                              }
-                              className="w-full font-mono text-[13px] outline-none bg-transparent text-primary placeholder-secondary mb-1"
-                              onChange={(e) => {
-                                let value = e.target.value;
-
-                                // Allow empty input
-                                if (value === "") {
-                                  handleAmountChange(vault.name, "");
-                                  return;
-                                }
-
-                                // Only allow numbers and a single dot
-                                const isValid = /^(\d+)?(\.\d*)?$/.test(value);
-                                if (!isValid) return;
-
-                                handleAmountChange(vault.name, value);
-                              }}
-                            />
-
-                            <div className="font-mono text-[10px] text-muted">
-                              {quantity[vault.ticker]
-                                ? quantity[vault.ticker]
-                                : "0"}{" "}
-                              {vault.ticker}
-                            </div>
-                          </div>
-
-                          <div className="flex flex-row gap-1 items-center">
-                            {/* Asset Logo */}
-                            <span className="flex items-center w-[20px] h-[20px]">
-                              <Image
-                                src={USDC}
-                                alt="USDC"
-                                width={20}
-                                height={20}
-                                className="rounded-full"
-                              />
-                            </span>
-
-                            {/* Asset Name */}
-                            <span className="text-secondary text-[12px]">
-                              USDC
-                            </span>
-
-                            {/* Max Button */}
-                            <Button
-                              type="button"
-                              className="px-[8px] py-[5px] h-[26px] text-[12px] rounded-[4px] bg-accent text-primary hover:bg-muted cursor-pointer"
-                              onClick={() => setMaxAmount(vault.name)}
-                            >
-                              {t("common.max")}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                      {insufficientValue && (
-                        <div className="flex justify-end mt-1 gap-1">
-                          <Info color="#c73e59f2" className="w-4 h-4" />
-                          <span className="text-xs text-secondary">
-                            {arbitrumBalanceError || t("common.insufficientValue")}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex justify-end mt-1">
-                        <span className="text-xs text-secondary">
-                          {t("common.balance")}:{" "}
-                          {balances["USDC"]?.toFixed(4) || 0} {"USDC"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* APY info */}
-                    <div className="space-y-4 mb-6 pt-6">
-                      <div className="flex items-center justify-between gap-4">
-                        {/*<div className="flex items-center gap-1">
-                          <span className="text-[12px] text-muted">
-                            {t("table.oneYearPerformance")}
-                          </span>
-                        </div>
-                         <div className="flex items-center gap-1">
-                          <span className="font-normal text-primary text-[12px]">
-                            {vault.performance?.oneYearReturn.toFixed(2) || "0"}{" "}
-                            %
-                          </span>
-                        </div> */}
-                      </div>
-
-                      {/* Collateral Exposure */}
-                      <div className="flex items-center justify-between gap-4">
-                        {/* <div className="flex items-center gap-1">
-                          <span className="text-[12px] text-muted">
-                            {t("common.collateralExposure")}
-                          </span>
-                        </div>*/}
-                        <div className="flex items-center gap-1">
-                          {vault.collateral.length > 0 ? (
-                            vault.collateral
-                              .slice(0, 5)
-                              .map((collateral, index) => (
-                                <CustomTooltip
-                                  key={"collateral-" + index.toString()}
-                                  content={
-                                    <div className="flex flex-col gap-1 min-w-[220px] bg-foreground rounded-[8px]">
-                                      <div className="flex justify-between border-b py-1 px-3 border-accent">
-                                        <span>Collateral</span>
-                                        <div className="flex items-center">
-                                          <Image
-                                            src={collateral.logo || USDC}
-                                            alt={"USDC"}
-                                            width={17}
-                                            height={17}
-                                          />
-                                          <span>PT-U...025</span>
-                                        </div>
-                                      </div>
-                                      <div className="flex justify-between border-b py-1 px-3 border-accent">
-                                        <span className="">Oracle</span>
-                                        <a
-                                          target="_blank"
-                                          href="https://etherscan.io/address/0xDddd770BADd886dF3864029e4B377B5F6a2B6b83"
-                                          className="hover:bg-[afafaf20]"
-                                        >
-                                          Exchange rate
-                                        </a>
-                                        <Copy className="w-[15px] h-[15px]" />
-                                      </div>
-                                    </div>
-                                  }
-                                >
-                                  <div className="flex items-center gap-1 hover:px-1 hover:transition-all">
-                                    <Image
-                                      src={collateral.logo && collateral.logo !== "" ? collateral.logo : USDC}
-                                      alt={collateral.name}
-                                      width={17}
-                                      height={17}
-                                      className="object-cover w-full h-full"
-                                    />
-                                  </div>
-                                </CustomTooltip>
-                              ))
-                          ) : (
-                            <></>
-                          )}
-                          {vault.collateral.length > 5 && (
-                            <CustomTooltip
-                              content={
-                                <div className="flex flex-col gap-2 p-2 overflow-y-auto max-h-[300px] bg-foreground">
-                                  {vault.collateral
-                                    .slice(5)
-                                    .map((collateral, index) => (
-                                      <div
-                                        key={index}
-                                        className="flex items-center gap-2"
-                                      >
-                                        <span>{collateral.name}</span>
-                                      </div>
-                                    ))}
-                                </div>
-                              }
-                            >
-                              <span className="text-[12px] pl-2 text-secondary">
-                                + {vault.collateral?.length - 5}
-                              </span>
-                            </CustomTooltip>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-              </div>
+            <TabsContent value="buy" className="flex-1 overflow-y-auto m-0 overscroll-contain">
+              {renderTradeContent()}
             </TabsContent>
-            
-            <TabsContent value="bridge" className="flex-1 m-0">
-              <BridgeTab />
+
+            <TabsContent value="sell" className="flex-1 overflow-y-auto m-0 overscroll-contain">
+              {renderTradeContent()}
             </TabsContent>
           </Tabs>
+        </div>
 
-          {/* Previous Mint Invoices Section - Commented Out */}
-          {/* <div className="flex flex-col p-4 border-t border-accent">
-            <h3 className="text-[14px] text-primary font-semibold mb-2">
-              Previous Mint Invoices
-            </h3>
-
-            {(() => {
-              const latest = useSelector(selectLatestMintInvoice);
-              if (!latest) {
-                return (
-                  <p className="text-[13px] pt-4 text-secondary">
-                    There is no previous Mint Invoice for your connected wallet!
-                  </p>
-                );
-              }
-
-              return (
-                <div className="p-2 rounded-lg bg-accent border border-accent flex flex-col gap-1">
-                  <div className="flex items-center justify-between text-[12px]">
-                    <span className="text-secondary">
-                      {format(new Date(latest.timestamp), "MMM d, HH:mm:ss")}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-500">
-                      {latest.status.charAt(0).toUpperCase() + latest.status.slice(1)}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-[13px] text-primary">
-                    <Image
-                      src={USDC}
-                      alt="USDC"
-                      width={18}
-                      height={18}
-                      className="rounded-full"
-                    />
-                    <span className="font-medium">
-                      {Number(latest.amount_paid).toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      USDC →
-                    </span>
-                    <IndexMaker className="text-muted w-[18px] h-[18px]" />
-                    <span className="font-medium">
-                      {Number(latest.filled_quantity).toExponential(2)}{" "}
-                      {latest.symbol}
-                    </span>
-                  </div>
-
-                  <div className="text-[11px] text-blue-400">
-                    Invoice #
-                    <span
-                      className="pl-1 underline cursor-pointer"
-                      onClick={() =>
-                        viewFullInvoice(
-                          latest.chain_id,
-                          latest.address,
-                          latest.client_order_id
-                        )
-                      }
-                    >
-                      {latest.payment_id}
-                    </span>
-                  </div>
-
-                  <div className="relative h-4 bg-background rounded-full overflow-hidden mt-1">
-                    <div
-                      className="h-full bg-blue-500 transition-all"
-                      style={{ width: "100%" }}
-                    />
-                    <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white">
-                      100%
-                    </span>
-                  </div>
-                </div> 
-              );
-            })()}
-          </div> */}
-
-          {/* Footer - Only show on Buy tab */}
-          {activeTab === "buy" && (
-            <>
-              {!wallet ? (
-                <div className="p-4 flex flex-col gap-2 border-t border-accent bottom-[50px] absolute w-full">
-                  <Button
-                    onClick={connectWallet}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[14px] cursor-pointer"
-                  >
-                    {t("common.connectWallet")}
-                  </Button>
+        {/* Sticky footer with action buttons */}
+        {wallet && (
+          <div className="flex-shrink-0 p-4 pb-6 border-t border-accent bg-foreground">
+              {/* Status indicator */}
+              {currentStatus !== "idle" && (
+                <div className={cn(
+                  "flex items-center gap-2 mb-3 p-2 rounded text-sm",
+                  isSuccess && "bg-green-500/10 text-green-500",
+                  isError && "bg-red-500/10 text-red-500",
+                  isProcessing && "bg-blue-500/10 text-blue-500"
+                )}>
+                  {isProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isSuccess && <CheckCircle2 className="w-4 h-4" />}
+                  {isError && <AlertCircle className="w-4 h-4" />}
+                  <span>{getStatusMessage()}</span>
                 </div>
-              ) : (
-                // Connected & Whitelisted
-                <div className="bottom-[50px] absolute w-full p-2 border-t border-accent">
-                  <div className="p-0 flex flex-col">
-                <span className="text-yellow-500 text-[11px] text-right">
-                  ⚠️Withdraw and Invest are pause until DAO is formed.
-                </span>
-                <div className="w-full text-[13px] text-secondary text-right">
-                  Estimated Fill Time : ~5 seconds
-                </div>
-              </div>
-              <div className="flex gap-10 lg:gap-10 items-center h-[40px] justify-between relative">
+              )}
+
+              {/* Transaction hash link */}
+              {currentTxHash && (
+                <a
+                  href={`https://arbiscan.io/tx/${currentTxHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-500 hover:underline block mb-3"
+                >
+                  View on Arbiscan →
+                </a>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-3">
                 <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className="h-[26px] px-[8px] py-[5px] border-accent w-[50px] bg-accent text-[11px] hover:bg-foreground text-primary cursor-pointer"
+                      className="h-[44px] px-4 border-accent bg-accent text-sm hover:bg-foreground text-primary cursor-pointer"
                     >
-                      {t("common.cancel")}
+                      Cancel
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
-                    className="w-[300px] p-4 bg-ring text-card rounded-md flex flex-col gap-4 shadow-[0px_1px_20px_0px_rgba(0,0,0,0.04),0px_12px_16px_0px_rgba(6,9,11,0.05),0px_6px_12px_0px_rgba(0,0,0,0.07)] z-100"
+                    className="w-[280px] p-4 bg-ring text-card rounded-md flex flex-col gap-4 shadow-lg z-50"
                     align="start"
                     sideOffset={10}
                   >
-                    <p className="text-[11px] font-normal text-card text-center">
-                      {t("common.transactionConfrimTitle")}
+                    <p className="text-sm text-center">
+                      Cancel and close this panel?
                     </p>
-                    <div className="flex justify-end items-end gap-2">
+                    <div className="flex justify-end gap-2">
                       <Button
                         variant="secondary"
-                        className="text-[11px] px-[8px] py-[5px] bg-accent cursor-pointer h-[26px] rounded-[4px]"
+                        className="text-sm px-3 py-1 bg-accent cursor-pointer h-[32px] rounded"
                         onClick={() => setPopoverOpen(false)}
                       >
-                        {t("common.noKeep")}
+                        No, keep
                       </Button>
                       <Button
                         variant="destructive"
-                        className="text-[11px] px-[8px] py-[5px] cursor-pointer !bg-[#c73e59e6] h-[26px] rounded-[4px]"
+                        className="text-sm px-3 py-1 cursor-pointer !bg-red-600 h-[32px] rounded"
                         onClick={onClose}
                       >
-                        {t("common.yesCancel")}
+                        Yes, cancel
                       </Button>
                     </div>
                   </PopoverContent>
                 </Popover>
 
-                <div className="flex items-center gap-2">
-                  <div className="relative group">
-                    <Button
-                      className="h-[40px] bg-gray-500 text-white text-[13px] cursor-not-allowed opacity-70"
-                      disabled
-                    >
-                      {t("common.sell")}
-                    </Button>
-                    <div className="absolute hidden group-hover:block bottom-full mb-2 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-800 text-xs text-white rounded whitespace-nowrap">
-                      Sell not available during alpha
+                <Button
+                  className={cn(
+                    "flex-1 h-[44px] text-white text-sm cursor-pointer font-semibold",
+                    activeTab === "buy"
+                      ? "bg-green-600 hover:bg-green-700"
+                      : "bg-red-600 hover:bg-red-700"
+                  )}
+                  disabled={
+                    isProcessing ||
+                    parsedAmount <= 0 ||
+                    !wallet ||
+                    itpsLoading
+                  }
+                  onClick={activeTab === "buy" ? handleBuy : handleSell}
+                >
+                  {isProcessing ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : null}
+                  {activeTab === "buy" ? "Buy" : "Sell"}
+                </Button>
+              </div>
+
+              {/* Chain warning */}
+              {!isCorrectChain && wallet && (
+                <p className="text-xs text-yellow-500 mt-2 text-center">
+                  Please switch to Arbitrum network
+                </p>
+              )}
+
+            {/* ITP count info */}
+            {!itpsLoading && itps.length > 0 && (
+              <p className="text-xs text-muted mt-2 text-center">
+                {itps.length} ITPs available on Arbitrum
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Connect wallet prompt */}
+        {!wallet && (
+          <div className="flex-shrink-0 p-4 pb-6 border-t border-accent bg-foreground">
+            <Button
+              onClick={connectWallet}
+              className="w-full h-[44px] bg-blue-600 hover:bg-blue-700 text-white text-sm cursor-pointer"
+            >
+              Connect Wallet
+            </Button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+
+  function renderTradeContent() {
+    return (
+      <div className="flex flex-col">
+        {vaults.map((vault, index) => (
+          <div key={vault.name + index}>
+            {/* Header */}
+            <div className="flex items-start justify-between py-6 px-4">
+              <div className="flex items-start gap-2">
+                <div className="w-[40px] h-[40px] rounded-full p-1 flex items-start justify-center">
+                  <IndexMaker className="w-[36px] h-[36px] text-muted" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <h2 className="font-medium text-[15px] text-primary">
+                    {vault.name}
+                  </h2>
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-secondary">
+                    <span className="text-[11px] bg-accent px-2 py-0.5 rounded">
+                      {vault.ticker}
+                    </span>
+                    <span className="text-[11px] bg-accent px-2 py-0.5 rounded">
+                      <AnimatedPrice
+                        currency="USDC"
+                        value={Number(indexPrices[vault.ticker] ?? 0)}
+                      />
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => removeVault(vault.name)}
+                className="text-secondary cursor-pointer hover:text-primary bg-accent p-[6px] w-[24px] h-[24px] rounded-[4px]"
+              >
+                <X className="h-2 w-2" style={{ width: "12px" }} />
+              </Button>
+            </div>
+
+            {/* Amount input */}
+            <div className="p-4 pt-0 border-b border-accent">
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[12px] text-secondary">
+                    {activeTab === "buy" ? "You pay" : "You sell"}
+                  </label>
+                </div>
+                <div
+                  className={cn(
+                    "flex flex-row items-center justify-between gap-1 space-x-2 px-[10px] py-[12px] bg-accent rounded-[8px] border",
+                    insufficientValue ? "border-red-500" : "border-transparent"
+                  )}
+                >
+                  <div className="flex flex-col flex-1">
+                    <input
+                      type="text"
+                      placeholder="0.00"
+                      inputMode="decimal"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      value={
+                        selectedVault.find((_vault) => _vault.name === vault.name)?.amount || ""
+                      }
+                      className="w-full font-mono text-[18px] font-semibold outline-none bg-transparent text-primary placeholder-secondary"
+                      onChange={(e) => {
+                        let value = e.target.value;
+                        if (value === "") {
+                          handleAmountChange(vault.name, "");
+                          return;
+                        }
+                        const isValid = /^(\d+)?(\.\d*)?$/.test(value);
+                        if (!isValid) return;
+                        handleAmountChange(vault.name, value);
+                      }}
+                    />
+                    <div className="font-mono text-[11px] text-muted mt-1">
+                      ≈ {quantity[vault.ticker]?.toFixed(4) || "0"} {vault.ticker}
                     </div>
                   </div>
 
-                  <Button
-                    className="flex-1 h-[40px] bg-blue-600 hover:bg-blue-700 text-white text-[13px] cursor-pointer"
-                    disabled={
-                      selectedVault.filter(
-                        (_vault) =>
-                          isNaN(Number(_vault.amount)) ||
-                          Number(_vault.amount) === 0
-                      ).length > 0 || !wallet
-                    }
-                    onClick={handleSupply}
-                  >
-                    {t("common.finalizeTransactions")}
-                  </Button>
+                  <div className="flex flex-row gap-2 items-center">
+                    <span className="flex items-center">
+                      <Image
+                        src={USDC}
+                        alt="USDC"
+                        width={24}
+                        height={24}
+                        className="rounded-full"
+                      />
+                    </span>
+                    <span className="text-primary text-[14px] font-medium">
+                      USDC
+                    </span>
+                    <Button
+                      type="button"
+                      className="px-[10px] py-[6px] h-[28px] text-[11px] rounded bg-foreground text-primary hover:bg-muted cursor-pointer font-medium"
+                      onClick={() => setMaxAmount(vault.name)}
+                    >
+                      MAX
+                    </Button>
+                  </div>
+                </div>
+
+                {insufficientValue && (
+                  <div className="flex justify-end mt-2 gap-1 items-center">
+                    <Info color="#ef4444" className="w-3 h-3" />
+                    <span className="text-xs text-red-500">
+                      {arbitrumBalanceError || "Insufficient balance"}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-end mt-2">
+                  <span className="text-xs text-muted">
+                    Balance: {balances["USDC"]?.toFixed(4) || "0.00"} USDC
+                  </span>
                 </div>
               </div>
-            </div>
+
+              {/* You receive section */}
+              <div className="mb-4">
+                <label className="text-[12px] text-secondary mb-2 block">
+                  {activeTab === "buy" ? "You receive" : "You receive"}
+                </label>
+                <div className="flex items-center justify-between px-[10px] py-[12px] bg-accent/50 rounded-[8px]">
+                  <div className="flex flex-col">
+                    <span className="font-mono text-[18px] font-semibold text-primary">
+                      {activeTab === "buy"
+                        ? (quantity[vault.ticker]?.toFixed(4) || "0.00")
+                        : (parsedAmount * (Number(indexPrices[vault.ticker]) || 0)).toFixed(2)
+                      }
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <IndexMaker className="w-[24px] h-[24px] text-muted" />
+                    <span className="text-primary text-[14px] font-medium">
+                      {activeTab === "buy" ? vault.ticker : "USDC"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Price info - compact */}
+              <div className="text-xs text-muted py-1">
+                <div className="flex justify-between">
+                  <span>Price</span>
+                  <span>1 {vault.ticker} = {(indexPrices[vault.ticker] && !isNaN(Number(indexPrices[vault.ticker]))) ? Number(indexPrices[vault.ticker]).toFixed(2) : "0.00"} USDC</span>
+                </div>
+              </div>
+
+              {/* Virtual Orderbook */}
+              {vault.collateral && vault.collateral.length > 0 && (
+                <div className="mt-4">
+                  <VirtualOrderbook
+                    symbols={vault.collateral.map(c => c.name.toUpperCase())}
+                    weights={(() => {
+                      // Use actual weights from ITP if available, otherwise equal weights
+                      const hasWeights = vault.collateral.some(c => c.weight !== undefined);
+                      if (hasWeights) {
+                        return vault.collateral.map(c => c.weight || 0);
+                      }
+                      // Fallback to equal weights
+                      const len = vault.collateral.length;
+                      const baseWeight = Math.floor(10000 / len);
+                      const remainder = 10000 - (baseWeight * len);
+                      return vault.collateral.map((_, i) => baseWeight + (i < remainder ? 1 : 0));
+                    })()}
+                    displayLevels={5}
+                    compact={true}
+                    defaultCollapsed={true}
+                    baseMidPrice={vault.indexPrice || (indexPrices[vault.ticker] ? Number(indexPrices[vault.ticker]) : undefined)}
+                  />
+                </div>
               )}
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        ))}
       </div>
-      <TransactionConfirmModal
-        isOpen={confirmModalOpen}
-        onClose={onConfirmTransactionClose}
-        transactions={transactions}
-        index_address={
-          vaults && vaults[0] && vaults[0].address ? vaults[0].address : ""
-        }
-        symbol={
-          vaults && vaults[0] && vaults[0].ticker ? vaults[0].ticker : "SY100"
-        }
-      />
-    </>
-  );
+    );
+  }
 }

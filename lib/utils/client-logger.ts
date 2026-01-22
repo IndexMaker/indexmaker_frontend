@@ -93,24 +93,18 @@ const createClientLogger = (): Logger => {
     };
   } else {
     // Server-side implementation - try to use pino, fallback to console
+    // NOTE: Do NOT use pino-pretty transport - it spawns worker threads
+    // which break in Next.js API routes causing MODULE_NOT_FOUND errors
     try {
       // Only import pino on server side
       const pino = require('pino');
-      
+
       return pino({
         level: logLevel,
-        transport: process.env.NODE_ENV === 'development' ? {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            translateTime: 'HH:MM:ss',
-            ignore: 'pid,hostname',
-            singleLine: true,
-          },
-        } : undefined,
+        // No transport - pino-pretty worker threads break in Next.js
         timestamp: pino.stdTimeFunctions.isoTime,
         base: {
-          service: 'calculator',
+          service: 'indexmaker',
           version: process.env?.npm_package_version || '1.0.0',
         },
         redact: {

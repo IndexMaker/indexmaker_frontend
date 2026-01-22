@@ -266,9 +266,11 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
     };
     index?.indexId && _fetchUserTransaction(index?.indexId);
 
-    index &&
-      index.ticker &&
-      setIndexDescription((getIndexData(index.ticker) || getIndexData("SY100"))?.description);
+    // Set description from index data or mockup (fallback to empty string)
+    if (index && index.ticker) {
+      const mockupData = getIndexData(index.ticker);
+      setIndexDescription(mockupData?.description || "");
+    }
 
     index &&
       dispatch(addSelectedVault({ name: index.name, ticker: index.ticker }));

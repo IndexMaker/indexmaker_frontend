@@ -60,17 +60,7 @@ const wallets = [
 
 const onboard = Onboard({
   wallets: wallets,
-  // Disable Unstoppable Domains resolution to reduce errors on alt chains
-  // Note: ENS resolution still happens internally but errors are non-blocking
   chains: [
-    {
-      id: "0x1", // Ethereum Mainnet - listed first for ENS resolution priority
-      token: "ETH",
-      label: "Ethereum Mainnet",
-      rpcUrl:
-        process.env.ETHEREUM_RPCURL ||
-        "https://mainnet.infura.io/v3/920d560360ac4b7193a85e7d7448fcf8",
-    },
     {
       id: "0xa4b1", // Arbitrum One (42161 in hex)
       token: "ETH",

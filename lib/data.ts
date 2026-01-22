@@ -156,6 +156,7 @@ export const mockup_vaults = [
   }
 ];
 
+// Base tokens - index tokens are now fetched from API
 export const TOKEN_LIST = [
   {
     symbol: 'ETH',
@@ -167,42 +168,6 @@ export const TOKEN_LIST = [
     type: 'erc20',
     address: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
     decimals: 6,
-  },
-  {
-    symbol: 'SYDF',
-    type: 'erc20',
-    address: '0xcdce4c5ffd9cd0025d536dbc69a12cf7ada82193', 
-    decimals: 18,
-  },
-  {
-    symbol: 'SYME',
-    type: 'erc20',
-    address: '0xbab03330d8b41b20eb540b6361ab30b59d8ee849', 
-    decimals: 18,
-  },
-  {
-    symbol: 'SYAI',
-    type: 'erc20',
-    address: '0x700892f09f8f8589ff3e69341b806adb06bb67fd', 
-    decimals: 18,
-  },
-  {
-    symbol: 'SYL2',
-    type: 'erc20',
-    address: '0x0cee77782fa57cfb66403c94c08e2e3e376dc388', 
-    decimals: 18,
-  },
-  {
-    symbol: 'SYAZ',
-    type: 'erc20',
-    address: '0x8a8cf8860f97d007fcf46ed790df794e008b3ce8', 
-    decimals: 18,
-  },
-  {
-    symbol: 'SY100',
-    type: 'erc20',
-    address: '0x1a64a446e31f19172c6eb3197a1e85ff664af380', 
-    decimals: 18,
   },
 ];
 
@@ -243,51 +208,12 @@ export const TOKEN_METADATA: {
     // },
   },
   '0x2105': {
-    // Base mainnet
-    // ETH: {
-    //   type: 'native',
-    //   decimals: 18,
-    // },
+    // Base mainnet - index tokens are now fetched from API
     USDC: {
       type: 'erc20',
       address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
       decimals: 6,
     },
-    SYDF: {
-      type: 'erc20',
-      address: '0xcdce4c5ffd9cd0025d536dbc69a12cf7ada82193', 
-      decimals: 18,
-    },
-    SYME: {
-      type: 'erc20',
-      address: '0xbab03330d8b41b20eb540b6361ab30b59d8ee849', 
-      decimals: 18,
-    },
-    SYAI: {
-      type: 'erc20',
-      address: '0x700892f09f8f8589ff3e69341b806adb06bb67fd', 
-      decimals: 18,
-    },
-    SYL2: {
-      type: 'erc20',
-      address: '0x0cee77782fa57cfb66403c94c08e2e3e376dc388', 
-      decimals: 18,
-    },
-    SYAZ: {
-      type: 'erc20',
-      address: '0x8a8cf8860f97d007fcf46ed790df794e008b3ce8', 
-      decimals: 18,
-    },
-    SY100: {      
-      type: 'erc20',
-      address: '0x1a64a446e31f19172c6eb3197a1e85ff664af380', 
-      decimals: 18,
-    },
-    // USDT: {
-    //   type: 'erc20',
-    //   address: ' 0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2', // USDT on Base (verify this address)
-    //   decimals: 6,
-    // },
   },
 };
 

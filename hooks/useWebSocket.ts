@@ -190,7 +190,13 @@ export default function useQuoteSocket(
   const connectQuotes = () => {
     if (wsQuotesRef.current) return;
 
-    wsQuotesRef.current = new WebSocket(process.env.NEXT_PUBLIC_QUOTE_SERVER!);
+    const quoteServerUrl = process.env.NEXT_PUBLIC_QUOTE_SERVER;
+    if (!quoteServerUrl) {
+      console.debug("[WebSocket] NEXT_PUBLIC_QUOTE_SERVER not configured, skipping quotes connection");
+      return;
+    }
+
+    wsQuotesRef.current = new WebSocket(quoteServerUrl);
 
     wsQuotesRef.current.onopen = () => {
       setIsQuotesConnected(true);
@@ -235,7 +241,13 @@ export default function useQuoteSocket(
   const connectOrders = () => {
     if (wsOrdersRef.current) return;
 
-    wsOrdersRef.current = new WebSocket(process.env.NEXT_PUBLIC_ORDER_SERVER!);
+    const orderServerUrl = process.env.NEXT_PUBLIC_ORDER_SERVER;
+    if (!orderServerUrl) {
+      console.debug("[WebSocket] NEXT_PUBLIC_ORDER_SERVER not configured, skipping orders connection");
+      return;
+    }
+
+    wsOrdersRef.current = new WebSocket(orderServerUrl);
 
     wsOrdersRef.current.onopen = () => {
       setIsOrdersConnected(true);

@@ -3,25 +3,23 @@
 /**
  * useArbitrumSell Hook - Arbitrum Sell Flow Integration
  *
- * BLOCKED: The contract functions (requestSell) are NOT YET DEPLOYED.
- * This hook provides the interface and infrastructure for when contracts are ready.
- *
- * When contracts are available, this hook will handle:
+ * Handles the complete sell flow:
  * 1. ITP balance validation
  * 2. ITP approval flow (if needed)
  * 3. requestSell contract call
  * 4. Transaction status tracking
  *
- * Expected contract interface:
+ * Contract interface:
  * ```solidity
  * function requestSell(address itp, uint256 amount) external;
  * ```
  */
 
 import { useState, useCallback } from 'react';
-import { parseUnits } from 'viem';
+import { parseUnits, getContract } from 'viem';
 import { toast } from 'sonner';
 import { useBridgeWallet } from './useBridgeWallet';
+import { erc20Abi } from '@/lib/contracts/abis/erc20';
 import {
   checkItpBalance,
   hasApproval,
@@ -56,6 +54,8 @@ export interface SellResult {
   txHash?: `0x${string}`;
   error?: string;
   approvalTxHash?: `0x${string}`;
+  /** Sell nonce for tracking bridge completion */
+  nonce?: number;
 }
 
 /**
@@ -70,9 +70,6 @@ export interface SellParams {
 
 /**
  * Hook for executing Arbitrum sell flow.
- *
- * IMPORTANT: Contract functions are NOT YET DEPLOYED. This hook currently
- * provides infrastructure and will log/stub operations until contracts are ready.
  *
  * @example
  * ```tsx
@@ -92,6 +89,7 @@ export interface SellParams {
 export function useArbitrumSell() {
   const {
     publicClient,
+    walletClient,
     address,
     bridgeProxy,
     isConnected,
@@ -102,6 +100,7 @@ export function useArbitrumSell() {
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
   const [approvalTxHash, setApprovalTxHash] = useState<`0x${string}` | null>(null);
+  const [sellNonce, setSellNonce] = useState<number | null>(null);
 
   /**
    * Reset hook state
@@ -111,6 +110,7 @@ export function useArbitrumSell() {
     setError(null);
     setTxHash(null);
     setApprovalTxHash(null);
+    setSellNonce(null);
   }, []);
 
   /**
@@ -120,7 +120,7 @@ export function useArbitrumSell() {
    * 1. Validate wallet connection and chain
    * 2. Check ITP balance
    * 3. Check/request ITP approval
-   * 4. Call requestSell (BLOCKED - contract not deployed)
+   * 4. Call requestSell
    * 5. Return transaction hash
    */
   const executeSell = useCallback(
@@ -179,74 +179,75 @@ export function useArbitrumSell() {
         if (!approvalCheck.hasApproval) {
           setStatus('awaiting_approval');
 
-          // TODO: When contracts are deployed, uncomment this:
-          // try {
-          //   setStatus('approving');
-          //   toast.info('Approving ITP...');
-          //
-          //   // Create ITP contract instance for approval
-          //   const itpContract = getContract({
-          //     address: itpAddress,
-          //     abi: erc20Abi,
-          //     client: { public: publicClient, wallet: walletClient },
-          //   });
-          //
-          //   const approveTx = await itpContract.write.approve([BRIDGE_PROXY_ADDRESS, amountWei]);
-          //   setApprovalTxHash(approveTx);
-          //
-          //   await publicClient.waitForTransactionReceipt({ hash: approveTx });
-          //   toast.success('ITP approved');
-          // } catch (approvalError) {
-          //   const errorMsg = approvalError instanceof Error ? approvalError.message : 'Approval failed';
-          //   setError(errorMsg);
-          //   setStatus('approval_failed');
-          //   toast.error('Approval failed');
-          //   return { status: 'approval_failed', error: errorMsg };
-          // }
+          if (!walletClient) {
+            const errorMsg = 'Wallet client not available for approval';
+            setError(errorMsg);
+            setStatus('approval_failed');
+            toast.error(errorMsg);
+            return { status: 'approval_failed', error: errorMsg };
+          }
 
-          // TEMPORARY: Log the approval requirement
-          console.log('[useArbitrumSell] Approval required for', amount, 'ITP at', itpAddress);
-          toast.info('Approval would be required (contract not deployed yet)');
+          try {
+            setStatus('approving');
+            toast.info('Approving ITP...');
+
+            // Create ITP contract instance for approval
+            const itpContract = getContract({
+              address: itpAddress,
+              abi: erc20Abi,
+              client: { public: publicClient, wallet: walletClient },
+            });
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const approveTx = await (itpContract.write as any).approve([BRIDGE_PROXY_ADDRESS, amountWei]);
+            setApprovalTxHash(approveTx);
+
+            await publicClient.waitForTransactionReceipt({ hash: approveTx });
+            toast.success('ITP approved');
+          } catch (approvalError) {
+            const errorMsg = approvalError instanceof Error ? approvalError.message : 'Approval failed';
+            setError(errorMsg);
+            setStatus('approval_failed');
+            toast.error('Approval failed');
+            return { status: 'approval_failed', error: errorMsg };
+          }
         }
 
-        // Step 3: Execute sell (BLOCKED - contract function not deployed)
+        // Step 3: Get current nonce (will be the nonce for this sell)
+        let currentNonce: number | undefined;
+        try {
+          const nonce = await bridgeProxy.read.getUserSellNonce([address]);
+          currentNonce = Number(nonce);
+          setSellNonce(currentNonce);
+        } catch {
+          // Nonce fetch failed, continue without it
+          console.warn('Failed to fetch sell nonce');
+        }
+
+        // Step 4: Execute sell
         setStatus('awaiting_sell');
 
-        // TODO: When contracts are deployed, uncomment this:
-        // try {
-        //   setStatus('selling');
-        //   toast.info('Submitting sell transaction...');
-        //
-        //   const sellTx = await bridgeProxy.write.requestSell([itpAddress, amountWei]);
-        //   setTxHash(sellTx);
-        //
-        //   setStatus('processing');
-        //   await publicClient.waitForTransactionReceipt({ hash: sellTx });
-        //
-        //   setStatus('success');
-        //   toast.success('Sell transaction confirmed');
-        //   return { status: 'success', txHash: sellTx, approvalTxHash: approvalTxHash || undefined };
-        // } catch (sellError) {
-        //   const errorMsg = sellError instanceof Error ? sellError.message : 'Sell failed';
-        //   setError(errorMsg);
-        //   setStatus('sell_failed');
-        //   toast.error('Sell transaction failed');
-        //   return { status: 'sell_failed', error: errorMsg };
-        // }
+        try {
+          setStatus('selling');
+          toast.info('Submitting sell transaction...');
 
-        // TEMPORARY: Log the sell operation and return stub
-        console.log('[useArbitrumSell] Sell operation (BLOCKED - contract not deployed):', {
-          itpAddress,
-          amount,
-          userAddress: address,
-        });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const sellTx = await (bridgeProxy.write as any).requestSell([itpAddress, amountWei]);
+          setTxHash(sellTx);
 
-        toast.warning('Sell function not yet available - contracts pending deployment');
-        setStatus('idle');
-        return {
-          status: 'idle',
-          error: 'Contract functions not yet deployed. Sell operation will be available after contract deployment.',
-        };
+          setStatus('processing');
+          await publicClient.waitForTransactionReceipt({ hash: sellTx });
+
+          setStatus('success');
+          toast.success('Sell transaction confirmed');
+          return { status: 'success', txHash: sellTx, approvalTxHash: approvalTxHash || undefined, nonce: currentNonce };
+        } catch (sellError) {
+          const errorMsg = sellError instanceof Error ? sellError.message : 'Sell failed';
+          setError(errorMsg);
+          setStatus('sell_failed');
+          toast.error('Sell transaction failed');
+          return { status: 'sell_failed', error: errorMsg };
+        }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Unknown error occurred';
         setError(errorMsg);
@@ -255,7 +256,7 @@ export function useArbitrumSell() {
         return { status: 'error', error: errorMsg };
       }
     },
-    [address, isConnected, isCorrectChain, publicClient, reset]
+    [address, isConnected, isCorrectChain, publicClient, walletClient, bridgeProxy, reset]
   );
 
   return {
@@ -264,6 +265,7 @@ export function useArbitrumSell() {
     error,
     txHash,
     approvalTxHash,
+    sellNonce,
     reset,
     isConnected,
     isCorrectChain,

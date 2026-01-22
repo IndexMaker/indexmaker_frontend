@@ -31,9 +31,6 @@ import ETH from "../../public/logos/ethereum.png";
 import { clearSelectedVault } from "@/redux/vaultSlice";
 import { useQuoteContext } from "@/contexts/quote-context";
 import { Menu, X } from "lucide-react";
-import { fetchMintInvoices } from "@/server/invoice";
-import { setInvoices, setLatestInvoice } from "@/redux/mintInvoicesSlice";
-import { MintInvoice } from "@/types";
 interface HeaderProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
@@ -137,28 +134,13 @@ export function Header({
   //   }
   // }, [wallet, dispatch])
   useEffect(() => {
-    const now = new Date();
-    const DEFAULT_FROM = new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0));
-
-    // Default “to”: today @ 00:00:00 UTC
-    const DEFAULT_TO = new Date(
-      Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate(),
-        0,
-        0,
-        0,
-        0
-      )
-    );
     if (wallet && wallet.chains.length > 0) {
       const chainId = wallet.chains[0].id;
       dispatch(setCurrentChainId(chainId));
 
       // Check if connected to a supported Arbitrum chain
       const isArbitrumChain = chainId === "0xa4b1" || chainId === "0x6A11E3D";
-      
+
       // If not on Arbitrum chains, auto-switch to Arbitrum Mainnet
       if (!isArbitrumChain) {
         // Set selected network to Arbitrum if not already
@@ -168,39 +150,6 @@ export function Header({
         setShowModal(true);
       } else {
         setShowModal(false);
-      }
-
-      const from = DEFAULT_FROM;
-      const to = DEFAULT_TO;
-      const address = wallet.accounts?.[0]?.address;
-      let cancelled = false;
-      if (address) {
-        (async () => {
-          try {
-            const invoicesData = await fetchMintInvoices(from, to);
-
-            const filtered = invoicesData.filter(
-              (inv) => inv.address.toLowerCase() === address.toLowerCase()
-            );
-
-            const augmented = filtered.map((inv) => ({
-              ...inv,
-              status: "completed" as const,
-            }));
-
-            const sorted = augmented.sort(
-              (a, b) =>
-                new Date(b.timestamp).getTime() -
-                new Date(a.timestamp).getTime()
-            );
-            const latest = sorted.length > 0 ? sorted[0] : null;
-            if (!cancelled) {
-              dispatch(setLatestInvoice(latest as MintInvoice )); 
-            }
-          } catch (err) {
-            console.error("Failed to load invoices:", err);
-          }
-        })();
       }
     } else {
       dispatch(setCurrentChainId(null));

@@ -242,6 +242,12 @@ export function VaultTable({
   };
 
   const assetDetail = (vault: IndexListEntry) => {
+    // For ITPs (OrbitGo), navigate to /itp/[id] detail page
+    // For regular indexes, navigate to /vault/[ticker]
+    if (vault.category === "ITP" && vault.indexId) {
+      router.push(`/itp/${vault.indexId}`);
+      return;
+    }
     if (!vault.ticker) return;
     window.open("/vault/" + vault.ticker, "_blank");
   };
@@ -353,7 +359,7 @@ export function VaultTable({
 
                   return (
                     <TableRow
-                      key={vault.name}
+                      key={vault.address || `${vault.indexId}-${vault.name}`}
                       className="hover:bg-accent border-accent h-[54px] text-[13px] cursor-pointer"
                     >
                       {visibleColumns.map(
@@ -464,6 +470,52 @@ export function VaultTable({
                               
                               {col.id === "managementFee" && (
                                 <div>{vault.managementFee}</div>
+                              )}
+
+                              {col.id === "collateral" && (
+                                <div className="flex items-center">
+                                  {/* Stacked token logos */}
+                                  <div className="flex items-center -space-x-2">
+                                    {vault.collateral?.slice(0, 5).map((token, idx) => (
+                                      <Tooltip key={`${token.name}-${idx}`}>
+                                        <TooltipTrigger asChild>
+                                          <div
+                                            className="w-6 h-6 rounded-full border-2 border-foreground bg-background flex items-center justify-center overflow-hidden"
+                                            style={{ zIndex: 5 - idx }}
+                                          >
+                                            {token.logo ? (
+                                              <Image
+                                                src={token.logo}
+                                                alt={token.name}
+                                                width={20}
+                                                height={20}
+                                                className="object-cover w-5 h-5"
+                                                onError={(e) => {
+                                                  const target = e.target as HTMLImageElement;
+                                                  target.style.display = 'none';
+                                                  target.parentElement!.innerHTML = `<span class="text-[8px] text-muted-foreground font-medium">${token.name.slice(0, 2)}</span>`;
+                                                }}
+                                              />
+                                            ) : (
+                                              <span className="text-[8px] text-muted-foreground font-medium">
+                                                {token.name.slice(0, 2)}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>{token.name}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    ))}
+                                  </div>
+                                  {/* +N more indicator */}
+                                  {vault.collateral && vault.collateral.length > 5 && (
+                                    <span className="ml-1 text-[11px] text-muted-foreground">
+                                      +{vault.collateral.length - 5}
+                                    </span>
+                                  )}
+                                </div>
                               )}
 
                               {col.id === "actions" && (

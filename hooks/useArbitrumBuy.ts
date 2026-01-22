@@ -3,16 +3,13 @@
 /**
  * useArbitrumBuy Hook - Arbitrum Buy Flow Integration
  *
- * BLOCKED: The contract functions (depositForBuy) are NOT YET DEPLOYED.
- * This hook provides the interface and infrastructure for when contracts are ready.
- *
- * When contracts are available, this hook will handle:
+ * Handles the complete buy flow:
  * 1. USDC balance validation
  * 2. USDC approval flow (if needed)
  * 3. depositForBuy contract call
  * 4. Transaction status tracking
  *
- * Expected contract interface:
+ * Contract interface:
  * ```solidity
  * function depositForBuy(uint256 amount, address targetItp) external;
  * ```
@@ -56,6 +53,8 @@ export interface BuyResult {
   txHash?: `0x${string}`;
   error?: string;
   approvalTxHash?: `0x${string}`;
+  /** Deposit nonce for tracking bridge completion */
+  nonce?: number;
 }
 
 /**
@@ -70,9 +69,6 @@ export interface BuyParams {
 
 /**
  * Hook for executing Arbitrum buy flow.
- *
- * IMPORTANT: Contract functions are NOT YET DEPLOYED. This hook currently
- * provides infrastructure and will log/stub operations until contracts are ready.
  *
  * @example
  * ```tsx
@@ -103,6 +99,7 @@ export function useArbitrumBuy() {
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
   const [approvalTxHash, setApprovalTxHash] = useState<`0x${string}` | null>(null);
+  const [depositNonce, setDepositNonce] = useState<number | null>(null);
 
   /**
    * Reset hook state
@@ -112,6 +109,7 @@ export function useArbitrumBuy() {
     setError(null);
     setTxHash(null);
     setApprovalTxHash(null);
+    setDepositNonce(null);
   }, []);
 
   /**
@@ -121,7 +119,7 @@ export function useArbitrumBuy() {
    * 1. Validate wallet connection and chain
    * 2. Check USDC balance
    * 3. Check/request USDC approval
-   * 4. Call depositForBuy (BLOCKED - contract not deployed)
+   * 4. Call depositForBuy
    * 5. Return transaction hash
    */
   const executeBuy = useCallback(
@@ -179,67 +177,60 @@ export function useArbitrumBuy() {
         if (!approvalCheck.hasApproval) {
           setStatus('awaiting_approval');
 
-          // TODO: When contracts are deployed, uncomment this:
-          // try {
-          //   setStatus('approving');
-          //   toast.info('Approving USDC...');
-          //
-          //   const approveTx = await usdc.write.approve([BRIDGE_PROXY_ADDRESS, amountWei]);
-          //   setApprovalTxHash(approveTx);
-          //
-          //   await publicClient.waitForTransactionReceipt({ hash: approveTx });
-          //   toast.success('USDC approved');
-          // } catch (approvalError) {
-          //   const errorMsg = approvalError instanceof Error ? approvalError.message : 'Approval failed';
-          //   setError(errorMsg);
-          //   setStatus('approval_failed');
-          //   toast.error('Approval failed');
-          //   return { status: 'approval_failed', error: errorMsg };
-          // }
+          try {
+            setStatus('approving');
+            toast.info('Approving USDC...');
 
-          // TEMPORARY: Log the approval requirement
-          console.log('[useArbitrumBuy] Approval required for', amount, 'USDC to', BRIDGE_PROXY_ADDRESS);
-          toast.info('Approval would be required (contract not deployed yet)');
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const approveTx = await (usdc.write as any).approve([BRIDGE_PROXY_ADDRESS, amountWei]);
+            setApprovalTxHash(approveTx);
+
+            await publicClient.waitForTransactionReceipt({ hash: approveTx });
+            toast.success('USDC approved');
+          } catch (approvalError) {
+            const errorMsg = approvalError instanceof Error ? approvalError.message : 'Approval failed';
+            setError(errorMsg);
+            setStatus('approval_failed');
+            toast.error('Approval failed');
+            return { status: 'approval_failed', error: errorMsg };
+          }
         }
 
-        // Step 3: Execute buy (BLOCKED - contract function not deployed)
+        // Step 3: Get current nonce (will be the nonce for this deposit)
+        let currentNonce: number | undefined;
+        try {
+          const nonce = await bridgeProxy.read.getUserDepositNonce([address]);
+          currentNonce = Number(nonce);
+          setDepositNonce(currentNonce);
+        } catch {
+          // Nonce fetch failed, continue without it
+          console.warn('Failed to fetch deposit nonce');
+        }
+
+        // Step 4: Execute buy
         setStatus('awaiting_deposit');
 
-        // TODO: When contracts are deployed, uncomment this:
-        // try {
-        //   setStatus('depositing');
-        //   toast.info('Submitting buy transaction...');
-        //
-        //   const buyTx = await bridgeProxy.write.depositForBuy([amountWei, targetItpAddress]);
-        //   setTxHash(buyTx);
-        //
-        //   setStatus('processing');
-        //   await publicClient.waitForTransactionReceipt({ hash: buyTx });
-        //
-        //   setStatus('success');
-        //   toast.success('Buy transaction confirmed');
-        //   return { status: 'success', txHash: buyTx, approvalTxHash: approvalTxHash || undefined };
-        // } catch (depositError) {
-        //   const errorMsg = depositError instanceof Error ? depositError.message : 'Deposit failed';
-        //   setError(errorMsg);
-        //   setStatus('deposit_failed');
-        //   toast.error('Buy transaction failed');
-        //   return { status: 'deposit_failed', error: errorMsg };
-        // }
+        try {
+          setStatus('depositing');
+          toast.info('Submitting buy transaction...');
 
-        // TEMPORARY: Log the buy operation and return stub
-        console.log('[useArbitrumBuy] Buy operation (BLOCKED - contract not deployed):', {
-          amount,
-          targetItpAddress,
-          userAddress: address,
-        });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const buyTx = await (bridgeProxy.write as any).depositForBuy([targetItpAddress, amountWei]);
+          setTxHash(buyTx);
 
-        toast.warning('Buy function not yet available - contracts pending deployment');
-        setStatus('idle');
-        return {
-          status: 'idle',
-          error: 'Contract functions not yet deployed. Buy operation will be available after contract deployment.',
-        };
+          setStatus('processing');
+          await publicClient.waitForTransactionReceipt({ hash: buyTx });
+
+          setStatus('success');
+          toast.success('Buy transaction confirmed');
+          return { status: 'success', txHash: buyTx, approvalTxHash: approvalTxHash || undefined, nonce: currentNonce };
+        } catch (depositError) {
+          const errorMsg = depositError instanceof Error ? depositError.message : 'Deposit failed';
+          setError(errorMsg);
+          setStatus('deposit_failed');
+          toast.error('Buy transaction failed');
+          return { status: 'deposit_failed', error: errorMsg };
+        }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Unknown error occurred';
         setError(errorMsg);
@@ -248,7 +239,7 @@ export function useArbitrumBuy() {
         return { status: 'error', error: errorMsg };
       }
     },
-    [address, isConnected, isCorrectChain, publicClient, reset]
+    [address, isConnected, isCorrectChain, publicClient, usdc, bridgeProxy, reset]
   );
 
   return {
@@ -257,6 +248,7 @@ export function useArbitrumBuy() {
     error,
     txHash,
     approvalTxHash,
+    depositNonce,
     reset,
     isConnected,
     isCorrectChain,

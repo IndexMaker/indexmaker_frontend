@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/language-context";
 import { useWallet } from "@/contexts/wallet-context";
-import { Calculator, TrendingUp, X, Users, FileScanIcon, BarChart3 } from "lucide-react";
+import { Calculator, TrendingUp, X, Sparkles, BarChart3, Wallet } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePathname } from "next/navigation";
 import EcosystemSvg from "../icons/ecosystem";
@@ -163,15 +163,6 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
               {t("common.curators")}
             </NavItem>
             <NavItem
-              href="/invoices"
-              active={isRouteActive("/invoices")}
-              className="text-[13px] text-secondary py-[6px] px-[10px] h-[32px]"
-              icon={FileScanIcon}
-              collapsed={collapsed}
-            >
-              {t("common.invoices")}
-            </NavItem>
-            <NavItem
               href="/tax-optimizer"
               active={isRouteActive("/tax-optimizer")}
               className="text-[13px] text-secondary py-[6px] px-[10px] h-[32px]"
@@ -188,6 +179,15 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
               collapsed={collapsed}
             >
               {t("common.keeperCharts")}
+            </NavItem>
+            <NavItem
+              href="/portfolio"
+              active={isRouteActive("/portfolio")}
+              className="text-[13px] text-secondary py-[6px] px-[10px] h-[32px]"
+              icon={Wallet}
+              collapsed={collapsed}
+            >
+              {t("common.portfolio")}
             </NavItem>
           </nav>
 
@@ -209,15 +209,14 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
                 {t("common.analytics")}
               </NavItem> */}
               <NavItem
-                href="/private-dashboard"
-                icon={Users}
-                active={isRouteActive("/private-dashboard")}
+                href="/create-itp"
+                icon={Sparkles}
+                active={isRouteActive("/create-itp")}
                 className="text-muted h-[28px] px-[6px] py-[2px]"
                 collapsed={collapsed}
-                external={true}
                 iconClassName="mr-[2px] text-muted"
               >
-                {t("common.marketInsights")}
+                {t("common.createItp")}
               </NavItem>
               <NavItem
                 href="https://github.com/IndexMaker/index-maker"

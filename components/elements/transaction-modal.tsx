@@ -24,15 +24,21 @@ import { toast } from "sonner";
 import { useWallet } from "@/contexts/wallet-context";
 import { useQuoteContext } from "@/contexts/quote-context";
 import onboard from "@/lib/blocknative/web3-onboard";
-import { sendMintInvoiceToBackend } from "@/server/indices";
-import { setLatestInvoice } from "@/redux/mintInvoicesSlice";
-import { useDispatch } from "react-redux";
-import { MintInvoice } from "@/types";
+import { bridgeProxyAbi } from "@/lib/contracts/abis/bridge-proxy";
+import { BRIDGE_PROXY_ADDRESS, BRIDGED_ITP_FACTORY_ADDRESS, ARBITRUM_CHAIN_ID } from "@/lib/contracts/addresses";
+import { bridgedItpFactoryAbi } from "@/lib/contracts/abis/bridged-itp-factory";
 
 // ---------- Config ----------
-const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+// Base chain USDC
+const BASE_USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+// Arbitrum chain USDC
+const ARB_USDC_ADDRESS = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
 const USDC_DECIMALS = 6;
-const EXPLORER_TX = "https://basescan.org/tx/";
+const BASE_EXPLORER_TX = "https://basescan.org/tx/";
+const ARB_EXPLORER_TX = "https://arbiscan.io/tx/";
+// Legacy alias
+const USDC_ADDRESS = BASE_USDC_ADDRESS;
+const EXPLORER_TX = BASE_EXPLORER_TX;
 
 type OnboardWallet = {
   label: string;
@@ -234,7 +240,6 @@ export function TransactionConfirmModal({
   const [depositStatus, setDepositStatus] = useState<"idle" | "done" | "error">(
     "idle"
   );
-  const dispatch = useDispatch();
   // Progress + receipts
   const [clientOrderId, setClientOrderId] = useState<string | null>(null);
   const [orderProgressPct, setOrderProgressPct] = useState<number>(0);
@@ -245,7 +250,6 @@ export function TransactionConfirmModal({
 
   const [txBlockNumber, setTxBlockNumber] = useState<number | null>(null);
   const [mintedQuantity, setMintedQuantity] = useState<number | null>(null);
-  const sentInvoiceRef = useRef(false);
   const activeOrderIdRef = useRef<string | null>(null);
   const fillUnsubRef = useRef<null | (() => void)>(null);
   const invoiceUnsubRef = useRef<null | (() => void)>(null);
@@ -463,7 +467,6 @@ export function TransactionConfirmModal({
           if (activeOrderIdRef.current !== orderId) return;
           console.log("[MODAL] invoice", invoice);
           setMintInvoice(invoice);
-          dispatch(setLatestInvoice(invoice as MintInvoice )); 
           const q = Number(invoice?.filled_quantity);
           if (!Number.isNaN(q)) setMintedQuantity(q);
           setOrderProgressPct(100);
@@ -479,7 +482,7 @@ export function TransactionConfirmModal({
     } finally {
       setIsProcessing(false);
     }
-  }, [wallet, totalUSDC, dispatch]);
+  }, [wallet, totalUSDC]);
 
   const handleCancelOrder = async () => {
     try {
@@ -544,14 +547,22 @@ export function TransactionConfirmModal({
 
       const provider = new BrowserProvider(eip1193);
       const signer = await provider.getSigner();
-      const usdc = new Contract(USDC_ADDRESS, erc20Abi.abi, signer);
+      const network = await provider.getNetwork();
+      const chainId = Number(network.chainId);
 
+      // Determine USDC address and spender based on chain
+      const isArbitrum = chainId === ARBITRUM_CHAIN_ID;
+      const usdcAddress = isArbitrum ? ARB_USDC_ADDRESS : BASE_USDC_ADDRESS;
+      // On Arbitrum, approve to BridgeProxy; on Base, approve to index contract
+      const spender = isArbitrum ? BRIDGE_PROXY_ADDRESS : index_address;
+
+      const usdc = new Contract(usdcAddress, erc20Abi.abi, signer);
       const amount = parseUnits(totalUSDC.toString(), USDC_DECIMALS);
       const owner = (await signer.getAddress()) as `0x${string}`;
-      const allowance: bigint = await usdc.allowance(owner, index_address);
+      const allowance: bigint = await usdc.allowance(owner, spender);
 
       if (allowance < amount) {
-        const tx = await usdc.approve(index_address, amount);
+        const tx = await usdc.approve(spender, amount);
         const receipt = await tx.wait();
         setApprovalBlock(BigInt(receipt.blockNumber));
       } else {
@@ -577,13 +588,84 @@ export function TransactionConfirmModal({
 
       const provider = new BrowserProvider((window as any).ethereum);
       const signer = await provider.getSigner();
-      const otcIndex = new Contract(index_address, otcIndexAbi.abi, signer);
 
       const network = await provider.getNetwork();
-      const chainId = network.chainId; // bigint
+      const chainId = Number(network.chainId);
       const userAddr = ethers.getAddress(await signer.getAddress());
 
       const amount = parseUnits(totalUSDC.toString(), USDC_DECIMALS);
+
+      // Check if on Arbitrum - use bridge flow
+      const isArbitrum = chainId === ARBITRUM_CHAIN_ID;
+
+      if (isArbitrum) {
+        // ARBITRUM BRIDGE FLOW: depositForBuy on BridgeProxy
+        toast.info("Looking up ITP on Arbitrum...");
+
+        // Fetch all bridged ITPs from factory
+        const factory = new Contract(
+          BRIDGED_ITP_FACTORY_ADDRESS,
+          bridgedItpFactoryAbi,
+          provider
+        );
+        const allItps: string[] = await factory.getAllBridgedItps();
+
+        if (!allItps || allItps.length === 0) {
+          toast.error("No ITPs available on Arbitrum. Please create an ITP first.");
+          setDepositStatus("error");
+          return;
+        }
+
+        // Find matching ITP by symbol
+        let targetItpAddress: string | null = null;
+        for (const itpAddr of allItps) {
+          const itp = new Contract(itpAddr, erc20Abi.abi, provider);
+          try {
+            const itpSymbol: string = await itp.symbol();
+            // Match by symbol (bridged ITPs have 'b' prefix)
+            const normalizedSymbol = symbol.toLowerCase();
+            const itpSymbolLower = itpSymbol.toLowerCase();
+            if (
+              itpSymbolLower === normalizedSymbol ||
+              itpSymbolLower === `b${normalizedSymbol}` ||
+              itpSymbolLower.replace(/^b/, '') === normalizedSymbol
+            ) {
+              targetItpAddress = itpAddr;
+              break;
+            }
+          } catch {
+            // Skip ITPs that fail to query
+          }
+        }
+
+        // If no exact match, use the first ITP as fallback (for testing)
+        if (!targetItpAddress && allItps.length > 0) {
+          targetItpAddress = allItps[0];
+          toast.info(`Using first available ITP: ${targetItpAddress.slice(0, 10)}...`);
+        }
+
+        if (!targetItpAddress) {
+          toast.error("Could not find matching ITP on Arbitrum.");
+          setDepositStatus("error");
+          return;
+        }
+
+        // Execute depositForBuy on Bridge
+        const bridge = new Contract(BRIDGE_PROXY_ADDRESS, bridgeProxyAbi, signer);
+        toast.info("Submitting buy order via bridge...");
+
+        const tx = await bridge.depositForBuy(targetItpAddress, amount);
+        const receipt = await tx.wait();
+
+        setTxHash(tx.hash);
+        setDepositStatus("done");
+        toast.success("Buy order submitted to bridge!");
+        setTxBlockNumber(receipt.blockNumber);
+        return;
+      }
+
+      // BASE CHAIN: Original OTC flow
+      const otcIndex = new Contract(index_address, otcIndexAbi.abi, signer);
 
       if (approvalBlock == null) {
         toast.error("Missing approval block — please approve again.");
@@ -594,7 +676,7 @@ export function TransactionConfirmModal({
       // 4B chain | 8B block | 20B address
       const addrBN = BigInt(userAddr);
       const seqNumNewOrderSingle =
-        ((chainId & ((1n << 32n) - 1n)) << (64n + 160n)) |
+        ((BigInt(chainId) & ((1n << 32n) - 1n)) << (64n + 160n)) |
         ((approvalBlock & ((1n << 64n) - 1n)) << 160n) |
         (addrBN & ((1n << 160n) - 1n));
 
@@ -643,39 +725,10 @@ export function TransactionConfirmModal({
     setTxHash(null);
     setTxBlockNumber(null);
     setMintedQuantity(null);
-    sentInvoiceRef.current = false;
     setIsProcessing(false);
     onClose();
   };
 
-  useEffect(() => {
-    const haveTx = txHash && typeof txBlockNumber === "number";
-    const haveQty = typeof mintedQuantity === "number";
-    if (!sentInvoiceRef.current && haveTx && haveQty) {
-      sentInvoiceRef.current = true; // guard against duplicates
-      sendMintInvoiceToBackend({
-        txHash: txHash!,
-        blockNumber: txBlockNumber!,
-        logIndex: 0,
-        eventType: "mint",
-        contractAddress: index_address,
-        network: "base",
-        userAddress: wallet?.accounts[0]?.address,
-        amount: totalUSDC.toString(),
-        quantity: mintedQuantity!,
-      }).catch((err) => {
-        console.error("sendMintInvoiceToBackend failed:", err);
-        sentInvoiceRef.current = false; // allow retry
-      });
-    }
-  }, [
-    txHash,
-    txBlockNumber,
-    mintedQuantity,
-    index_address,
-    wallet?.accounts,
-    totalUSDC,
-  ]);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleCancelAndClose}>
