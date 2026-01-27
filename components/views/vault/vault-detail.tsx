@@ -132,8 +132,8 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
   }, [indexPrices, index?.ticker]);
   // const storedWallet = useSelector((state: RootState) => state.wallet.wallet);
   const dispatch = useDispatch();
-  const handleSupplyClick = (name: string, ticker: string) => {
-    dispatch(addSelectedVault({ name, ticker }));
+  const handleSupplyClick = (name: string, ticker: string, address: string) => {
+    dispatch(addSelectedVault({ name, ticker, address }));
   };
   const selectedVault = useSelector(
     (state: RootState) => state.vault.selectedVault
@@ -273,7 +273,7 @@ export function VaultDetailPage({ index }: VaultDetailPageProps) {
     }
 
     index &&
-      dispatch(addSelectedVault({ name: index.name, ticker: index.ticker }));
+      dispatch(addSelectedVault({ name: index.name, ticker: index.ticker, address: index.address }));
   }, [index, dispatch]);
 
   const containerRef = useRef<HTMLDivElement>(null);

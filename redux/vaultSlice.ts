@@ -3,6 +3,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 interface Vault {
   name: string;
   ticker: string;
+  address: string;
   amount: string;
 }
 
@@ -20,39 +21,36 @@ const vaultSlice = createSlice({
   reducers: {
     addSelectedVault(
       state,
-      action: PayloadAction<{ name: string; ticker: string }>
+      action: PayloadAction<{ name: string; ticker: string; address: string }>
     ) {
-      const existingVault = state.selectedVault[0]; // Get the current vault
+      const existingVault = state.selectedVault[0];
 
-      // If we're adding the same vault name, do nothing or update the ticker?
-      if (existingVault && existingVault.name === action.payload.name) {
-        // Option 1: Do nothing (keep existing vault as is)
+      // Use address as unique key - same address means same vault
+      if (existingVault && existingVault.address === action.payload.address) {
         return;
-
-        // Option 2: Update the ticker but keep the amount
-        // existingVault.ticker = action.payload.ticker;
       } else {
-        // Different vault name - replace the existing one
         state.selectedVault = [
           {
             name: action.payload.name,
             ticker: action.payload.ticker,
-            amount: existingVault?.amount || "", // Keep amount if you want, or reset to empty
+            address: action.payload.address,
+            amount: existingVault?.amount || "",
           },
         ];
       }
     },
     removeSelectedVault(state, action: PayloadAction<string>) {
+      // Remove by address
       state.selectedVault = state.selectedVault.filter(
-        (vault) => vault.name !== action.payload
+        (vault) => vault.address !== action.payload
       );
     },
     updateVaultAmount(
       state,
-      action: PayloadAction<{ name: string; amount: string }>
+      action: PayloadAction<{ address: string; amount: string }>
     ) {
       const vault = state.selectedVault.find(
-        (v) => v.name === action.payload.name
+        (v) => v.address === action.payload.address
       );
       if (vault) {
         vault.amount = action.payload.amount;

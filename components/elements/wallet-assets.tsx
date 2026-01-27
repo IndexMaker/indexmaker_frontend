@@ -1,16 +1,6 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import Image from "next/image";
-import Link from "next/link";
 import { cn, shortenAddress } from "@/lib/utils";
 import RightArrow from "../icons/right-arrow";
 import { useLanguage } from "@/contexts/language-context";
@@ -60,13 +50,6 @@ interface WalletHoldingsTableProps {
   className?: string;
 }
 
-const columns = [
-  { id: "asset", name: "Asset" },
-  { id: "balance", name: "Balance" },
-  { id: "value", name: "Value" },
-  //   { id: "extra", name: "Info" },
-  { id: "contract", name: "Contract" },
-] as const;
 
 function formatUnits(raw: string, decimals: number): number {
   if (!raw) return 0;
@@ -142,114 +125,74 @@ export default function WalletHoldingsTable({
 
   const hasAnyRows = tokenRows.length + itpRows.length > 0;
 
-  const sectionHeader = (label: string) => (
-    <TableRow>
-      <TableCell
-        colSpan={columns.length}
-        className="bg-white/5 text-[12px] uppercase tracking-wide text-secondary py-2"
-      >
-        {label}
-      </TableCell>
-    </TableRow>
-  );
-
   return (
-    <Card
-      className={cn("bg-foreground border-none rounded-[8px] py-0", className)}
-    >
-      <CardContent className="p-0 overflow-x-auto">
-        <Table>
-          <TableHeader className="bg-foreground">
-            <TableRow className="hover:bg-transparent border-[#afafaf1a] h-[44px]">
-              {columns.map((c) => (
-                <TableHead
-                  key={c.id}
-                  className="text-secondary text-[13px] pl-[20px] pr-[48px]"
-                >
-                  {t?.(`table.${c.id}` as any) ?? c.name}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <TableRow
-                  key={`skel-${i}`}
-                  className="border-[#afafaf1a] h-[54px]"
-                >
-                  {columns.map((c) => (
-                    <TableCell key={`${c.id}-${i}`} className="pl-[20px] pr-18">
-                      <div className="h-4 w-32 rounded animate-pulse bg-white/10" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : errorText ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="text-center py-4 text-muted"
-                >
-                  {errorText}
-                </TableCell>
-              </TableRow>
-            ) : !hasAnyRows ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="text-center py-4 text-muted"
-                >
-                  {t?.("common.noEarnPosition") ?? "No holdings found"}
-                </TableCell>
-              </TableRow>
-            ) : (
-              <>
-                {/* ITPs SECTION */}
-                {itpRows.length > 0 && sectionHeader("ITP Indexes")}
-                {itpRows.map((itp, i) => (
-                  <HoldingsRow
-                    key={`itp-${itp.address}-${itp.chain ?? 'default'}-${i}`}
-                    type="itp"
-                    symbol={itp.symbol}
-                    name={itp.name}
-                    logoUrl={itp.logoUrl}
-                    amount={itp.amount}
-                    value={itp.value}
-                    contractAddress={itp.address}
-                    explorerBaseUrl={explorerBaseUrl}
-                    chain={itp.chain}
-                    extra={
-                      itp.sharePct != null
-                        ? `${formatNumber(itp.sharePct, {
-                            maximumFractionDigits: 2,
-                          })}% ${t?.("table.share") ?? "Share"}`
-                        : undefined
-                    }
-                  />
-                ))}
+    <div className={cn("rounded-lg", className)}>
+      {/* Header */}
+      <div className="flex items-center justify-between pb-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-medium text-primary">Assets</h2>
+          {hasAnyRows && (
+            <span className="px-2 py-0.5 text-xs bg-accent text-secondary rounded-full">
+              {tokenRows.length + itpRows.length} held
+            </span>
+          )}
+        </div>
+      </div>
 
-                {/* TOKENS SECTION */}
-                {tokenRows.length > 0 && sectionHeader("Assets")}
-                {tokenRows.map((tkn, i) => (
-                  <HoldingsRow
-                    key={`tok-${tkn.address}-${i}`}
-                    type="token"
-                    symbol={tkn.symbol}
-                    name={tkn.name}
-                    logoUrl={tkn.logoUrl}
-                    amount={tkn.amount}
-                    value={tkn.value}
-                    contractAddress={tkn.address}
-                    explorerBaseUrl={explorerBaseUrl}
-                  />
-                ))}
-              </>
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-4">
+          <div className="w-4 h-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+        </div>
+      ) : errorText ? (
+        <div className="bg-red-500/10 border border-red-500/20 rounded p-2 mb-2">
+          <p className="text-xs text-red-500 text-center">{errorText}</p>
+        </div>
+      ) : !hasAnyRows ? (
+        <p className="text-xs text-muted text-center py-4">
+          {t?.("common.noEarnPosition") ?? "No holdings found"}
+        </p>
+      ) : (
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-muted-foreground text-left border-b border-border">
+              <th className="py-1.5 font-medium">Asset</th>
+              <th className="py-1.5 font-medium">Balance</th>
+              <th className="py-1.5 font-medium">Value</th>
+              <th className="py-1.5 font-medium text-right">Contract</th>
+            </tr>
+          </thead>
+          <tbody>
+            {itpRows.map((itp, i) => (
+              <CompactHoldingsRow
+                key={`itp-${itp.address}-${itp.chain ?? 'default'}-${i}`}
+                type="itp"
+                symbol={itp.symbol}
+                name={itp.name}
+                logoUrl={itp.logoUrl}
+                amount={itp.amount}
+                value={itp.value}
+                contractAddress={itp.address}
+                explorerBaseUrl={explorerBaseUrl}
+                chain={itp.chain}
+              />
+            ))}
+            {tokenRows.map((tkn, i) => (
+              <CompactHoldingsRow
+                key={`tok-${tkn.address}-${i}`}
+                type="token"
+                symbol={tkn.symbol}
+                name={tkn.name}
+                logoUrl={tkn.logoUrl}
+                amount={tkn.amount}
+                value={tkn.value}
+                contractAddress={tkn.address}
+                explorerBaseUrl={explorerBaseUrl}
+              />
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
   );
 }
 
@@ -275,8 +218,8 @@ function ChainBadge({ chain }: { chain?: 'arbitrum' | 'orbit' }) {
   );
 }
 
-function HoldingsRow({
-  type, // "token" | "itp"
+function CompactHoldingsRow({
+  type,
   symbol,
   name,
   logoUrl,
@@ -284,7 +227,6 @@ function HoldingsRow({
   value,
   contractAddress,
   explorerBaseUrl,
-  extra,
   chain,
 }: {
   type: "token" | "itp";
@@ -293,9 +235,8 @@ function HoldingsRow({
   logoUrl?: string;
   amount: number;
   value?: number;
-  contractAddress: string; // "native" ok for tokens; ITPs are ERC-20
+  contractAddress: string;
   explorerBaseUrl: string;
-  extra?: string;
   chain?: 'arbitrum' | 'orbit';
 }) {
   const isNative = contractAddress.toLowerCase() === "native";
@@ -304,63 +245,52 @@ function HoldingsRow({
     : `${explorerBaseUrl}/address/${contractAddress}`;
 
   return (
-    <TableRow className="border-[#afafaf1a] hover:bg-foreground/50 h-[54px] text-[13px]">
-      {/* Asset */}
-      <TableCell className="pl-[20px] text-card pr-18">
-        <div className="flex items-center gap-2">
+    <tr className="border-b border-border/50">
+      <td className="py-2">
+        <div className="flex items-center gap-1.5">
           {logoUrl ? (
             <Image
               src={logoUrl}
               alt={`${symbol} logo`}
-              width={18}
-              height={18}
+              width={14}
+              height={14}
               className="rounded-full"
             />
           ) : type === "itp" ? (
-            <IndexMaker className="w-4 h-4 text-muted" />
+            <IndexMaker className="w-3.5 h-3.5 text-muted" />
           ) : (
-            <div className="w-[18px] h-[18px] rounded-full bg-white/15" />
+            <div className="w-[14px] h-[14px] rounded-full bg-white/15" />
           )}
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{symbol}</span>
-            {name ? <span className="text-secondary">{name}</span> : null}
-            <ChainBadge chain={chain} />
-          </div>
+          <span className="font-medium text-primary">{symbol}</span>
+          <ChainBadge chain={chain} />
         </div>
-      </TableCell>
-
-      {/* Balance */}
-      <TableCell className="pl-[20px] text-card pr-18">
-        {formatNumber(amount, {
-          maximumFractionDigits: type === "itp" ? 30 : 6,
-        })}{" "}
-        {symbol}
-      </TableCell>
-
-      {/* Value */}
-      <TableCell className="pl-[20px] text-card pr-18">
-        <div className="px-[2px] pt-1 rounded-[4px] bg-accent text-secondary text-[11px] inline-flex items-center">
-          {value == null
-            ? "—"
-            : type === "itp"
-            ? `${formatNumber(value, { maximumFractionDigits: 6 })} USDC`
-            : `$${formatNumber(value, { maximumFractionDigits: 6 })}`}
-        </div>
-      </TableCell>
-
-      {/* Contract */}
-      <TableCell className="pl-[20px] text-card pr-18">
-        <div className="flex items-center gap-2">
-          <span>{isNative ? "Native" : shortenAddress(contractAddress)}</span>
-          <Link href={contractUrl} target="_blank">
-            <RightArrow
-              className="rotate-135 text-secondary"
-              width="11px"
-              height="11px"
-            />
-          </Link>
-        </div>
-      </TableCell>
-    </TableRow>
+      </td>
+      <td className="py-2 text-primary font-mono">
+        {formatNumber(amount, { maximumFractionDigits: type === "itp" ? 6 : 6 })}
+      </td>
+      <td className="py-2 text-secondary">
+        {value == null
+          ? "—"
+          : type === "itp"
+          ? `${formatNumber(value, { maximumFractionDigits: 2 })} USDC`
+          : `$${formatNumber(value, { maximumFractionDigits: 2 })}`}
+      </td>
+      <td className="py-2 text-right">
+        <a
+          href={contractUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#2470ff] hover:underline flex items-center gap-1 font-mono justify-end"
+        >
+          {isNative ? "Native" : shortenAddress(contractAddress)}
+          <RightArrow
+            className="rotate-135 text-[#2470ff]"
+            width="10px"
+            height="10px"
+          />
+        </a>
+      </td>
+    </tr>
   );
 }
+

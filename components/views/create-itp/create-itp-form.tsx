@@ -27,6 +27,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useWallet } from "@/contexts/wallet-context";
+import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { arbitrum } from "viem/chains";
+import { bridgeProxyAbi, BRIDGE_PROXY_ADDRESS } from "@/lib/contracts/bridge-proxy";
 import {
   Command,
   CommandEmpty,
@@ -50,12 +53,14 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { VirtualOrderbook } from "@/components/elements/VirtualOrderbook";
 import { CalendlyModal } from "@/components/calendly/calendly-modal";
+import { assetsFromJSON, type AssetJSON } from "@/lib/types/assets";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 interface TradeableAsset {
+  id: bigint;        // Registry ID
   symbol: string;
   exchange: string;
   quote_currency: string;
@@ -64,6 +69,7 @@ interface TradeableAsset {
 }
 
 interface SelectedAsset {
+  id: bigint;        // Registry ID - used for on-chain asset mapping
   symbol: string;
   weight: string;
   exchange: string;
@@ -82,11 +88,13 @@ interface CreateItpRequest {
   weights: number[];
   asset_composition: string[];
   sync: boolean;
+  admin_address?: string; // Story 2-3 AC#6: Issuer wallet for portfolio view
 }
 
 interface AsyncResponse {
   tx_hash: string;
   nonce: number;
+  confirmed_at_block: number; // Block when request was confirmed (for status polling)
   estimated_completion_time?: number;
   status: "pending";
 }
@@ -97,6 +105,14 @@ interface SyncResponse {
   orbit_address: string;
   arbitrum_address: string;
   status: "completed";
+}
+
+// Response from status polling endpoint
+interface StatusPollResponse {
+  nonce: number;
+  status: "pending" | "completed";
+  orbit_address?: string;
+  arbitrum_address?: string;
 }
 
 type CreateItpResponse = AsyncResponse | SyncResponse;
@@ -140,6 +156,32 @@ interface TopCategoryResponse {
 }
 
 type WeightingStrategy = "equal" | "market_cap";
+
+// Real progress phases based on actual blockchain state
+type DeployPhase = "submitting" | "tx-confirmed" | "waiting-bridge" | "complete";
+
+const PHASE_MESSAGES: Record<DeployPhase, { label: string; detail: string; progress: number }> = {
+  submitting: {
+    label: "Submitting Transaction",
+    detail: "Sending creation request to Arbitrum...",
+    progress: 10,
+  },
+  "tx-confirmed": {
+    label: "Transaction Confirmed",
+    detail: "Request confirmed on Arbitrum. Waiting for bridge...",
+    progress: 30,
+  },
+  "waiting-bridge": {
+    label: "Bridge Processing",
+    detail: "Waiting for Orbit vault creation and bridge confirmation...",
+    progress: 50,
+  },
+  complete: {
+    label: "Complete",
+    detail: "ITP successfully deployed on both chains!",
+    progress: 100,
+  },
+};
 
 // ============================================================================
 // CONSTANTS - ALLOWED CATEGORIES FOR ITP CREATION
@@ -385,7 +427,7 @@ const validatePrice = (price: string): string | null => {
 // ============================================================================
 
 export function CreateItpForm() {
-  const { connectWallet, isConnected } = useWallet();
+  const { wallet, connectWallet, isConnected, address } = useWallet();
 
   // Available assets from backend (Bitget only)
   const [availableAssets, setAvailableAssets] = useState<TradeableAsset[]>([]);
@@ -428,6 +470,7 @@ export function CreateItpForm() {
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pollingProgress, setPollingProgress] = useState<number | null>(null);
+  const [deployPhase, setDeployPhase] = useState<DeployPhase | null>(null); // Story 2-3 AC#4
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [result, setResult] = useState<CreateItpResponse | null>(null);
@@ -448,13 +491,25 @@ export function CreateItpForm() {
       try {
         setAssetsLoading(true);
         setAssetsError(null);
-        const response = await fetch("/api/assets/tradeable");
+        // Fetch from centralized asset registry (vendor/assets.json)
+        const response = await fetch("/api/assets/registry");
         if (!response.ok) {
           throw new Error("Failed to fetch assets");
         }
-        const data = await response.json();
-        setAvailableAssets(data.assets || []);
-        log.info("Loaded Bitget tradeable assets", { count: data.total_count });
+        const data: { assets: AssetJSON[]; total_count: number } = await response.json();
+        // Convert JSON IDs (number) to bigint for type safety
+        const assets = assetsFromJSON(data.assets);
+        // Map to TradeableAsset format for compatibility with existing UI
+        const tradeableAssets: TradeableAsset[] = assets.map(a => ({
+          id: a.id,
+          symbol: a.bitget.replace(/USD[CT]$/, ""), // Strip quote currency for display
+          exchange: "bitget",
+          quote_currency: a.bitget.endsWith("USDC") ? "USDC" : "USDT",
+          coin_id: a.coingecko || undefined,
+          logo: a.logo,
+        }));
+        setAvailableAssets(tradeableAssets);
+        log.info("Loaded registry assets", { count: data.total_count });
       } catch (error) {
         log.error("Failed to fetch assets", { error });
         setAssetsError("Failed to load available assets");
@@ -578,7 +633,14 @@ export function CreateItpForm() {
   const handleAddAsset = (asset: TradeableAsset) => {
     setSelectedAssets(prev => [
       ...prev,
-      { symbol: asset.symbol, weight: "", exchange: asset.exchange, coin_id: asset.coin_id, logo: asset.logo }
+      {
+        id: asset.id,        // Store registry ID for on-chain submission
+        symbol: asset.symbol,
+        weight: "",
+        exchange: asset.exchange,
+        coin_id: asset.coin_id,
+        logo: asset.logo,
+      }
     ]);
     setAssetPopoverOpen(false);
     setAssetSearch("");
@@ -612,70 +674,206 @@ export function CreateItpForm() {
     };
 
     setErrors(newErrors);
-    return !Object.values(newErrors).some(Boolean);
+
+    const hasErrors = Object.values(newErrors).some(Boolean);
+
+    // Scroll to first error field
+    if (hasErrors) {
+      const fieldOrder: (keyof ValidationErrors)[] = ["name", "symbol", "initial_price", "assets", "weights"];
+      const firstErrorField = fieldOrder.find(f => newErrors[f]);
+      if (firstErrorField) {
+        // weights shares the same card as assets
+        const fieldId = firstErrorField === "weights" ? "field-assets" : `field-${firstErrorField}`;
+        const el = document.getElementById(fieldId);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("animate-shake");
+          setTimeout(() => el.classList.remove("animate-shake"), 600);
+        }
+      }
+    }
+
+    return !hasErrors;
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
+    // Check wallet connection
+    if (!wallet || !address) {
+      setSubmitError("Please connect your wallet first");
+      return;
+    }
+
+    if (!wallet.rawProvider) {
+      setSubmitError("Wallet provider not available");
+      return;
+    }
+
     const controller = new AbortController();
     setAbortController(controller);
     setIsSubmitting(true);
     setSubmitError(null);
-    setPollingProgress(0);
+    setPollingProgress(10);
+    setDeployPhase("submitting");
 
     try {
       const assetList = selectedAssets.map(a => a.symbol.toUpperCase());
-      // Convert weights from float (0-1) to basis points (0-10000)
-      const weightList = selectedAssets.map(a => Math.round(parseFloat(a.weight) * 10000));
-      // Use sequential IDs for now (1, 2, 3...) - TODO: integrate with vendor asset registry
-      const assetIdList = selectedAssets.map((_, index) => index + 1);
+      // Convert weights from float (0-1) to 18 decimals for contract (sum must equal 1e18)
+      // Contract expects weights in 18 decimals where 1.0 = 1e18
+      const weightList = selectedAssets.map(a => {
+        const weight = parseFloat(a.weight);
+        // Convert to BigInt with 18 decimals
+        return BigInt(Math.round(weight * 1e18));
+      });
+      // Use actual registry IDs for on-chain asset mapping
+      const assetIdList = selectedAssets.map(a => BigInt(a.id));
 
-      const payload: CreateItpRequest = {
-        name: name.trim(),
-        symbol: symbol.trim().toUpperCase(),
-        description: description.trim() || `Index tracking ${assetList.join(", ")}`,
-        methodology: methodology.trim() || "Market cap weighted index",
-        initial_price: parseFloat(initialPrice),
-        max_order_size: (parseFloat(maxOrderSize) || 1000) * 1000000, // Convert USDC to 6 decimals
-        asset_ids: assetIdList,
-        weights: weightList,
-        asset_composition: assetList,
-        sync: true, // Always wait for bridge confirmation
-      };
+      // Contract parameters
+      const itpName = name.trim();
+      const itpSymbol = symbol.trim().toUpperCase();
+      const itpDescription = description.trim() || `Index tracking ${assetList.join(", ")}`;
+      const itpMethodology = methodology.trim() || "Market cap weighted index";
+      // Initial price in USDC (6 decimals)
+      const initialPriceUsdc = BigInt(Math.round(parseFloat(initialPrice) * 1_000_000));
+      // Max order size in 18 decimals
+      const maxOrderSizeWei = BigInt(Math.round((parseFloat(maxOrderSize) || 1000) * 1e18));
 
-      log.info("Submitting ITP creation", { payload });
-
-      // Start polling progress
-      const pollInterval = setInterval(() => {
-        setPollingProgress(prev => {
-          if (prev === null || prev >= 100) return prev;
-          return Math.min(prev + (100 / 12), 100);
-        });
-      }, 5000);
-
-      const response = await fetch("/api/itp/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
+      log.info("Submitting ITP creation via MetaMask", {
+        name: itpName,
+        symbol: itpSymbol,
+        initialPrice: initialPriceUsdc.toString(),
+        maxOrderSize: maxOrderSizeWei.toString(),
+        assets: assetIdList.map(a => a.toString()),
+        weights: weightList.map(w => w.toString()),
       });
 
-      clearInterval(pollInterval);
+      // Step 1: Create wallet client for MetaMask
+      const walletClient = createWalletClient({
+        chain: arbitrum,
+        transport: custom(wallet.rawProvider),
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(errorData.error || `Error: ${response.status} ${response.statusText}`);
+      const publicClient = createPublicClient({
+        chain: arbitrum,
+        transport: http("https://arb1.arbitrum.io/rpc"),
+      });
+
+      // Step 2: Get current nonce before submitting (to track this request)
+      const currentNonce = await publicClient.readContract({
+        address: BRIDGE_PROXY_ADDRESS,
+        abi: bridgeProxyAbi,
+        functionName: "getAdminItpCreationNonce",
+        args: [address as `0x${string}`],
+      });
+
+      log.info("Current ITP creation nonce", { nonce: currentNonce.toString() });
+
+      // Step 3: Submit requestCreateItp via MetaMask
+      log.info("Requesting MetaMask signature for requestCreateItp...");
+      const txHash = await walletClient.writeContract({
+        address: BRIDGE_PROXY_ADDRESS,
+        abi: bridgeProxyAbi,
+        functionName: "requestCreateItp",
+        args: [
+          itpName,
+          itpSymbol,
+          itpDescription,
+          itpMethodology,
+          initialPriceUsdc,
+          maxOrderSizeWei,
+          assetIdList,
+          weightList,
+        ],
+        account: address as `0x${string}`,
+      });
+
+      log.info("Transaction submitted", { txHash });
+
+      // Step 4: Wait for transaction confirmation
+      setDeployPhase("tx-confirmed");
+      setPollingProgress(30);
+
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+        confirmations: 1,
+      });
+
+      if (receipt.status !== "success") {
+        throw new Error("Transaction reverted on-chain");
       }
 
-      const data: CreateItpResponse = await response.json();
-      log.info("ITP creation response", { data });
-      setResult(data);
+      const confirmedAtBlock = receipt.blockNumber;
+      log.info("Transaction confirmed", {
+        txHash,
+        blockNumber: confirmedAtBlock.toString(),
+        nonce: currentNonce.toString(),
+      });
+
+      // Step 5: Poll for real completion status (bridge-node will complete creation)
+      const maxPolls = 120; // 120 polls * 2s = 240s timeout (bridge can take time)
+      const pollIntervalMs = 2000;
+      let pollCount = 0;
+
+      setDeployPhase("waiting-bridge");
+      setPollingProgress(50);
+
+      while (pollCount < maxPolls) {
+        if (controller.signal.aborted) {
+          throw new Error("Cancelled");
+        }
+
+        // Poll for status via backend API
+        const statusResponse = await fetch(
+          `/api/itp/status/${currentNonce}?from_block=${confirmedAtBlock}&admin=${address}`,
+          { signal: controller.signal }
+        );
+
+        if (!statusResponse.ok) {
+          log.warn("Status poll failed", { status: statusResponse.status });
+          await new Promise(r => setTimeout(r, pollIntervalMs));
+          pollCount++;
+          continue;
+        }
+
+        const statusData: StatusPollResponse = await statusResponse.json();
+        log.debug("Status poll result", { statusData });
+
+        // Update progress based on poll count (50-90%)
+        const progressPct = 50 + Math.min(40, pollCount * 0.5);
+        setPollingProgress(progressPct);
+
+        if (statusData.status === "completed" && statusData.orbit_address && statusData.arbitrum_address) {
+          // Success!
+          const syncResult: SyncResponse = {
+            tx_hash: txHash,
+            nonce: Number(currentNonce),
+            orbit_address: statusData.orbit_address,
+            arbitrum_address: statusData.arbitrum_address,
+            status: "completed",
+          };
+          log.info("ITP creation completed", { syncResult });
+          setDeployPhase("complete");
+          setPollingProgress(100);
+          setResult(syncResult);
+          return;
+        }
+
+        // Still pending, continue polling
+        await new Promise(r => setTimeout(r, pollIntervalMs));
+        pollCount++;
+      }
+
+      // Timeout - but tx was submitted successfully
+      throw new Error(`Bridge confirmation timed out after ${(maxPolls * pollIntervalMs) / 1000}s. Transaction was submitted (tx: ${txHash.slice(0, 10)}...). The bridge-node will complete the ITP creation - check back later.`);
 
     } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
+      if (error instanceof Error && (error.name === "AbortError" || error.message === "Cancelled")) {
         log.info("ITP creation cancelled by user");
         setSubmitError(null);
+      } else if (error instanceof Error && error.message.includes("User rejected")) {
+        log.info("User rejected MetaMask transaction");
+        setSubmitError("Transaction rejected in wallet");
       } else {
         log.error("ITP creation failed", { error });
         setSubmitError(error instanceof Error ? error.message : "Failed to create ITP");
@@ -683,6 +881,7 @@ export function CreateItpForm() {
     } finally {
       setIsSubmitting(false);
       setPollingProgress(null);
+      setDeployPhase(null);
       setAbortController(null);
     }
   };
@@ -824,7 +1023,7 @@ export function CreateItpForm() {
           // 1. Exact coin_id match (most reliable)
           // 2. Exact symbol match
           // 3. Normalized symbol match (e.g., SHIB matches 1000SHIB)
-          let matchedAsset = coinIdToExchange.get(coinIdLower)
+          const matchedAsset = coinIdToExchange.get(coinIdLower)
             || exactToExchange.get(coinSymbolUpper)
             || normalizedToExchange.get(coinSymbolUpper);
 
@@ -882,25 +1081,55 @@ export function CreateItpForm() {
       const adjustment = Math.round((1 - currentSum) * 10000) / 10000;
       const weights = [roundedWeights[0] + adjustment, ...roundedWeights.slice(1)];
 
-      // Create selected assets with weights
-      const newSelectedAssets: SelectedAsset[] = topCoins.map((coin, index) => {
+      // Create selected assets with weights - only include assets with valid registry IDs
+      const assetsWithWeights = topCoins.map((coin, index) => {
         const bitgetAsset = availableAssets.find(
           a => a.symbol.toUpperCase() === coin.symbol
         );
         return {
-          symbol: coin.symbol,
-          weight: weights[index].toFixed(4),
-          exchange: bitgetAsset?.exchange || "bitget",
-          coin_id: coin.coin_id,
-          logo: coin.logo, // Use CoinGecko image URL from API
+          bitgetAsset,
+          coin,
+          weight: weights[index],
         };
       });
 
+      // Filter out assets without valid registry IDs (id must be > 0)
+      const validAssets = assetsWithWeights.filter(
+        ({ bitgetAsset }) => bitgetAsset && bitgetAsset.id > BigInt(0)
+      );
+
+      // If we filtered some assets, recalculate weights to sum to 1.0
+      let finalWeights = validAssets.map(a => a.weight);
+      if (validAssets.length < assetsWithWeights.length && validAssets.length > 0) {
+        const totalWeight = finalWeights.reduce((sum, w) => sum + w, 0);
+        finalWeights = finalWeights.map(w => w / totalWeight);
+        // Re-round and adjust
+        finalWeights = finalWeights.map(w => Math.round(w * 10000) / 10000);
+        const currentSum = finalWeights.reduce((sum, w) => sum + w, 0);
+        const adjustment = Math.round((1 - currentSum) * 10000) / 10000;
+        finalWeights[0] = finalWeights[0] + adjustment;
+      }
+
+      const newSelectedAssets: SelectedAsset[] = validAssets.map(({ bitgetAsset, coin }, index) => ({
+        id: bitgetAsset!.id, // Safe: filtered to only valid assets
+        symbol: coin.symbol,
+        weight: finalWeights[index].toFixed(4),
+        exchange: bitgetAsset!.exchange || "bitget",
+        coin_id: coin.coin_id,
+        logo: coin.logo, // Use CoinGecko image URL from API
+      }));
+
       setSelectedAssets(newSelectedAssets);
 
+      const finalAssetCount = newSelectedAssets.length;
+      const skippedCount = topCoins.length - finalAssetCount;
+
       // Auto-generate name and symbol if empty
+      // Strip parentheses and their content from category name for the Name field
+      // (e.g. "Layer 1 (L1)" -> "Layer 1") since name only allows letters, numbers, spaces
+      const cleanCategoryName = categoryName.replace(/\s*\([^)]*\)/g, "").trim();
       if (!name) {
-        setName(`Top ${topCoins.length} ${categoryName} Index`);
+        setName(`Top ${finalAssetCount} ${cleanCategoryName} Index`);
       }
       if (!symbol) {
         // Generate symbol from category name (first letters, max 8 chars)
@@ -909,7 +1138,7 @@ export function CreateItpForm() {
           .map(p => p[0])
           .join("")
           .toUpperCase()
-          .slice(0, 6) + topCoins.length.toString();
+          .slice(0, 6) + finalAssetCount.toString();
         setSymbol(generatedSymbol.slice(0, 8));
       }
 
@@ -917,19 +1146,27 @@ export function CreateItpForm() {
       const strategyName = weightingStrategy === "equal"
         ? "Equal-weighted"
         : `Market cap weighted (min ${minWeightPercent}%)`;
-      setMethodology(`${strategyName} index tracking ${categoryName} tokens`);
+      setMethodology(`${strategyName} index tracking ${cleanCategoryName} tokens`);
 
-      // Show success message
-      const message = topCoins.length < topXCount
-        ? `Added ${topCoins.length} assets (only ${topCoins.length} available in this category)`
-        : `Added ${topCoins.length} assets`;
+      // Show success message - account for filtered assets without registry IDs
+      let message: string;
+      if (skippedCount > 0) {
+        message = `Added ${finalAssetCount} assets (${skippedCount} skipped - not in registry)`;
+      } else if (finalAssetCount < topXCount) {
+        message = `Added ${finalAssetCount} assets (only ${finalAssetCount} available in this category)`;
+      } else {
+        message = `Added ${finalAssetCount} assets`;
+      }
       setLastPrefillResult(message);
 
       log.info("Category pre-fill applied", {
+        event: "category_prefill",
         category: selectedCategory,
         strategy: weightingStrategy,
         coinsCount: topCoins.length,
         requestedCount: topXCount,
+        actualCount: finalAssetCount,
+        filteredCount: skippedCount,
       });
 
     } catch (error) {
@@ -1157,7 +1394,7 @@ export function CreateItpForm() {
           <h3 className="text-lg font-semibold text-primary mb-4">ITP Details</h3>
           <div className="space-y-6">
             {/* Name */}
-            <div className="space-y-2">
+            <div id="field-name" className="space-y-2">
               <label className="text-sm font-medium text-secondary">
                 Name <span className="text-red-500">*</span>
               </label>
@@ -1180,7 +1417,7 @@ export function CreateItpForm() {
             </div>
 
             {/* Symbol */}
-            <div className="space-y-2">
+            <div id="field-symbol" className="space-y-2">
               <label className="text-sm font-medium text-secondary">
                 Symbol <span className="text-red-500">*</span>
               </label>
@@ -1206,7 +1443,7 @@ export function CreateItpForm() {
             </div>
 
             {/* Initial Price */}
-            <div className="space-y-2">
+            <div id="field-initial_price" className="space-y-2">
               <label className="text-sm font-medium text-secondary">
                 Initial Price (USD) <span className="text-red-500">*</span>
               </label>
@@ -1403,7 +1640,7 @@ export function CreateItpForm() {
             </Card>
 
             {/* Asset Composition Section */}
-            <Card className="bg-background border border-accent">
+            <Card id="field-assets" className="bg-background border border-accent">
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between mb-4">
                   <label className="text-sm font-medium text-secondary">
@@ -1734,8 +1971,8 @@ export function CreateItpForm() {
                   {isSubmitting ? (
                     <span className="flex items-center gap-2">
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      {pollingProgress !== null
-                        ? `Waiting for confirmation (${Math.round(pollingProgress)}%)`
+                      {deployPhase
+                        ? `${PHASE_MESSAGES[deployPhase].label} (${Math.round(pollingProgress || 0)}%)`
                         : "Deploying..."}
                     </span>
                   ) : !canSubmit && selectedAssets.length > 0 && !weightsValid ? (

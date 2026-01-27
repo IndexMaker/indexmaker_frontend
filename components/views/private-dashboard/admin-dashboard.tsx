@@ -40,7 +40,7 @@ const initialColumns: ColumnType[] = [
 ];
 
 interface AdminDashboardProps {
-  onSupplyClick?: (vaultId: string, token: string) => void;
+  onSupplyClick?: (vaultId: string, token: string, address: string) => void;
 }
 
 export function AdminDashboard({ onSupplyClick }: AdminDashboardProps) {

@@ -26,16 +26,16 @@ function validateAddress(
 }
 
 // Contract addresses deployed on Arbitrum Mainnet
-// Updated to match deployed contracts (2026-01-18)
+// Updated to match deployed contracts from story 2-3 (2026-01-26)
 export const BRIDGE_PROXY_ADDRESS = validateAddress(
   process.env.NEXT_PUBLIC_BRIDGE_PROXY_ADDRESS,
-  '0xD39238ba5E44B0109BaF7D399A4db67C5fb54B14',
+  '0x19E2c2947f7739d43Aa260b775a858d8b0ad6Aa7',
   'BRIDGE_PROXY'
 );
 
 export const BRIDGED_ITP_FACTORY_ADDRESS = validateAddress(
   process.env.NEXT_PUBLIC_BRIDGED_ITP_FACTORY_ADDRESS,
-  '0xC8f7B4B4834b8DDfad604cA48e95280ef3e95150',
+  '0xBaA059612f051296744fFd8Aad1eC38a4F585b21',
   'BRIDGED_ITP_FACTORY'
 );
 

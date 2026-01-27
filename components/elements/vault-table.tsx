@@ -32,6 +32,7 @@ import USDC from "../../public/logos/usd-coin.png";
 import IndexMaker from "../icons/indexmaker";
 import LeftArrow from "../icons/left-arrow";
 import RightArrow from "../icons/right-arrow";
+import AddressIdenticon from "./AddressIdenticon";
 import AnimatedPrice from "./animate-price";
 
 const ERC20_ABI = [
@@ -58,7 +59,7 @@ interface VaultTableProps {
   onSort?: (columnId: string, direction: "asc" | "desc") => void;
   sortColumn?: string;
   sortDirection?: "asc" | "desc";
-  onSupplyClick?: (vaultId: string, token: string) => void;
+  onSupplyClick?: (vaultId: string, token: string, address: string) => void;
 }
 
 export function VaultTable({
@@ -214,20 +215,22 @@ export function VaultTable({
     };
   }, [wallet?.provider, dispatch]); 
 
-  // --- MEMO: Calculate AUM ---
-  const liveTotalSupplyUSDByTicker = useMemo(() => {
+  // --- MEMO: Calculate AUM (keyed by address for unique ITPs) ---
+  const liveTotalSupplyUSDByAddress = useMemo(() => {
     const map: Record<string, number> = {};
 
     for (const v of vaults) {
-      const qty = reduxSupplies[v.ticker] ?? 0;
-      const livePrice = getLiveIndexPrice(v.ticker);
+      // Try address key first (for ITPs), then fall back to ticker (for legacy indices)
+      const key = v.address || v.ticker;
+      const qty = reduxSupplies[key] ?? reduxSupplies[v.ticker] ?? 0;
+      const livePrice = reduxPrices[key] ?? getLiveIndexPrice(v.ticker);
 
       let usd = 0;
       if (livePrice != null && !Number.isNaN(livePrice)) {
         usd = qty * livePrice;
       }
 
-      map[v.ticker] = usd;
+      map[key] = usd;
     }
     return map;
   }, [vaults, reduxPrices, reduxSupplies]);
@@ -242,7 +245,7 @@ export function VaultTable({
   };
 
   const assetDetail = (vault: IndexListEntry) => {
-    // For ITPs (OrbitGo), navigate to /itp/[id] detail page
+    // For ITPs, navigate to /itp/[id] detail page
     // For regular indexes, navigate to /vault/[ticker]
     if (vault.category === "ITP" && vault.indexId) {
       router.push(`/itp/${vault.indexId}`);
@@ -281,7 +284,7 @@ export function VaultTable({
                         : cn(
                             "text-secondary text-[11px] h-[44px] pl-5 pr-18 ",
                             col.id === "actions"
-                              ? "max-w-[92px] sticky right-0 bg-gradient-to-r from-transparent via-foreground to-foreground"
+                              ? "max-w-[92px] sticky right-0 z-10 bg-gradient-to-r from-transparent via-foreground to-foreground"
                               : "min-w-[180px]"
                           )
                     }
@@ -347,10 +350,11 @@ export function VaultTable({
                   </TableRow>
                 ))
               : currentVaults.map((vault: IndexListEntry) => {
-                  const unitPrice = getLiveIndexPrice(vault.ticker);
-                  const rawSupply = reduxSupplies[vault.ticker];
+                  const key = vault.address || vault.ticker;
+                  const unitPrice = reduxPrices[key] ?? getLiveIndexPrice(vault.ticker);
+                  const rawSupply = reduxSupplies[key] ?? reduxSupplies[vault.ticker];
                   const liveSupplyUSD =
-                    liveTotalSupplyUSDByTicker[vault.ticker] ?? 0;
+                    liveTotalSupplyUSDByAddress[key] ?? 0;
 
                   // If default supply is used (no wallet), these will be true immediately
                   const isPriceLoaded = unitPrice !== undefined;
@@ -371,12 +375,15 @@ export function VaultTable({
                               className={cn(
                                 "text-card",
                                 col.id === "actions"
-                                  ? "sticky right-0 px-5 py-0 bg-foreground border-t before-line max-w-[92px] cursor-default"
+                                  ? "sticky right-0 z-10 px-5 py-0 bg-foreground border-t before-line max-w-[92px] cursor-default"
                                   : "pl-5 pr-18"
                               )}
                             >
                               {col.id === "name" && (
                                 <div className="flex items-center gap-2 pl-[1.5px]">
+                                  {vault.address && vault.category === "ITP" ? (
+                                    <AddressIdenticon address={vault.address} size={20} />
+                                  ) : null}
                                   <span>{vault.name}</span>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
@@ -463,8 +470,19 @@ export function VaultTable({
 
                               {col.id === "curator" && (
                                 <div className="flex items-center gap-2">
-                                  <IndexMaker className="w-4 h-4 text-muted" />
-                                  <span>{"OTC"}</span>
+                                  {vault.curator && vault.curator.startsWith("0x") ? (
+                                    <>
+                                      <AddressIdenticon address={vault.curator} size={16} />
+                                      <span title={vault.curator}>
+                                        {vault.curator.slice(0, 6)}...{vault.curator.slice(-4)}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <IndexMaker className="w-4 h-4 text-muted" />
+                                      <span>{vault.curator || "Unknown"}</span>
+                                    </>
+                                  )}
                                 </div>
                               )}
                               
@@ -532,7 +550,8 @@ export function VaultTable({
                                         e.stopPropagation();
                                         onSupplyClick?.(
                                           vault.name,
-                                          vault.ticker
+                                          vault.ticker,
+                                          vault.address
                                         );
                                       }}
                                     >

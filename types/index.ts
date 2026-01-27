@@ -27,6 +27,7 @@ export interface IndexListEntry {
   assetClass?: string;
   category?: string;
   inceptionDate?: string;
+  arbitrumAddress?: string;
   ratings?: {
     overallRating: string;
     expenseRating: string;

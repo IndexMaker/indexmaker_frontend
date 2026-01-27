@@ -48,7 +48,7 @@ const ORBIT_CONFIG = {
   chainId: ORBIT_CHAIN_ID,
   name: "Orbit Testnet",
   rpcUrl: "https://index.rpc.zeeve.net",
-  wusdc: "0xE1AccDbE71393F582CD86a6F04872ed341B499e9",
+  wusdc: "0x183A81F735430AAF58227aF4c0D7B35bC8e0f8B6",
   bridge: "0x721fcEE97DB26B0406852fabf2420B347042358E",
   explorer: "https://index.explorer.zeeve.net",
 };

@@ -186,8 +186,8 @@ export const TOKEN_METADATA: {
     // Custom Orbit Chain (111222333 decimal)
     USDC: {
       type: 'erc20',
-      address: '0xE1AccDbE71393F582CD86a6F04872ed341B499e9', // Wrapped USDC on Orbit
-      decimals: 6,
+      address: '0x183A81F735430AAF58227aF4c0D7B35bC8e0f8B6', // Wrapped USDC on Orbit (updated after redeploy)
+      decimals: 18,
     },
   },
   "0x1": {

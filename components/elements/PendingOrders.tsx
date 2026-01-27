@@ -9,7 +9,6 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Clock,
   CheckCircle,
   Loader2,
   RefreshCw,
@@ -45,96 +44,22 @@ function getTokenDisplay(address: string): string {
 }
 
 /**
- * Order card component
+ * Status badge component styled like "Bridge is processing"
  */
-function OrderCard({ order }: { order: PendingOrder }) {
-  const isBuy = order.type === 'buy';
-  const statusColor = order.completed ? 'text-green-500' : 'text-yellow-500';
-  const statusBg = order.completed ? 'bg-green-500/10' : 'bg-yellow-500/10';
-
+function StatusBadge({ completed }: { completed: boolean }) {
+  if (completed) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-green-500">
+        <CheckCircle className="w-3 h-3" />
+        Completed
+      </span>
+    );
+  }
   return (
-    <div className="bg-muted/30 border border-border rounded-lg p-4 space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {isBuy ? (
-            <ArrowDownCircle className="w-5 h-5 text-green-500" />
-          ) : (
-            <ArrowUpCircle className="w-5 h-5 text-red-500" />
-          )}
-          <span className="font-medium text-primary">
-            {isBuy ? 'Buy' : 'Sell'} Order
-          </span>
-          <span className="text-xs text-muted-foreground">#{order.nonce}</span>
-        </div>
-
-        <div className={cn('flex items-center gap-1.5 px-2 py-1 rounded-full text-xs', statusBg, statusColor)}>
-          {order.completed ? (
-            <>
-              <CheckCircle className="w-3 h-3" />
-              <span>Completed</span>
-            </>
-          ) : (
-            <>
-              <Loader2 className="w-3 h-3 animate-spin" />
-              <span>Processing</span>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Details */}
-      <div className="space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">
-            {isBuy ? 'Amount (USDC)' : 'Amount'}
-          </span>
-          <span className="text-primary font-mono">
-            {parseFloat(order.amountFormatted).toFixed(isBuy ? 2 : 6)}
-            {!isBuy && ` ${getTokenDisplay(order.tokenAddress)}`}
-          </span>
-        </div>
-
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">
-            {isBuy ? 'Target ITP' : 'ITP'}
-          </span>
-          <a
-            href={`https://arbiscan.io/address/${order.tokenAddress}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[#2470ff] hover:underline flex items-center gap-1 font-mono text-xs"
-          >
-            {truncateAddress(order.tokenAddress)}
-            <ExternalLink className="w-3 h-3" />
-          </a>
-        </div>
-      </div>
-
-      {/* Status message for pending */}
-      {!order.completed && (
-        <div className="bg-[#2470ff]/5 border border-[#2470ff]/20 rounded-lg p-2">
-          <p className="text-xs text-[#2470ff] text-center">
-            Bridge is processing your {isBuy ? 'buy' : 'sell'} order...
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * Empty state component
- */
-function EmptyState() {
-  return (
-    <div className="text-center py-8">
-      <Clock className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-      <h3 className="text-lg font-medium text-muted-foreground mb-2">No Orders</h3>
-      <p className="text-sm text-muted-foreground/70">
-        Your pending and recent orders will appear here
-      </p>
-    </div>
+    <span className="inline-flex items-center gap-1 text-xs text-[#2470ff]">
+      <Loader2 className="w-3 h-3 animate-spin" />
+      Bridge is processing
+    </span>
   );
 }
 
@@ -197,14 +122,22 @@ export function PendingOrders({
   const hasPending = pendingOrders.length > 0;
   const hasCompleted = completedOrders.length > 0;
 
+  // Hide completely if no orders
+  if (!isLoading && !hasOrders) {
+    return null;
+  }
+
+  // Combine all displayed orders
+  const displayedOrders = [...displayedPending, ...displayedCompleted];
+
   return (
-    <div className={cn('bg-foreground border border-border rounded-lg', className)}>
+    <div className={cn('rounded-lg', className)}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="flex items-center justify-between pb-2">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-primary">Orders</h2>
+          <h2 className="text-sm font-medium text-primary">Orders</h2>
           {hasPending && (
-            <span className="px-2 py-0.5 text-xs bg-yellow-500/10 text-yellow-500 rounded-full">
+            <span className="px-2 py-0.5 text-xs bg-[#2470ff]/10 text-[#2470ff] rounded-full">
               {pendingOrders.length} pending
             </span>
           )}
@@ -213,84 +146,91 @@ export function PendingOrders({
         <button
           onClick={refresh}
           disabled={isLoading}
-          className="p-2 text-muted-foreground hover:text-primary disabled:opacity-50"
+          className="p-1 text-muted-foreground hover:text-primary disabled:opacity-50"
         >
-          <RefreshCw className={cn('w-4 h-4', isLoading && 'animate-spin')} />
+          <RefreshCw className={cn('w-3.5 h-3.5', isLoading && 'animate-spin')} />
         </button>
       </div>
 
-      {/* Content */}
-      <div className={cn('p-4 space-y-4', compact && 'p-3 space-y-3')}>
-        {/* Error state */}
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-            <p className="text-xs text-red-500 text-center">{error}</p>
-          </div>
-        )}
+      {/* Error state */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded p-2 mb-2">
+          <p className="text-xs text-red-500 text-center">{error}</p>
+        </div>
+      )}
 
-        {/* Loading state */}
-        {isLoading && !hasOrders && (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-          </div>
-        )}
+      {/* Loading state */}
+      {isLoading && !hasOrders && (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+        </div>
+      )}
 
-        {/* Empty state */}
-        {!isLoading && !hasOrders && <EmptyState />}
+      {/* Orders table */}
+      {displayedOrders.length > 0 && (
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-muted-foreground text-left border-b border-border">
+              <th className="py-1.5 font-medium">Type</th>
+              <th className="py-1.5 font-medium">Amount</th>
+              <th className="py-1.5 font-medium">Target ITP</th>
+              <th className="py-1.5 font-medium text-right">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {displayedOrders.map((order) => {
+              const isBuy = order.type === 'buy';
+              return (
+                <tr key={`${order.type}-${order.nonce}`} className="border-b border-border/50">
+                  <td className="py-2">
+                    <span className={cn('flex items-center gap-1', isBuy ? 'text-green-500' : 'text-red-500')}>
+                      {isBuy ? <ArrowDownCircle className="w-3.5 h-3.5" /> : <ArrowUpCircle className="w-3.5 h-3.5" />}
+                      {isBuy ? 'Buy' : 'Sell'}
+                    </span>
+                  </td>
+                  <td className="py-2 text-primary font-mono">
+                    {parseFloat(order.amountFormatted).toFixed(isBuy ? 2 : 6)}
+                    {isBuy ? ' USDC' : ` ${getTokenDisplay(order.tokenAddress)}`}
+                  </td>
+                  <td className="py-2">
+                    <a
+                      href={`https://arbiscan.io/address/${order.tokenAddress}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#2470ff] hover:underline flex items-center gap-1 font-mono"
+                    >
+                      {truncateAddress(order.tokenAddress)}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </td>
+                  <td className="py-2 text-right">
+                    <StatusBadge completed={order.completed} />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
 
-        {/* Pending orders */}
-        {hasPending && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Processing
-            </h3>
-            {displayedPending.map((order) => (
-              <OrderCard key={`${order.type}-${order.nonce}`} order={order} />
-            ))}
-          </div>
-        )}
-
-        {/* Completed orders */}
-        {showCompleted && hasCompleted && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              Completed
-            </h3>
-            {displayedCompleted.map((order) => (
-              <OrderCard key={`${order.type}-${order.nonce}`} order={order} />
-            ))}
-
-            {/* Show more button */}
-            {completedOrders.length > 3 && (
-              <button
-                onClick={() => setShowAllCompleted(!showAllCompleted)}
-                className="w-full flex items-center justify-center gap-1 py-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-              >
-                {showAllCompleted ? (
-                  <>
-                    Show less <ChevronUp className="w-4 h-4" />
-                  </>
-                ) : (
-                  <>
-                    Show {Math.min(completedOrders.length - 3, maxOrders - 3)} more{' '}
-                    <ChevronDown className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Stats */}
-        {hasOrders && !compact && (
-          <div className="pt-3 border-t border-border flex justify-between text-xs text-muted-foreground">
-            <span>Total buys: {depositNonce}</span>
-            <span>Total sells: {sellNonce}</span>
-          </div>
-        )}
-      </div>
+      {/* Show more button */}
+      {showCompleted && completedOrders.length > 3 && (
+        <button
+          onClick={() => setShowAllCompleted(!showAllCompleted)}
+          className="w-full flex items-center justify-center gap-1 py-2 text-xs text-muted-foreground hover:text-primary transition-colors"
+        >
+          {showAllCompleted ? (
+            <>
+              Show less <ChevronUp className="w-3.5 h-3.5" />
+            </>
+          ) : (
+            <>
+              Show {Math.min(completedOrders.length - 3, maxOrders - 3)} more{' '}
+              <ChevronDown className="w-3.5 h-3.5" />
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }

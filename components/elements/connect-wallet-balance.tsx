@@ -33,7 +33,7 @@ export interface ConnectedWalletBalancesProps {
   hideZeroBalances?: boolean;
   /** Polling interval in ms (default 30s). */
   pollInterval?: number;
-  /** Explorer base URL (default BaseScan). */
+  /** Explorer base URL (default Arbiscan). */
   explorerBaseUrl?: string;
   className?: string;
 }
@@ -44,7 +44,7 @@ export default function ConnectedWalletBalances({
   prices: propPrices = {}, // Renamed to avoid confusion with Redux prices
   hideZeroBalances = true,
   pollInterval = 30_000,
-  explorerBaseUrl = "https://basescan.org",
+  explorerBaseUrl = "https://arbiscan.io",
   className,
 }: ConnectedWalletBalancesProps) {
   const { wallet, address, isConnected, chainId } = useWallet();

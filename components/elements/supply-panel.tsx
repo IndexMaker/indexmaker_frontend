@@ -32,6 +32,7 @@ import USDC from "../../public/logos/usd-coin.png";
 import IndexMaker from "../icons/indexmaker";
 import Info from "../icons/info";
 import NavigationAlert from "../icons/navigation-alert";
+import AddressIdenticon from "./AddressIdenticon";
 import AnimatedPrice from "./animate-price";
 import CustomTooltip from "./custom-tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -56,6 +57,7 @@ interface SupplyPanelProps {
 interface VaultInfo {
   name: string;
   ticker: string;
+  address: string;
   amount: string;
 }
 
@@ -122,8 +124,11 @@ export function SupplyPanel({
   const currentAmount = selectedVault[0]?.amount || "0";
   const parsedAmount = parseFloat(currentAmount) || 0;
 
-  // Find ITP address for current vault
-  const currentItpAddress = currentVault?.ticker ? getItpAddress(currentVault.ticker) : undefined;
+  // Find ITP address for current vault.
+  // Prefer arbitrumAddress from the vault data (set by earn-content from backend ITP list).
+  // Fall back to useBridgedItps symbol lookup.
+  const currentItpAddress = currentVault?.arbitrumAddress
+    || (currentVault?.ticker ? getItpAddress(currentVault.ticker) : undefined);
 
   /**
    * Validate USDC balance on Arbitrum
@@ -222,16 +227,16 @@ export function SupplyPanel({
     return () => clearInterval(id);
   }, [wallet, currentChainId, pollInterval]);
 
-  // Calculate quantities when amounts change
+  // Calculate quantities when amounts change (keyed by address)
   useEffect(() => {
-    const newQuantities: { [ticker: string]: number } = {};
+    const newQuantities: { [key: string]: number } = {};
 
     selectedVault.forEach((vault) => {
       const amount = parseFloat(vault.amount);
-      const price = Number(indexPrices[vault.ticker]);
+      const price = Number(indexPrices[vault.address] ?? indexPrices[vault.ticker]);
 
       const qty = !isNaN(amount) && price > 0 ? amount / price : 0;
-      newQuantities[vault.ticker] = qty;
+      newQuantities[vault.address] = qty;
     });
 
     setQuantity(newQuantities);
@@ -261,21 +266,17 @@ export function SupplyPanel({
     // Find ITP address
     let itpAddress = currentItpAddress;
 
-    // If no exact match, try to find by name or use first available
+    // If no exact match, try to find by name or symbol
     if (!itpAddress && itps.length > 0) {
-      // Try to find by partial name match
       const foundItp = itps.find(itp =>
+        itp.symbol.toLowerCase() === currentVault.ticker.toLowerCase() ||
+        itp.symbol.toLowerCase() === `b${currentVault.ticker.toLowerCase()}` ||
         itp.name.toLowerCase().includes(currentVault.name.toLowerCase()) ||
-        currentVault.name.toLowerCase().includes(itp.name.toLowerCase()) ||
-        itp.symbol.toLowerCase().includes(currentVault.ticker.toLowerCase())
+        currentVault.name.toLowerCase().includes(itp.name.toLowerCase())
       );
 
       if (foundItp) {
         itpAddress = foundItp.address;
-      } else {
-        // Use first available ITP for testing
-        itpAddress = itps[0].address;
-        toast.info(`Using ITP: ${itps[0].symbol}`);
       }
     }
 
@@ -304,15 +305,14 @@ export function SupplyPanel({
 
     if (!itpAddress && itps.length > 0) {
       const foundItp = itps.find(itp =>
+        itp.symbol.toLowerCase() === currentVault.ticker.toLowerCase() ||
+        itp.symbol.toLowerCase() === `b${currentVault.ticker.toLowerCase()}` ||
         itp.name.toLowerCase().includes(currentVault.name.toLowerCase()) ||
-        itp.symbol.toLowerCase().includes(currentVault.ticker.toLowerCase())
+        currentVault.name.toLowerCase().includes(itp.name.toLowerCase())
       );
 
       if (foundItp) {
         itpAddress = foundItp.address;
-      } else {
-        itpAddress = itps[0].address;
-        toast.info(`Using ITP: ${itps[0].symbol}`);
       }
     }
 
@@ -338,7 +338,7 @@ export function SupplyPanel({
     }
   };
 
-  const setMaxAmount = (vaultId: string) => {
+  const setMaxAmount = (vaultAddress: string) => {
     const maxBalance = balances["USDC"] || 0;
 
     if (maxBalance === 0) {
@@ -346,22 +346,22 @@ export function SupplyPanel({
       return;
     }
     dispatch(
-      updateVaultAmount({ name: vaultId, amount: maxBalance.toString() })
+      updateVaultAmount({ address: vaultAddress, amount: maxBalance.toString() })
     );
     setInsufficientValue(false);
   };
 
-  const removeVault = (vaultId: string) => {
-    dispatch(removeSelectedVault(vaultId));
+  const removeVault = (vaultAddress: string) => {
+    dispatch(removeSelectedVault(vaultAddress));
   };
 
   const handleAmountChange = useCallback(
-    async (vaultId: string, value: string) => {
-      dispatch(updateVaultAmount({ name: vaultId, amount: value }));
+    async (vaultAddress: string, value: string) => {
+      dispatch(updateVaultAmount({ address: vaultAddress, amount: value }));
 
       const amount = parseFloat(value);
       if (!isNaN(amount) && amount >= 0) {
-        setQuantity((prev) => ({ ...prev, [vaultId]: 0 }));
+        setQuantity((prev) => ({ ...prev, [vaultAddress]: 0 }));
         setInsufficientValue(false);
       }
     },
@@ -576,13 +576,13 @@ export function SupplyPanel({
   function renderTradeContent() {
     return (
       <div className="flex flex-col">
-        {vaults.map((vault, index) => (
-          <div key={vault.name + index}>
+        {vaults.map((vault) => (
+          <div key={vault.address}>
             {/* Header */}
             <div className="flex items-start justify-between py-6 px-4">
               <div className="flex items-start gap-2">
                 <div className="w-[40px] h-[40px] rounded-full p-1 flex items-start justify-center">
-                  <IndexMaker className="w-[36px] h-[36px] text-muted" />
+                  <AddressIdenticon address={vault.address} size={36} />
                 </div>
                 <div className="flex flex-col gap-1">
                   <h2 className="font-medium text-[15px] text-primary">
@@ -595,7 +595,7 @@ export function SupplyPanel({
                     <span className="text-[11px] bg-accent px-2 py-0.5 rounded">
                       <AnimatedPrice
                         currency="USDC"
-                        value={Number(indexPrices[vault.ticker] ?? 0)}
+                        value={Number(indexPrices[vault.address] ?? indexPrices[vault.ticker] ?? 0)}
                       />
                     </span>
                   </div>
@@ -604,7 +604,7 @@ export function SupplyPanel({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => removeVault(vault.name)}
+                onClick={() => removeVault(vault.address)}
                 className="text-secondary cursor-pointer hover:text-primary bg-accent p-[6px] w-[24px] h-[24px] rounded-[4px]"
               >
                 <X className="h-2 w-2" style={{ width: "12px" }} />
@@ -633,22 +633,22 @@ export function SupplyPanel({
                       autoComplete="off"
                       autoCorrect="off"
                       value={
-                        selectedVault.find((_vault) => _vault.name === vault.name)?.amount || ""
+                        selectedVault.find((_vault) => _vault.address === vault.address)?.amount || ""
                       }
                       className="w-full font-mono text-[18px] font-semibold outline-none bg-transparent text-primary placeholder-secondary"
                       onChange={(e) => {
-                        let value = e.target.value;
+                        const value = e.target.value;
                         if (value === "") {
-                          handleAmountChange(vault.name, "");
+                          handleAmountChange(vault.address, "");
                           return;
                         }
                         const isValid = /^(\d+)?(\.\d*)?$/.test(value);
                         if (!isValid) return;
-                        handleAmountChange(vault.name, value);
+                        handleAmountChange(vault.address, value);
                       }}
                     />
                     <div className="font-mono text-[11px] text-muted mt-1">
-                      ≈ {quantity[vault.ticker]?.toFixed(4) || "0"} {vault.ticker}
+                      ≈ {quantity[vault.address]?.toFixed(4) || quantity[vault.ticker]?.toFixed(4) || "0"} {vault.ticker}
                     </div>
                   </div>
 
@@ -668,7 +668,7 @@ export function SupplyPanel({
                     <Button
                       type="button"
                       className="px-[10px] py-[6px] h-[28px] text-[11px] rounded bg-foreground text-primary hover:bg-muted cursor-pointer font-medium"
-                      onClick={() => setMaxAmount(vault.name)}
+                      onClick={() => setMaxAmount(vault.address)}
                     >
                       MAX
                     </Button>
@@ -700,13 +700,13 @@ export function SupplyPanel({
                   <div className="flex flex-col">
                     <span className="font-mono text-[18px] font-semibold text-primary">
                       {activeTab === "buy"
-                        ? (quantity[vault.ticker]?.toFixed(4) || "0.00")
-                        : (parsedAmount * (Number(indexPrices[vault.ticker]) || 0)).toFixed(2)
+                        ? (quantity[vault.address]?.toFixed(4) || quantity[vault.ticker]?.toFixed(4) || "0.00")
+                        : (parsedAmount * (Number(indexPrices[vault.address] ?? indexPrices[vault.ticker]) || 0)).toFixed(2)
                       }
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <IndexMaker className="w-[24px] h-[24px] text-muted" />
+                    <AddressIdenticon address={vault.address} size={24} />
                     <span className="text-primary text-[14px] font-medium">
                       {activeTab === "buy" ? vault.ticker : "USDC"}
                     </span>
@@ -718,7 +718,10 @@ export function SupplyPanel({
               <div className="text-xs text-muted py-1">
                 <div className="flex justify-between">
                   <span>Price</span>
-                  <span>1 {vault.ticker} = {(indexPrices[vault.ticker] && !isNaN(Number(indexPrices[vault.ticker]))) ? Number(indexPrices[vault.ticker]).toFixed(2) : "0.00"} USDC</span>
+                  <span>1 {vault.ticker} = {(() => {
+                    const price = Number(indexPrices[vault.address] ?? indexPrices[vault.ticker]);
+                    return !isNaN(price) ? price.toFixed(2) : "0.00";
+                  })()} USDC</span>
                 </div>
               </div>
 
@@ -742,7 +745,7 @@ export function SupplyPanel({
                     displayLevels={5}
                     compact={true}
                     defaultCollapsed={true}
-                    baseMidPrice={vault.indexPrice || (indexPrices[vault.ticker] ? Number(indexPrices[vault.ticker]) : undefined)}
+                    baseMidPrice={vault.indexPrice || (indexPrices[vault.address] ? Number(indexPrices[vault.address]) : indexPrices[vault.ticker] ? Number(indexPrices[vault.ticker]) : undefined)}
                   />
                 </div>
               )}

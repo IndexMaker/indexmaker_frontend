@@ -39,7 +39,7 @@ interface RebalanceTableProps {
   onSort?: (columnId: string, direction: "asc" | "desc") => void;
   sortColumn?: string;
   sortDirection?: "asc" | "desc";
-  onSupplyClick?: (vaultId: string, token: string) => void;
+  onSupplyClick?: (vaultId: string, token: string, address: string) => void;
 }
 
 interface RebalanceData {

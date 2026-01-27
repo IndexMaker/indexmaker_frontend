@@ -16,7 +16,7 @@ interface IndexBalanceProps {
   tokenSymbol?: string;
   instantAPY?: string;
   supplyPositions: SupplyPosition[];
-  onSupplyClick?: (indexId: string, token: string) => void;
+  onSupplyClick?: (indexId: string, token: string, address: string) => void;
   /** Balance on Arbitrum (bridged) - optional for dual-chain display */
   arbitrumBalance?: string;
   /** Balance on Orbit (native) - optional for dual-chain display */
@@ -72,7 +72,7 @@ export default function IndexBalance({
 
     if (!wallet) await connectWallet();
 
-    onSupplyClick && onSupplyClick(index.name, index.ticker);
+    onSupplyClick && onSupplyClick(index.name, index.ticker, index.address);
   }, [wallet]);
 
   // Determine if we have dual-chain data

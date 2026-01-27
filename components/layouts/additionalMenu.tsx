@@ -16,13 +16,15 @@ interface AdditionalMenuProps {
   canBuy?: boolean;
   indexName?: string;
   ticker?: string;
+  address?: string;
 }
 
 export function AdditionalMenu({
   className,
   canBuy = false,
   indexName,
-  ticker
+  ticker,
+  address
 }: AdditionalMenuProps) {
   const { t } = useLanguage();
   const [isCalendlyOpen, setIsCalendlyOpen] = useState(false);
@@ -30,8 +32,8 @@ export function AdditionalMenu({
   const dispatch = useDispatch();
 
   // Function to handle supply button click
-  const handleSupplyClick = (name: string, ticker: string) => {
-    dispatch(addSelectedVault({ name, ticker }));
+  const handleSupplyClick = (name: string, ticker: string, addr: string) => {
+    dispatch(addSelectedVault({ name, ticker, address: addr }));
   };
   return (
     <>
@@ -83,7 +85,7 @@ export function AdditionalMenu({
             onClick={
               canBuy
                 ? () =>
-                    indexName && ticker ? handleSupplyClick(indexName, ticker) : {}
+                    indexName && ticker && address ? handleSupplyClick(indexName, ticker, address) : {}
                 : undefined
             }
             disabled={!canBuy}

@@ -61,8 +61,8 @@ export default function Dashboard({
   const dispatch = useDispatch();
 
   // Function to handle supply button click
-  const handleSupplyClick = (name: string, ticker: string) => {
-    dispatch(addSelectedVault({ name, ticker }));
+  const handleSupplyClick = (name: string, ticker: string, address: string) => {
+    dispatch(addSelectedVault({ name, ticker, address }));
     // setRightbarOpen(true)
   };
 
@@ -127,7 +127,7 @@ export default function Dashboard({
               open={rightbarOpen}
               setOpen={setRightbarOpen}
               vaults={storedIndexes.filter((vault) =>
-                selectedVault.map((v) => v.name).includes(vault.name)
+                selectedVault.map((v) => v.address).includes(vault.address)
               )}
             />
           )}

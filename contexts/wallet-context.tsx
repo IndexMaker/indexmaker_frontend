@@ -72,6 +72,57 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
       return false;
     }
   };
+
+  const disconnectWallet = useCallback(async () => {
+    if (!wallet) return;
+
+    try {
+      // Disconnect using web3-onboard
+      await onboard.disconnectWallet({ label: wallet.label });
+
+      // Coinbase Wallet may support disconnect via EIP-1193
+      await wallet.rawProvider.disconnect?.();
+      // Alternatively, clear session via close
+      await wallet.rawProvider.close?.();
+      // Handle WalletConnect-specific disconnection
+      if (
+        wallet.label.toLowerCase().includes("walletconnect") &&
+        wallet.rawProvider
+      ) {
+        try {
+          await wallet.rawProvider.disconnect?.();
+        } catch (error) {
+          console.warn("Failed to close WalletConnect session:", error);
+        }
+      }
+
+      // Handle MetaMask-specific disconnection
+      if (
+        wallet.label.toLowerCase().includes("metamask") &&
+        wallet.rawProvider
+      ) {
+        try {
+          // Request new permissions to reset MetaMask session
+          await wallet.rawProvider.request({
+            method: "wallet_requestPermissions",
+            params: [{ eth_accounts: {} }],
+          });
+        } catch (error) {
+          console.warn("Failed to reset MetaMask session:", error);
+        }
+      }
+
+      // Clear local state
+      setWallet(null);
+      setChainId(null);
+      clearSelectedVault();
+      localStorage.removeItem(LAST_WALLET_KEY);
+    } catch (error) {
+      console.error("Error disconnecting wallet:", error);
+      throw error;
+    }
+  }, [wallet]);
+
   // Check if wallet is still connected
   const checkConnection = useCallback(async () => {
     if (!wallet || !wallet.provider) {
@@ -84,7 +135,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
       console.warn("Wallet connection lost:", error);
       await disconnectWallet();
     }
-  }, [wallet]);
+  }, [wallet, disconnectWallet]);
 
   useEffect(() => {
     const updateWhitelist = async () => {
@@ -168,56 +219,6 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
       unsubscribe?.();
     };
   }, []);
-
-  const disconnectWallet = useCallback(async () => {
-    if (!wallet) return;
-
-    try {
-      // Disconnect using web3-onboard
-      await onboard.disconnectWallet({ label: wallet.label });
-
-      // Coinbase Wallet may support disconnect via EIP-1193
-      await wallet.rawProvider.disconnect?.();
-      // Alternatively, clear session via close
-      await wallet.rawProvider.close?.();
-      // Handle WalletConnect-specific disconnection
-      if (
-        wallet.label.toLowerCase().includes("walletconnect") &&
-        wallet.rawProvider
-      ) {
-        try {
-          await wallet.rawProvider.disconnect?.();
-        } catch (error) {
-          console.warn("Failed to close WalletConnect session:", error);
-        }
-      }
-
-      // Handle MetaMask-specific disconnection
-      if (
-        wallet.label.toLowerCase().includes("metamask") &&
-        wallet.rawProvider
-      ) {
-        try {
-          // Request new permissions to reset MetaMask session
-          await wallet.rawProvider.request({
-            method: "wallet_requestPermissions",
-            params: [{ eth_accounts: {} }],
-          });
-        } catch (error) {
-          console.warn("Failed to reset MetaMask session:", error);
-        }
-      }
-
-      // Clear local state
-      setWallet(null);
-      setChainId(null);
-      clearSelectedVault();
-      localStorage.removeItem(LAST_WALLET_KEY);
-    } catch (error) {
-      console.error("Error disconnecting wallet:", error);
-      throw error;
-    }
-  }, [wallet]);
 
   // Periodic connection check and provider event listeners
   useEffect(() => {

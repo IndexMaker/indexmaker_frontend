@@ -11,7 +11,7 @@
  *
  * Contract interface:
  * ```solidity
- * function depositForBuy(uint256 amount, address targetItp) external;
+ * function depositForBuy(address targetItp, uint256 amount) external;
  * ```
  */
 

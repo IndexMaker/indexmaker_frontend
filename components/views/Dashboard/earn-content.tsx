@@ -47,6 +47,20 @@ import USDC from "../../../public/logos/usd-coin.png";
 import { Asset } from "@/types";
 import { fetchAssets } from "@/server/indices";
 
+// Build symbol-to-coinId mapping from centralized vendor/assets.json
+import vendorAssets from "../../../../vendor/assets.json";
+
+const VENDOR_SYMBOL_TO_COIN_ID: Record<string, string> = (() => {
+  const map: Record<string, string> = {};
+  for (const asset of vendorAssets) {
+    if (!asset.coingecko) continue;
+    // Extract symbol from bitget pair (e.g., "BTCUSDC" → "BTC")
+    const symbol = asset.bitget.replace(/USD[CT]$/, "");
+    if (symbol) map[symbol] = asset.coingecko;
+  }
+  return map;
+})();
+
 type ColumnType = {
   id: string;
   title: string;
@@ -63,13 +77,13 @@ const initialColumns: ColumnType[] = [
   { id: "collateral", title: "Collateral", visible: true },
   { id: "assetClass", title: "Asset Class", visible: true },
   { id: "category", title: "Category", visible: true },
-  { id: "inceptionDate", title: "Inception Date", visible: false },
+  { id: "inceptionDate", title: "Inception Date", visible: true },
   { id: "managementFee", title: "Management Fee", visible: false },
   { id: "actions", title: "", visible: true },
 ];
 
 interface EarnContentProps {
-  onSupplyClick?: (vaultId: string, token: string) => void;
+  onSupplyClick?: (vaultId: string, token: string, address: string) => void;
   onShowVideoPopup: () => void;
 }
 
@@ -95,7 +109,7 @@ export function EarnContent({
   const [itps, setItps] = useState<ItpListEntry[]>([]);
   const [itpLoading, setItpLoading] = useState(false);
   const [itpTotalAum, setItpTotalAum] = useState<number | null>(null);
-  const [symbolToCoinId, setSymbolToCoinId] = useState<Record<string, string>>({});
+  const [symbolToCoinId, setSymbolToCoinId] = useState<Record<string, string>>(VENDOR_SYMBOL_TO_COIN_ID);
 
   const [activeMyearnTab, setActiveMyearnTab] = useState<
     "position" | "historic"
@@ -166,7 +180,7 @@ export function EarnContent({
         }
         const data = await response.json();
         // Convert array of {symbol, coin_id} to Record<string, string>
-        const mapping: Record<string, string> = {};
+        const mapping: Record<string, string> = { ...VENDOR_SYMBOL_TO_COIN_ID };
         for (const item of data.mappings || []) {
           mapping[item.symbol.toUpperCase()] = item.coin_id;
         }
@@ -203,15 +217,15 @@ export function EarnContent({
           setItpTotalAum(data.total_aum);
         }
 
-        // Update Redux with ITP prices and supplies
+        // Update Redux with ITP prices and supplies (keyed by orbit_address for uniqueness)
         for (const itp of data.itps || []) {
           if (itp.current_price != null) {
-            dispatch(setTokenPrice({ ticker: itp.symbol, price: itp.current_price }));
+            dispatch(setTokenPrice({ ticker: itp.orbit_address, price: itp.current_price }));
           }
           // Parse total_supply (it's a string in 18 decimals)
           const supply = parseFloat(itp.total_supply) / 1e18;
           if (!Number.isNaN(supply)) {
-            dispatch(setTokenSupply({ ticker: itp.symbol, supply }));
+            dispatch(setTokenSupply({ ticker: itp.orbit_address, supply }));
           }
         }
 
@@ -267,7 +281,8 @@ export function EarnContent({
           name: itp.name,
           address: itp.orbit_address,
           ticker: itp.symbol,
-          curator: "OrbitGo",
+          curator: itp.admin_address || itp.orbit_address || "",
+          arbitrumAddress: itp.arbitrum_address,
           totalSupply: parseFloat(itp.total_supply) / 1e18,
           totalSupplyUSD: (parseFloat(itp.total_supply) / 1e18) * (itp.current_price ?? 0),
           ytdReturn: itp.price_24h_change ?? 0,
@@ -289,9 +304,9 @@ export function EarnContent({
 
     // Only update if we have ITPs to add
     if (validItpEntries.length > 0) {
-      // Merge with existing traditional indices (avoiding duplicates by name)
+      // Merge with existing traditional indices (avoiding duplicates by address)
       const existingIndices = indexLists.filter(
-        idx => !validItpEntries.some(itp => itp.name === idx.name)
+        idx => !validItpEntries.some(itp => itp.address === idx.address)
       );
       const mergedIndices = [...existingIndices, ...validItpEntries];
       dispatch(setIndices(mergedIndices));
@@ -345,7 +360,8 @@ export function EarnContent({
       name: itp.name,
       address: itp.orbit_address,
       ticker: itp.symbol,
-      curator: "OrbitGo",
+      curator: itp.admin_address || itp.orbit_address || "",
+      arbitrumAddress: itp.arbitrum_address,
       totalSupply: parseFloat(itp.total_supply) / 1e18,
       totalSupplyUSD: (parseFloat(itp.total_supply) / 1e18) * (itp.current_price ?? 0),
       ytdReturn: itp.price_24h_change ?? 0,
@@ -396,11 +412,11 @@ export function EarnContent({
       }, 0);
     }
 
-    // Add ITP AUM (calculated from Redux prices/supplies for ITPs)
+    // Add ITP AUM (calculated from Redux prices/supplies for ITPs, keyed by address)
     for (const itp of itps) {
-      const ticker = itp.symbol;
-      const supply = reduxSupplies[ticker] ?? 0;
-      const price = reduxPrices[ticker] ?? 0;
+      const key = itp.orbit_address;
+      const supply = reduxSupplies[key] ?? 0;
+      const price = reduxPrices[key] ?? 0;
       liveTotalAUM += supply * price;
     }
 
@@ -426,12 +442,15 @@ export function EarnContent({
     const itpEntries = validItps.map(itpToIndexEntry);
 
     if (filterMyIndex && wallet?.accounts?.[0]?.address) {
-      // When "My Index" is enabled: Show all indexes created by connected wallet
+      // When "My Index" is enabled: Show ITPs deployed by connected wallet
+      // Filter on raw ITP data first (admin_address is the deployer wallet)
       const walletAddress = wallet.accounts[0].address.toLowerCase();
-      filtered = (storedIndexes || []).filter((vault) =>
-        vault.address?.toLowerCase() === walletAddress ||
-        vault.curator?.toLowerCase() === walletAddress
+      const myItpAddresses = new Set(
+        validItps
+          .filter(itp => itp.admin_address?.toLowerCase() === walletAddress)
+          .map(itp => itp.orbit_address)
       );
+      filtered = itpEntries.filter(vault => myItpAddresses.has(vault.address));
     } else {
       // Show only valid ITPs from API
       filtered = itpEntries;
@@ -790,7 +809,7 @@ export function EarnContent({
           
           {/* Create Index Button */}
           <div className="flex justify-end pt-6">
-            <Link href="/create-index">
+            <Link href="/create-itp">
               <CustomButton
                 className="bg-[#2470ff] hover:bg-blue-700 text-[11px] rounded-[3px] cursor-pointer flex items-center gap-2"
               >

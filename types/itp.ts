@@ -14,6 +14,7 @@ export interface ItpListEntry {
   assets?: string[];
   weights?: number[];
   aum?: number | null;
+  admin_address?: string;
   created_at: number;
 }
 

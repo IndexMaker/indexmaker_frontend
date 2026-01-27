@@ -7,8 +7,10 @@
  * Styled to match keeper-charts page pattern.
  *
  * @see Story 6.12 - Task 4.2
+ * @see Story 3.3 - Task 4 (click-to-detail navigation)
  */
 
+import { useRouter } from 'next/navigation';
 import type { PortfolioPosition } from '@/types/portfolio';
 
 interface PortfolioPositionRowProps {
@@ -53,6 +55,7 @@ export function PortfolioPositionRow({
   position,
   onBridge,
 }: PortfolioPositionRowProps) {
+  const router = useRouter();
   const pnlColor =
     position.pnlPercent === null
       ? 'text-secondary'
@@ -60,8 +63,18 @@ export function PortfolioPositionRow({
         ? 'text-green-600 dark:text-green-400'
         : 'text-red-600 dark:text-red-400';
 
+  const handleRowClick = () => {
+    const itpId = position.arbitrumAddress || position.orbitAddress;
+    if (itpId) {
+      router.push(`/itp/${itpId}`);
+    }
+  };
+
   return (
-    <tr className="border-b border-accent hover:bg-accent/30 transition-colors">
+    <tr
+      className="border-b border-accent hover:bg-accent/30 transition-colors cursor-pointer"
+      onClick={handleRowClick}
+    >
       {/* ITP Info */}
       <td className="py-4 px-4">
         <div>
@@ -115,7 +128,10 @@ export function PortfolioPositionRow({
       <td className="py-4 px-4 text-right">
         {onBridge && (
           <button
-            onClick={() => onBridge(position)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onBridge(position);
+            }}
             className="text-sm px-3 py-1 rounded border border-accent text-secondary hover:bg-accent hover:text-primary transition-colors disabled:opacity-50"
             disabled
             title="Bridge coming soon"

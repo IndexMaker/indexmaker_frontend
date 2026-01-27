@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { log } from "@/lib/utils/logger";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:3002";
+// Server-side only - use non-public env var (falls back to public for compatibility)
+const BACKEND_URL = process.env.BACKEND_API || process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:3002";
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
 
 export async function POST(req: Request) {

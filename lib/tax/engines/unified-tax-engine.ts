@@ -79,7 +79,7 @@ export class UnifiedTaxEngine {
 
     // Calculate tax using appropriate engine
     let result: TaxResult;
-    let additionalInfo: UnifiedTaxResult['additionalInfo'] = {};
+    const additionalInfo: UnifiedTaxResult['additionalInfo'] = {};
 
     try {
       switch (taxSystem) {

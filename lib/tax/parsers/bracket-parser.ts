@@ -185,7 +185,7 @@ export class TaxBracketParser {
 
   private static parseAmount(amountStr: string): number {
     // Remove commas and handle suffixes
-    let cleanAmount = amountStr.replace(/,/g, '');
+    const cleanAmount = amountStr.replace(/,/g, '');
 
     // Handle Japanese yen millions (m)
     if (cleanAmount.includes('m')) {
